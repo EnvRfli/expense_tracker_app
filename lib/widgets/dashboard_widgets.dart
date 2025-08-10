@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/providers.dart';
 import '../utils/theme.dart';
 
@@ -559,7 +558,7 @@ class RecentTransactionsCard extends StatelessWidget {
                           ),
                     ),
                     Text(
-                      '${category?.name ?? 'Unknown'} • ${DateFormat('dd MMM').format(data.date)}',
+                      '${category?.name ?? 'Unknown'} • ${data.date.day}/${data.date.month}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],

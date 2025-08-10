@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
+import '../providers/base_provider.dart';
 import '../utils/theme.dart';
 import 'dashboard_screen.dart';
 import 'onboarding_screen.dart';
@@ -43,7 +44,10 @@ class _SplashScreenState extends State<SplashScreen>
       curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
     ));
 
-    _initializeApp();
+    // Defer initialization until after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeApp();
+    });
   }
 
   Future<void> _initializeApp() async {
@@ -72,15 +76,24 @@ class _SplashScreenState extends State<SplashScreen>
     final budgetProvider = context.read<BudgetProvider>();
     final syncProvider = context.read<SyncProvider>();
 
-    // Initialize all providers
+    // Initialize all providers silently without triggering notifications
     await Future.wait([
-      userSettingsProvider.initialize(),
-      categoryProvider.initialize(),
-      expenseProvider.initialize(),
-      incomeProvider.initialize(),
-      budgetProvider.initialize(),
-      syncProvider.initialize(),
+      _initializeProviderSilently(userSettingsProvider),
+      _initializeProviderSilently(categoryProvider),
+      _initializeProviderSilently(expenseProvider),
+      _initializeProviderSilently(incomeProvider),
+      _initializeProviderSilently(budgetProvider),
+      _initializeProviderSilently(syncProvider),
     ]);
+  }
+
+  Future<void> _initializeProviderSilently(BaseProvider provider) async {
+    try {
+      await provider.initialize();
+      provider.markInitialized();
+    } catch (e) {
+      provider.setError(e.toString());
+    }
   }
 
   void _navigateToNextScreen() {

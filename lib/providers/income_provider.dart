@@ -21,7 +21,7 @@ class IncomeProvider extends BaseProvider {
     await handleAsync(() async {
       _incomes = DatabaseService.instance.incomes.values.toList()
         ..sort((a, b) => b.date.compareTo(a.date));
-      notifyListeners();
+      // Don't call notifyListeners() here - handleAsync will handle it
     });
   }
 

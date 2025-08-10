@@ -17,9 +17,10 @@ class UserSettingsProvider extends BaseProvider {
   int get budgetAlertPercentage => _user?.budgetAlertPercentage ?? 80;
 
   // Initialize provider
+  @override
   Future<void> initialize() async {
-    await handleAsync(() async {
-      await loadUserSettings();
+    await handleAsyncSilent(() async {
+      _user = DatabaseService.instance.getCurrentUser();
     });
   }
 
@@ -27,7 +28,7 @@ class UserSettingsProvider extends BaseProvider {
   Future<void> loadUserSettings() async {
     await handleAsync(() async {
       _user = DatabaseService.instance.getCurrentUser();
-      notifyListeners();
+      // Don't call notifyListeners() here - handleAsync will handle it
     });
   }
 

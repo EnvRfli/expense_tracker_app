@@ -26,7 +26,7 @@ class CategoryProvider extends BaseProvider {
     await handleAsync(() async {
       _categories = DatabaseService.instance.categories.values.toList()
         ..sort((a, b) => a.name.compareTo(b.name));
-      notifyListeners();
+      // Don't call notifyListeners() here - handleAsync will handle it
     });
   }
 

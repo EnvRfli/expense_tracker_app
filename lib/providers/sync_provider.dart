@@ -72,7 +72,7 @@ class SyncProvider extends BaseProvider {
         _autoSyncEnabled = user.isBackupEnabled;
       }
 
-      notifyListeners();
+      // Don't call notifyListeners() here - handleAsync will handle it
     });
   }
 

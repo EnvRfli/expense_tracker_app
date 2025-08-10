@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/providers.dart';
 import '../utils/theme.dart';
 import '../widgets/dashboard_widgets.dart';
@@ -130,8 +129,7 @@ class DashboardHomeTab extends StatelessWidget {
                         ),
                   ),
                   Text(
-                    DateFormat('EEEE, dd MMMM yyyy', 'id_ID')
-                        .format(DateTime.now()),
+                    'Hari ini, ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white70,
                         ),

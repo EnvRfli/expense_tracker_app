@@ -21,7 +21,7 @@ class ExpenseProvider extends BaseProvider {
     await handleAsync(() async {
       _expenses = DatabaseService.instance.expenses.values.toList()
         ..sort((a, b) => b.date.compareTo(a.date));
-      notifyListeners();
+      // Don't call notifyListeners() here - handleAsync will handle it
     });
   }
 
