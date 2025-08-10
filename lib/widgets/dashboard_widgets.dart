@@ -81,7 +81,8 @@ class BalanceSummaryCard extends StatelessWidget {
                         userSettings,
                       ),
                     ),
-                    const SizedBox(width: AppSizes.paddingMedium),
+                    const SizedBox(
+                        width: AppSizes.paddingSmall), // Reduced spacing
                     Expanded(
                       child: _buildBalanceItem(
                         context,
@@ -111,7 +112,7 @@ class BalanceSummaryCard extends StatelessWidget {
     UserSettingsProvider userSettings,
   ) {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.paddingMedium),
+      padding: const EdgeInsets.all(AppSizes.paddingSmall), // Reduced padding
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -122,12 +123,16 @@ class BalanceSummaryCard extends StatelessWidget {
           Row(
             children: [
               Icon(icon, color: color, size: AppSizes.iconSmall),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white70,
-                    ),
+              const SizedBox(width: 2), // Reduced spacing
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white70,
+                      ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
             ],
           ),
@@ -138,6 +143,8 @@ class BalanceSummaryCard extends StatelessWidget {
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ],
       ),
@@ -163,38 +170,40 @@ class QuickActionsCard extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: AppSizes.paddingMedium),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildQuickAction(
-                    context,
-                    'Tambah Pengeluaran',
-                    Icons.remove_circle,
-                    AppColors.expense,
-                    () => _showAddExpenseDialog(context),
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickAction(
+                      context,
+                      'Tambah Pengeluaran',
+                      Icons.remove_circle,
+                      AppColors.expense,
+                      () => _showAddExpenseDialog(context),
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSizes.paddingSmall),
-                Expanded(
-                  child: _buildQuickAction(
-                    context,
-                    'Tambah Pemasukan',
-                    Icons.add_circle,
-                    AppColors.income,
-                    () => _showAddIncomeDialog(context),
+                  const SizedBox(width: AppSizes.paddingSmall),
+                  Expanded(
+                    child: _buildQuickAction(
+                      context,
+                      'Tambah Pemasukan',
+                      Icons.add_circle,
+                      AppColors.income,
+                      () => _showAddIncomeDialog(context),
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSizes.paddingSmall),
-                Expanded(
-                  child: _buildQuickAction(
-                    context,
-                    'Buat Budget',
-                    Icons.pie_chart,
-                    AppColors.budget,
-                    () => _showAddBudgetDialog(context),
+                  const SizedBox(width: AppSizes.paddingSmall),
+                  Expanded(
+                    child: _buildQuickAction(
+                      context,
+                      'Buat Budget',
+                      Icons.pie_chart,
+                      AppColors.budget,
+                      () => _showAddBudgetDialog(context),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -213,12 +222,14 @@ class QuickActionsCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(AppSizes.paddingMedium),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: AppSizes.iconLarge),
             const SizedBox(height: AppSizes.paddingSmall),
@@ -226,6 +237,8 @@ class QuickActionsCard extends StatelessWidget {
               label,
               style: Theme.of(context).textTheme.bodySmall,
               textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 3,
             ),
           ],
         ),

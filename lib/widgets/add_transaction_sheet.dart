@@ -20,7 +20,8 @@ class AddTransactionSheet extends StatefulWidget {
 class _AddTransactionSheetState extends State<AddTransactionSheet>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  final _formKey = GlobalKey<FormState>();
+  final _expenseFormKey = GlobalKey<FormState>();
+  final _incomeFormKey = GlobalKey<FormState>();
 
   // Form fields
   final _amountController = TextEditingController();
@@ -36,6 +37,18 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
+
+    // Reset form when switching tabs
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {
+          _amountController.clear();
+          _descriptionController.clear();
+          _selectedCategory = null;
+          _selectedDate = DateTime.now();
+        });
+      }
+    });
   }
 
   @override
@@ -49,41 +62,126 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLarge),
+        ),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           // Handle bar
           Container(
             width: 40,
             height: 4,
-            margin:
-                const EdgeInsets.symmetric(vertical: AppSizes.paddingMedium),
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
             decoration: BoxDecoration(
               color: Colors.grey[300],
               borderRadius: BorderRadius.circular(2),
             ),
           ),
 
-          // Tab bar
-          TabBar(
-            controller: _tabController,
-            tabs: [
-              Tab(
-                icon: const Icon(Icons.remove_circle),
-                text: 'Pengeluaran',
+          // Header dengan gradient
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingLarge,
+              vertical: AppSizes.paddingMedium,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.primaryColor.withOpacity(0.1),
+                  AppTheme.primaryColor.withOpacity(0.05),
+                ],
               ),
-              Tab(
-                icon: const Icon(Icons.add_circle),
-                text: 'Pemasukan',
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Tambah Transaksi',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Catat keuangan Anda dengan mudah',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                ),
+              ],
+            ),
+          ),
+
+          // Tab bar dengan custom design
+          Container(
+            margin: const EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingLarge,
+              vertical: AppSizes.paddingMedium,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
+              indicatorPadding: const EdgeInsets.all(2),
+              labelColor: AppTheme.primaryColor,
+              unselectedLabelColor: Colors.grey[600],
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+              tabs: [
+                Tab(
+                  height: 45,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.remove_circle, size: 18),
+                      const SizedBox(width: 6),
+                      Text('Pengeluaran'),
+                    ],
+                  ),
+                ),
+                Tab(
+                  height: 45,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_circle, size: 18),
+                      const SizedBox(width: 6),
+                      Text('Pemasukan'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
 
           // Tab content
-          Flexible(
+          Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
@@ -99,124 +197,341 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
 
   Widget _buildTransactionForm(BuildContext context, bool isIncome) {
     return Form(
-      key: _formKey,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+      key: isIncome ? _incomeFormKey : _expenseFormKey,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.paddingLarge,
+          vertical: AppSizes.paddingMedium,
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Amount field
-            TextFormField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
-              decoration: InputDecoration(
-                labelText: 'Jumlah',
-                prefixText: 'Rp ',
-                border: const OutlineInputBorder(),
-                hintText: '0',
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Jumlah tidak boleh kosong';
-                }
-                if (double.tryParse(value) == null ||
-                    double.parse(value) <= 0) {
-                  return 'Masukkan jumlah yang valid';
-                }
-                return null;
-              },
-            ),
+            // Amount field dengan design card
+            _buildAmountCard(isIncome),
             const SizedBox(height: AppSizes.paddingMedium),
 
             // Description field
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Deskripsi',
-                border: OutlineInputBorder(),
-                hintText: 'Contoh: Makan siang',
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Deskripsi tidak boleh kosong';
-                }
-                return null;
-              },
-            ),
+            _buildDescriptionCard(),
             const SizedBox(height: AppSizes.paddingMedium),
 
             // Category selection
-            Consumer<CategoryProvider>(
-              builder: (context, categoryProvider, child) {
-                final categories = isIncome
-                    ? categoryProvider.incomeCategories
-                    : categoryProvider.expenseCategories;
-
-                return DropdownButtonFormField<CategoryModel>(
-                  value: _selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: categories.map((category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category.name),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCategory = value;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return 'Pilih kategori';
-                    }
-                    return null;
-                  },
-                );
-              },
-            ),
+            _buildCategoryCard(isIncome),
             const SizedBox(height: AppSizes.paddingMedium),
 
             // Date selection
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Tanggal',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                child: Text(
-                  '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                ),
-              ),
-            ),
+            _buildDateCard(),
             const SizedBox(height: AppSizes.paddingLarge),
 
-            // Submit button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _submitTransaction(context, isIncome),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isIncome ? AppColors.income : AppColors.expense,
-                  padding: const EdgeInsets.symmetric(
-                      vertical: AppSizes.paddingMedium),
+            // Submit button dengan animasi
+            _buildSubmitButton(context, isIncome),
+            SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAmountCard(bool isIncome) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingMedium),
+      decoration: BoxDecoration(
+        color:
+            (isIncome ? AppColors.income : AppColors.expense).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: (isIncome ? AppColors.income : AppColors.expense)
+              .withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: (isIncome ? AppColors.income : AppColors.expense)
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
-                  'Tambah ${isIncome ? 'Pemasukan' : 'Pengeluaran'}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                child: Icon(
+                  Icons.attach_money,
+                  color: isIncome ? AppColors.income : AppColors.expense,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Jumlah ${isIncome ? 'Pemasukan' : 'Pengeluaran'}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isIncome ? AppColors.income : AppColors.expense,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            decoration: InputDecoration(
+              hintText: '0',
+              hintStyle: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 16,
+              ),
+              prefixText: 'Rp ',
+              prefixStyle: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 4),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Jumlah tidak boleh kosong';
+              }
+              if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                return 'Masukkan jumlah yang valid';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescriptionCard() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingMedium),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey[200]!,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  Icons.description,
+                  color: Colors.grey[700],
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Deskripsi',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _descriptionController,
+            style: const TextStyle(
+              fontSize: 14,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Contoh: Makan siang di restoran',
+              hintStyle: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 14,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 4),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Deskripsi tidak boleh kosong';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryCard(bool isIncome) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryColor.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  Icons.category,
+                  color: AppTheme.primaryColor,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Kategori',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Consumer<CategoryProvider>(
+            builder: (context, categoryProvider, child) {
+              final categories = isIncome
+                  ? categoryProvider.incomeCategories
+                  : categoryProvider.expenseCategories;
+
+              // Reset selected category if it's not in the current list
+              if (_selectedCategory != null &&
+                  !categories.any((cat) => cat.id == _selectedCategory!.id)) {
+                _selectedCategory = null;
+              }
+
+              return DropdownButtonFormField<CategoryModel>(
+                value: _selectedCategory,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                decoration: const InputDecoration(
+                  hintText: 'Pilih kategori',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 4),
+                ),
+                icon: Icon(
+                  Icons.keyboard_arrow_down,
+                  color: AppTheme.primaryColor,
+                ),
+                items: categories.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category.name),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value;
+                  });
+                  // Haptic feedback
+                  HapticFeedback.selectionClick();
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Pilih kategori';
+                  }
+                  return null;
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateCard() {
+    return InkWell(
+      onTap: () => _selectDate(context),
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        decoration: BoxDecoration(
+          color: Colors.blue[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.blue[200]!,
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[100],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    Icons.calendar_today,
+                    color: Colors.blue[700],
+                    size: 18,
                   ),
                 ),
+                const SizedBox(width: 8),
+                Text(
+                  'Tanggal',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue[700],
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.edit,
+                  color: Colors.blue[400],
+                  size: 14,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -225,24 +540,104 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
     );
   }
 
+  Widget _buildSubmitButton(BuildContext context, bool isIncome) {
+    return Container(
+      width: double.infinity,
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isIncome
+              ? [AppColors.income, AppColors.income.withOpacity(0.8)]
+              : [AppColors.expense, AppColors.expense.withOpacity(0.8)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: (isIncome ? AppColors.income : AppColors.expense)
+                .withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            _submitTransaction(context, isIncome);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isIncome ? Icons.add_circle : Icons.remove_circle,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Tambah ${isIncome ? 'Pemasukan' : 'Pengeluaran'}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _selectDate(BuildContext context) async {
+    // Haptic feedback saat membuka date picker
+    HapticFeedback.selectionClick();
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: AppTheme.primaryColor,
+                  onPrimary: Colors.white,
+                  surface: Colors.white,
+                  onSurface: Colors.black87,
+                ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
       });
+      // Haptic feedback saat tanggal berubah
+      HapticFeedback.lightImpact();
     }
   }
 
   void _submitTransaction(BuildContext context, bool isIncome) {
-    if (_formKey.currentState!.validate()) {
+    final formKey = isIncome ? _incomeFormKey : _expenseFormKey;
+
+    if (formKey.currentState!.validate()) {
       final amount = double.parse(_amountController.text);
       final description = _descriptionController.text;
+
+      // Haptic feedback untuk success
+      HapticFeedback.lightImpact();
 
       if (isIncome) {
         context.read<IncomeProvider>().addIncome(
@@ -261,18 +656,46 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             );
       }
 
-      // Show success message
+      // Show success message with animation
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '${isIncome ? 'Pemasukan' : 'Pengeluaran'} berhasil ditambahkan',
+          content: Row(
+            children: [
+              Icon(
+                isIncome ? Icons.check_circle : Icons.check_circle,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${isIncome ? 'Pemasukan' : 'Pengeluaran'} berhasil ditambahkan',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
           backgroundColor: isIncome ? AppColors.income : AppColors.expense,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
         ),
       );
 
-      // Close the modal
-      Navigator.of(context).pop();
+      // Close the modal dengan delay sedikit untuk UX yang lebih smooth
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      });
+    } else {
+      // Haptic feedback untuk error
+      HapticFeedback.heavyImpact();
     }
   }
 }
