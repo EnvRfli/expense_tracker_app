@@ -18,7 +18,7 @@ class TransactionListScreen extends StatefulWidget {
 
 class _TransactionListScreenState extends State<TransactionListScreen> {
   DateTimeRange? _selectedDateRange;
-  String _selectedType = 'all'; // all, income, expense
+  String _selectedType = 'all';
   String? _selectedCategoryId;
 
   @override
@@ -72,20 +72,22 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       body: Column(
         children: [
           _buildFilterBar(context, categoryProvider),
-          const Divider(height: 0),
           Expanded(
             child: transactions.isEmpty
                 ? Center(
                     child: Text('Tidak ada transaksi',
                         style: Theme.of(context).textTheme.bodyLarge),
                   )
-                : ListView.separated(
+                : ListView.builder(
                     itemCount: transactions.length,
-                    separatorBuilder: (_, __) => const Divider(height: 0),
                     itemBuilder: (context, index) {
                       final item = transactions[index];
-                      return _TransactionTile(
-                          item: item, categoryProvider: categoryProvider);
+                      return Column(
+                        children: [
+                          _TransactionTile(
+                              item: item, categoryProvider: categoryProvider),
+                        ],
+                      );
                     },
                   ),
           ),
@@ -113,77 +115,251 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   Widget _buildFilterBar(
       BuildContext context, CategoryProvider categoryProvider) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingMedium, vertical: AppSizes.paddingSmall),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingMedium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // First row: Type and Reset button
+          Row(
+            children: [
+              Expanded(
+                child: _buildTypeFilterChips(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.filter_alt_off),
+                tooltip: 'Reset Filter',
+                onPressed: () {
+                  setState(() {
+                    _selectedType = 'all';
+                    _selectedCategoryId = null;
+                    _selectedDateRange = null;
+                  });
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.paddingSmall),
+          // Second row: Category and Date filters
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: _buildCategoryFilter(categoryProvider),
+              ),
+              const SizedBox(width: AppSizes.paddingSmall),
+              Expanded(
+                flex: 3,
+                child: _buildDateFilter(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeFilterChips() {
+    return Row(
+      children: [
+        _buildFilterChip(
+          'Semua',
+          _selectedType == 'all',
+          () => setState(() => _selectedType = 'all'),
+        ),
+        const SizedBox(width: 8),
+        _buildFilterChip(
+          'Keluar',
+          _selectedType == 'expense',
+          () => setState(() => _selectedType = 'expense'),
+        ),
+        const SizedBox(width: 8),
+        _buildFilterChip(
+          'Masuk',
+          _selectedType == 'income',
+          () => setState(() => _selectedType = 'income'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.primaryColor
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          border: Border.all(
+            color: isSelected
+                ? AppTheme.primaryColor
+                : Theme.of(context).dividerColor,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected
+                ? Colors.white
+                : Theme.of(context).textTheme.bodyMedium?.color,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryFilter(CategoryProvider categoryProvider) {
+    return GestureDetector(
+      onTap: () => _showCategoryDialog(categoryProvider),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          color: Theme.of(context).colorScheme.surface,
+        ),
         child: Row(
           children: [
-            // Type filter
-            DropdownButton<String>(
-              value: _selectedType,
-              items: const [
-                DropdownMenuItem(value: 'all', child: Text('Semua Transaksi')),
-                DropdownMenuItem(value: 'expense', child: Text('Pengeluaran')),
-                DropdownMenuItem(value: 'income', child: Text('Pemasukan')),
-              ],
-              onChanged: (val) => setState(() => _selectedType = val!),
+            Icon(
+              Icons.category,
+              size: AppSizes.iconSmall,
+              color: Theme.of(context).iconTheme.color,
             ),
-            const SizedBox(width: 8),
-            // Category filter
-            DropdownButton<String?>(
-              value: _selectedCategoryId,
-              hint: const Text('Kategori'),
-              items: [
-                const DropdownMenuItem(
-                    value: null, child: Text('Semua Kategori')),
-                ...(_selectedType == 'income'
-                        ? categoryProvider.incomeCategories
-                        : _selectedType == 'expense'
-                            ? categoryProvider.expenseCategories
-                            : categoryProvider.categories)
-                    .map((cat) =>
-                        DropdownMenuItem(value: cat.id, child: Text(cat.name)))
-              ],
-              onChanged: (val) => setState(() => _selectedCategoryId = val),
+            const SizedBox(width: AppSizes.paddingSmall),
+            Expanded(
+              child: Text(
+                _selectedCategoryId == null
+                    ? 'Kategori'
+                    : categoryProvider
+                            .getCategoryById(_selectedCategoryId!)
+                            ?.name ??
+                        'Kategori',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _selectedCategoryId == null
+                      ? Theme.of(context).hintColor
+                      : Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const SizedBox(width: 8),
-            // Date filter
-            OutlinedButton.icon(
-              icon: const Icon(Icons.date_range, size: 18),
-              label: Text(_selectedDateRange == null
-                  ? 'Tanggal'
-                  : '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month}/${_selectedDateRange!.start.year} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}/${_selectedDateRange!.end.year}'),
-              onPressed: () async {
-                final picked = await showDateRangePicker(
-                  context: context,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                  initialDateRange: _selectedDateRange,
-                );
-                if (picked != null) {
-                  setState(() => _selectedDateRange = picked);
-                }
-              },
-            ),
-            const SizedBox(width: 8),
-            // Reset filter
-            IconButton(
-              icon: const Icon(Icons.filter_alt_off),
-              tooltip: 'Reset Filter',
-              onPressed: () {
-                setState(() {
-                  _selectedType = 'all';
-                  _selectedCategoryId = null;
-                  _selectedDateRange = null;
-                });
-              },
+            Icon(
+              Icons.arrow_drop_down,
+              size: AppSizes.iconSmall,
+              color: Theme.of(context).iconTheme.color,
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDateFilter() {
+    return GestureDetector(
+      onTap: _showDateRangePicker,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          color: Theme.of(context).colorScheme.surface,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.date_range,
+              size: AppSizes.iconSmall,
+              color: Theme.of(context).iconTheme.color,
+            ),
+            const SizedBox(width: AppSizes.paddingSmall),
+            Expanded(
+              child: Text(
+                _selectedDateRange == null
+                    ? 'Tanggal'
+                    : '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _selectedDateRange == null
+                      ? Theme.of(context).hintColor
+                      : Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCategoryDialog(CategoryProvider categoryProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pilih Kategori'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              ListTile(
+                title: const Text('Semua Kategori'),
+                onTap: () {
+                  setState(() => _selectedCategoryId = null);
+                  Navigator.pop(context);
+                },
+                trailing: _selectedCategoryId == null
+                    ? const Icon(Icons.check, color: AppTheme.primaryColor)
+                    : null,
+              ),
+              const Divider(),
+              ...(_selectedType == 'income'
+                      ? categoryProvider.incomeCategories
+                      : _selectedType == 'expense'
+                          ? categoryProvider.expenseCategories
+                          : categoryProvider.categories)
+                  .map((cat) => ListTile(
+                        title: Text(cat.name),
+                        onTap: () {
+                          setState(() => _selectedCategoryId = cat.id);
+                          Navigator.pop(context);
+                        },
+                        trailing: _selectedCategoryId == cat.id
+                            ? const Icon(Icons.check,
+                                color: AppTheme.primaryColor)
+                            : null,
+                      )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDateRangePicker() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _selectedDateRange,
+    );
+    if (picked != null) {
+      setState(() => _selectedDateRange = picked);
+    }
   }
 }
 
