@@ -7,6 +7,7 @@ import '../models/expense.dart';
 import '../models/income.dart';
 import '../models/category.dart';
 import '../widgets/add_transaction_sheet.dart';
+import '../widgets/edit_transaction_sheet.dart';
 import '../utils/theme.dart';
 
 class TransactionListScreen extends StatefulWidget {
@@ -94,6 +95,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: "transaction_list_fab",
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         onPressed: () {
@@ -430,7 +432,19 @@ class _TransactionTile extends StatelessWidget {
         ],
       ),
       onTap: () {
-        // TODO: Show detail or edit
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppSizes.radiusLarge),
+            ),
+          ),
+          builder: (context) => EditTransactionSheet(
+            transactionId: item.isExpense ? item.expense!.id : item.income!.id,
+            isExpense: item.isExpense,
+          ),
+        );
       },
     );
   }

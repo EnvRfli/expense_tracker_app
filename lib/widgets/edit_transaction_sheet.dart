@@ -3,28 +3,28 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../providers/providers.dart';
 import '../models/models.dart';
+import '../providers/providers.dart';
 import '../utils/theme.dart';
 import '../services/image_picker_service.dart';
 
-class AddTransactionSheet extends StatefulWidget {
-  final int initialTabIndex;
+class EditTransactionSheet extends StatefulWidget {
+  final String transactionId;
+  final bool isExpense;
 
-  const AddTransactionSheet({
+  const EditTransactionSheet({
     super.key,
-    this.initialTabIndex = 0,
+    required this.transactionId,
+    required this.isExpense,
   });
 
   @override
-  State<AddTransactionSheet> createState() => _AddTransactionSheetState();
+  State<EditTransactionSheet> createState() => _EditTransactionSheetState();
 }
 
-class _AddTransactionSheetState extends State<AddTransactionSheet>
+class _EditTransactionSheetState extends State<EditTransactionSheet>
     with TickerProviderStateMixin {
-  late TabController _tabController;
-  final _expenseFormKey = GlobalKey<FormState>();
-  final _incomeFormKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
   // Form fields
   final _amountController = TextEditingController();
@@ -35,36 +35,59 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
   DateTime _selectedDate = DateTime.now();
   String _selectedPaymentMethod = 'cash';
   String? _receiptPhotoPath;
+  bool _isRecurring = false;
+  String _recurringPattern = 'monthly';
+  bool _isLoading = false;
+
+  ExpenseModel? _expense;
+  IncomeModel? _income;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: 2,
-      vsync: this,
-      initialIndex: widget.initialTabIndex,
-    );
+    _loadTransactionData();
+  }
 
-    // Reset form when switching tabs
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        setState(() {
-          _amountController.clear();
-          _descriptionController.clear();
-          _locationController.clear();
-          _sourceController.clear();
-          _selectedCategory = null;
-          _selectedDate = DateTime.now();
-          _selectedPaymentMethod = 'cash';
-          _receiptPhotoPath = null;
-        });
-      }
-    });
+  void _loadTransactionData() {
+    if (widget.isExpense) {
+      _expense = context
+          .read<ExpenseProvider>()
+          .expenses
+          .firstWhere((e) => e.id == widget.transactionId);
+
+      _amountController.text = _expense!.amount.toString();
+      _descriptionController.text = _expense!.description;
+      _locationController.text = _expense!.location ?? '';
+      _selectedDate = _expense!.date;
+      _selectedCategory = context
+          .read<CategoryProvider>()
+          .expenseCategories
+          .firstWhere((cat) => cat.id == _expense!.categoryId);
+      _selectedPaymentMethod = _expense!.paymentMethod;
+      _receiptPhotoPath = _expense!.receiptPhotoPath;
+      _isRecurring = _expense!.isRecurring;
+      _recurringPattern = _expense!.recurringPattern ?? 'monthly';
+    } else {
+      _income = context
+          .read<IncomeProvider>()
+          .incomes
+          .firstWhere((i) => i.id == widget.transactionId);
+
+      _amountController.text = _income!.amount.toString();
+      _descriptionController.text = _income!.description;
+      _sourceController.text = _income!.source;
+      _selectedDate = _income!.date;
+      _selectedCategory = context
+          .read<CategoryProvider>()
+          .incomeCategories
+          .firstWhere((cat) => cat.id == _income!.categoryId);
+      _isRecurring = _income!.isRecurring;
+      _recurringPattern = _income!.recurringPattern ?? 'monthly';
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _amountController.dispose();
     _descriptionController.dispose();
     _locationController.dispose();
@@ -107,117 +130,83 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppTheme.primaryColor.withOpacity(0.1),
-                  AppTheme.primaryColor.withOpacity(0.05),
+                  (widget.isExpense ? AppColors.expense : AppColors.income)
+                      .withOpacity(0.1),
+                  (widget.isExpense ? AppColors.expense : AppColors.income)
+                      .withOpacity(0.05),
                 ],
               ),
             ),
-            child: Column(
+            child: Row(
               children: [
-                Text(
-                  'Tambah Transaksi',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryColor,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Catat keuangan Anda dengan mudah',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.7),
-                      ),
-                ),
-              ],
-            ),
-          ),
-
-          // Tab bar dengan custom design
-          Container(
-            margin: const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingLarge,
-              vertical: AppSizes.paddingMedium,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Theme.of(context).colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (widget.isExpense
+                            ? AppColors.expense
+                            : AppColors.income)
                         .withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
-              ),
-              indicatorPadding: const EdgeInsets.all(2),
-              labelColor: AppTheme.primaryColor,
-              unselectedLabelColor:
-                  Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-              tabs: [
-                Tab(
-                  height: 45,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Icon(
+                    widget.isExpense ? Icons.edit : Icons.edit,
+                    color:
+                        widget.isExpense ? AppColors.expense : AppColors.income,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.remove_circle, size: 18),
-                      const SizedBox(width: 6),
-                      Text('Pengeluaran'),
+                      Text(
+                        'Edit ${widget.isExpense ? 'Pengeluaran' : 'Pemasukan'}',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: widget.isExpense
+                                      ? AppColors.expense
+                                      : AppColors.income,
+                                ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Perbarui detail transaksi Anda',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.7),
+                            ),
+                      ),
                     ],
                   ),
                 ),
-                Tab(
-                  height: 45,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_circle, size: 18),
-                      const SizedBox(width: 6),
-                      Text('Pemasukan'),
-                    ],
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(
+                    Icons.close,
+                    color:
+                        widget.isExpense ? AppColors.expense : AppColors.income,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Tab content
+          // Form content
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTransactionForm(context, false), // Expense
-                _buildTransactionForm(context, true), // Income
-              ],
-            ),
+            child: _buildTransactionForm(context),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionForm(BuildContext context, bool isIncome) {
+  Widget _buildTransactionForm(BuildContext context) {
     return Form(
-      key: isIncome ? _incomeFormKey : _expenseFormKey,
+      key: _formKey,
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSizes.paddingLarge,
@@ -226,7 +215,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
         child: Column(
           children: [
             // Amount field dengan design card
-            _buildAmountCard(isIncome),
+            _buildAmountCard(),
             const SizedBox(height: AppSizes.paddingMedium),
 
             // Description field
@@ -234,14 +223,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             const SizedBox(height: AppSizes.paddingMedium),
 
             // Category selection
-            _buildCategoryCard(isIncome),
+            _buildCategoryCard(),
             const SizedBox(height: AppSizes.paddingMedium),
 
             // Date selection
             _buildDateCard(),
 
             // Additional fields for expense
-            if (!isIncome) ...[
+            if (widget.isExpense) ...[
               const SizedBox(height: AppSizes.paddingMedium),
               _buildPaymentMethodCard(),
               const SizedBox(height: AppSizes.paddingMedium),
@@ -251,15 +240,19 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             ],
 
             // Source field for income
-            if (isIncome) ...[
+            if (!widget.isExpense) ...[
               const SizedBox(height: AppSizes.paddingMedium),
               _buildSourceCard(),
             ],
 
+            // Recurring transaction options
+            const SizedBox(height: AppSizes.paddingMedium),
+            _buildRecurringCard(),
+
             const SizedBox(height: AppSizes.paddingLarge),
 
-            // Submit button dengan animasi
-            _buildSubmitButton(context, isIncome),
+            // Action buttons
+            _buildActionButtons(context),
             SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 20),
           ],
         ),
@@ -267,15 +260,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
     );
   }
 
-  Widget _buildAmountCard(bool isIncome) {
+  Widget _buildAmountCard() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingMedium),
       decoration: BoxDecoration(
-        color:
-            (isIncome ? AppColors.income : AppColors.expense).withOpacity(0.05),
+        color: (widget.isExpense ? AppColors.expense : AppColors.income)
+            .withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: (isIncome ? AppColors.income : AppColors.expense)
+          color: (widget.isExpense ? AppColors.expense : AppColors.income)
               .withOpacity(0.2),
           width: 1,
         ),
@@ -288,23 +281,26 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: (isIncome ? AppColors.income : AppColors.expense)
-                      .withOpacity(0.1),
+                  color:
+                      (widget.isExpense ? AppColors.expense : AppColors.income)
+                          .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(
                   Icons.attach_money,
-                  color: isIncome ? AppColors.income : AppColors.expense,
+                  color:
+                      widget.isExpense ? AppColors.expense : AppColors.income,
                   size: 18,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
-                'Jumlah ${isIncome ? 'Pemasukan' : 'Pengeluaran'}',
+                'Jumlah ${widget.isExpense ? 'Pengeluaran' : 'Pemasukan'}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: isIncome ? AppColors.income : AppColors.expense,
+                  color:
+                      widget.isExpense ? AppColors.expense : AppColors.income,
                 ),
               ),
             ],
@@ -425,7 +421,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
     );
   }
 
-  Widget _buildCategoryCard(bool isIncome) {
+  Widget _buildCategoryCard() {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingMedium),
       decoration: BoxDecoration(
@@ -467,15 +463,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
           const SizedBox(height: 12),
           Consumer<CategoryProvider>(
             builder: (context, categoryProvider, child) {
-              final categories = isIncome
-                  ? categoryProvider.incomeCategories
-                  : categoryProvider.expenseCategories;
-
-              // Reset selected category if it's not in the current list
-              if (_selectedCategory != null &&
-                  !categories.any((cat) => cat.id == _selectedCategory!.id)) {
-                _selectedCategory = null;
-              }
+              final categories = widget.isExpense
+                  ? categoryProvider.expenseCategories
+                  : categoryProvider.incomeCategories;
 
               return DropdownButtonFormField<CategoryModel>(
                 value: _selectedCategory,
@@ -504,7 +494,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                   setState(() {
                     _selectedCategory = value;
                   });
-                  // Haptic feedback
                   HapticFeedback.selectionClick();
                 },
                 validator: (value) {
@@ -868,7 +857,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                           children: [
                             Icon(Icons.check_circle, color: Colors.white),
                             SizedBox(width: 8),
-                            Text('Foto berhasil ditambahkan'),
+                            Text('Foto berhasil diperbarui'),
                           ],
                         ),
                         backgroundColor: AppColors.success,
@@ -1011,59 +1000,203 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
     );
   }
 
-  Widget _buildSubmitButton(BuildContext context, bool isIncome) {
+  Widget _buildRecurringCard() {
     return Container(
-      width: double.infinity,
-      height: 48,
+      padding: const EdgeInsets.all(AppSizes.paddingMedium),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isIncome
-              ? [AppColors.income, AppColors.income.withOpacity(0.8)]
-              : [AppColors.expense, AppColors.expense.withOpacity(0.8)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        color: AppTheme.primaryColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: (isIncome ? AppColors.income : AppColors.expense)
-                .withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+          color: AppTheme.primaryColor.withOpacity(0.2),
+          width: 1,
+        ),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            _submitTransaction(context, isIncome);
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isIncome ? Icons.add_circle : Icons.remove_circle,
-                  color: Colors.white,
-                  size: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Tambah ${isIncome ? 'Pemasukan' : 'Pengeluaran'}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                child: Icon(
+                  Icons.repeat,
+                  color: AppTheme.primaryColor,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Transaksi Berulang',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Checkbox(
+                value: _isRecurring,
+                onChanged: (value) {
+                  setState(() {
+                    _isRecurring = value ?? false;
+                  });
+                  HapticFeedback.selectionClick();
+                },
+                activeColor: AppTheme.primaryColor,
+              ),
+              Expanded(
+                child: Text(
+                  'Aktifkan transaksi berulang',
+                  style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
+              ),
+            ],
+          ),
+          if (_isRecurring) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _recurringPattern,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Pilih pola pengulangan',
+                hintStyle: TextStyle(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                  fontSize: 14,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 4),
+              ),
+              icon: Icon(
+                Icons.keyboard_arrow_down,
+                color: AppTheme.primaryColor,
+              ),
+              items: const [
+                DropdownMenuItem(value: 'daily', child: Text('Harian')),
+                DropdownMenuItem(value: 'weekly', child: Text('Mingguan')),
+                DropdownMenuItem(value: 'monthly', child: Text('Bulanan')),
+                DropdownMenuItem(value: 'yearly', child: Text('Tahunan')),
               ],
+              onChanged: (value) {
+                setState(() {
+                  _recurringPattern = value!;
+                });
+                HapticFeedback.selectionClick();
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _isLoading ? null : _deleteTransaction,
+            icon: const Icon(Icons.delete),
+            label: const Text('Hapus'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error),
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSizes.paddingMedium,
+                horizontal: AppSizes.paddingMedium,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ),
-      ),
+        const SizedBox(width: AppSizes.paddingMedium),
+        Expanded(
+          flex: 2,
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: widget.isExpense
+                    ? [AppColors.expense, AppColors.expense.withOpacity(0.8)]
+                    : [AppColors.income, AppColors.income.withOpacity(0.8)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      (widget.isExpense ? AppColors.expense : AppColors.income)
+                          .withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _isLoading
+                    ? null
+                    : () {
+                        HapticFeedback.mediumImpact();
+                        _updateTransaction();
+                      },
+                borderRadius: BorderRadius.circular(12),
+                child: Center(
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.save,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Simpan Perubahan',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1100,315 +1233,244 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
     }
   }
 
-  void _submitTransaction(BuildContext context, bool isIncome) {
-    final formKey = isIncome ? _incomeFormKey : _expenseFormKey;
+  Future<void> _updateTransaction() async {
+    if (!_formKey.currentState!.validate()) return;
 
-    if (formKey.currentState!.validate()) {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
       final amount = double.parse(_amountController.text);
-      final description = _descriptionController.text;
+      final description = _descriptionController.text.trim();
 
-      // Haptic feedback untuk success
-      HapticFeedback.lightImpact();
+      bool success = false;
 
-      if (isIncome) {
-        context.read<IncomeProvider>().addIncome(
+      if (widget.isExpense) {
+        success = await context.read<ExpenseProvider>().updateExpense(
+              id: widget.transactionId,
               amount: amount,
               categoryId: _selectedCategory!.id,
               description: description,
               date: _selectedDate,
-              source: _sourceController.text.isNotEmpty
-                  ? _sourceController.text
-                  : 'Manual Entry',
-            );
-      } else {
-        context.read<ExpenseProvider>().addExpense(
-              amount: amount,
-              categoryId: _selectedCategory!.id,
-              description: description,
-              date: _selectedDate,
-              location: _locationController.text.isNotEmpty
-                  ? _locationController.text
-                  : null,
+              location: _locationController.text.trim().isEmpty
+                  ? null
+                  : _locationController.text.trim(),
               paymentMethod: _selectedPaymentMethod,
               receiptPhotoPath: _receiptPhotoPath,
+              isRecurring: _isRecurring,
+              recurringPattern: _isRecurring ? _recurringPattern : null,
+            );
+      } else {
+        success = await context.read<IncomeProvider>().updateIncome(
+              id: widget.transactionId,
+              amount: amount,
+              categoryId: _selectedCategory!.id,
+              description: description,
+              date: _selectedDate,
+              source: _sourceController.text.trim(),
+              isRecurring: _isRecurring,
+              recurringPattern: _isRecurring ? _recurringPattern : null,
             );
       }
 
-      // Show success message with animation
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                isIncome ? Icons.check_circle : Icons.check_circle,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '${isIncome ? 'Pemasukan' : 'Pengeluaran'} berhasil ditambahkan',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: isIncome ? AppColors.income : AppColors.expense,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-
-      // Close the modal dengan delay sedikit untuk UX yang lebih smooth
-      Future.delayed(const Duration(milliseconds: 500), () {
+      if (success) {
         if (mounted) {
-          Navigator.of(context).pop();
-        }
-      });
-    } else {
-      // Haptic feedback untuk error
-      HapticFeedback.heavyImpact();
-    }
-  }
-}
-
-// Quick add buttons for specific categories
-class QuickAddSheet extends StatelessWidget {
-  const QuickAddSheet({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.paddingMedium),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            margin:
-                const EdgeInsets.symmetric(vertical: AppSizes.paddingMedium),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          Text(
-            'Tambah Cepat',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: AppSizes.paddingLarge),
-
-          // Quick expense buttons
-          _buildQuickActionSection(
-            context,
-            'Pengeluaran Umum',
-            [
-              {
-                'name': 'Makan',
-                'icon': Icons.restaurant,
-                'color': Colors.orange
-              },
-              {
-                'name': 'Transport',
-                'icon': Icons.directions_car,
-                'color': Colors.blue
-              },
-              {
-                'name': 'Belanja',
-                'icon': Icons.shopping_cart,
-                'color': Colors.green
-              },
-              {'name': 'Hiburan', 'icon': Icons.movie, 'color': Colors.purple},
-            ],
-            false,
-          ),
-
-          const SizedBox(height: AppSizes.paddingLarge),
-
-          // Quick income buttons
-          _buildQuickActionSection(
-            context,
-            'Pemasukan Umum',
-            [
-              {'name': 'Gaji', 'icon': Icons.work, 'color': Colors.teal},
-              {
-                'name': 'Bonus',
-                'icon': Icons.card_giftcard,
-                'color': Colors.amber
-              },
-              {
-                'name': 'Investasi',
-                'icon': Icons.trending_up,
-                'color': Colors.indigo
-              },
-            ],
-            true,
-          ),
-
-          const SizedBox(height: AppSizes.paddingLarge),
-
-          // Custom transaction button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(AppSizes.radiusLarge),
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '${widget.isExpense ? 'Pengeluaran' : 'Pemasukan'} berhasil diperbarui',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    child: const AddTransactionSheet(),
                   ),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Transaksi Custom'),
+                ],
+              ),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 3),
             ),
+          );
+        }
+      } else {
+        throw Exception('Gagal memperbarui transaksi');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('Error: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
-  Widget _buildQuickActionSection(
-    BuildContext context,
-    String title,
-    List<Map<String, dynamic>> actions,
-    bool isIncome,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: AppSizes.paddingMedium),
-        Wrap(
-          spacing: AppSizes.paddingSmall,
-          runSpacing: AppSizes.paddingSmall,
-          children: actions.map((action) {
-            return _buildQuickActionChip(
-              context,
-              action['name'],
-              action['icon'],
-              action['color'],
-              isIncome,
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickActionChip(
-    BuildContext context,
-    String name,
-    IconData icon,
-    Color color,
-    bool isIncome,
-  ) {
-    return InkWell(
-      onTap: () => _showQuickAmountDialog(context, name, isIncome),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingMedium,
-          vertical: AppSizes.paddingSmall,
-        ),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: AppSizes.iconSmall),
-            const SizedBox(width: AppSizes.paddingSmall),
-            Text(
-              name,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showQuickAmountDialog(
-      BuildContext context, String category, bool isIncome) {
-    final amountController = TextEditingController();
-
-    showDialog(
+  Future<void> _deleteTransaction() async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Tambah ${isIncome ? 'Pemasukan' : 'Pengeluaran'}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
           children: [
-            Text('Kategori: $category'),
-            const SizedBox(height: AppSizes.paddingMedium),
-            TextFormField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Jumlah',
-                prefixText: 'Rp ',
-                border: OutlineInputBorder(),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              autofocus: true,
+            ),
+            Expanded(
+              child: Text(
+                'Konfirmasi Hapus',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
             ),
           ],
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus ${widget.isExpense ? 'pengeluaran' : 'pemasukan'} ini? Tindakan ini tidak dapat dibatalkan.',
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            onPressed: () {
-              if (amountController.text.isNotEmpty) {
-                // Add quick transaction logic here
-                Navigator.of(context).pop();
-                Navigator.of(context).pop(); // Close the quick add sheet too
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('$category berhasil ditambahkan'),
-                    backgroundColor:
-                        isIncome ? AppColors.income : AppColors.expense,
-                  ),
-                );
-              }
-            },
-            child: const Text('Simpan'),
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Hapus'),
           ),
         ],
       ),
     );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      bool success = false;
+
+      if (widget.isExpense) {
+        success = await context
+            .read<ExpenseProvider>()
+            .deleteExpense(widget.transactionId);
+      } else {
+        success = await context
+            .read<IncomeProvider>()
+            .deleteIncome(widget.transactionId);
+      }
+
+      if (success) {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '${widget.isExpense ? 'Pengeluaran' : 'Pemasukan'} berhasil dihapus',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Gagal menghapus transaksi');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('Error: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

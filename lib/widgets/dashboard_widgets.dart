@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
+import './add_transaction_sheet.dart';
+import './edit_transaction_sheet.dart';
 import '../utils/theme.dart';
 import '../screens/transaction_list_screen.dart';
 
@@ -26,16 +28,36 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-class BalanceSummaryCard extends StatelessWidget {
+class BalanceSummaryCard extends StatefulWidget {
   const BalanceSummaryCard({super.key});
+
+  @override
+  State<BalanceSummaryCard> createState() => _BalanceSummaryCardState();
+}
+
+class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
+  bool _showCurrentMonth = true; // true = bulan ini, false = keseluruhan
 
   @override
   Widget build(BuildContext context) {
     return Consumer3<ExpenseProvider, IncomeProvider, UserSettingsProvider>(
       builder: (context, expenseProvider, incomeProvider, userSettings, child) {
+        // Data untuk bulan ini
         final currentMonthExpenses = expenseProvider.getCurrentMonthTotal();
         final currentMonthIncomes = incomeProvider.getCurrentMonthTotal();
-        final balance = currentMonthIncomes - currentMonthExpenses;
+
+        // Data untuk keseluruhan
+        final totalExpenses =
+            expenseProvider.getTotalAmount(expenseProvider.expenses);
+        final totalIncomes =
+            incomeProvider.getTotalAmount(incomeProvider.incomes);
+
+        // Pilih data yang akan ditampilkan
+        final displayExpenses =
+            _showCurrentMonth ? currentMonthExpenses : totalExpenses;
+        final displayIncomes =
+            _showCurrentMonth ? currentMonthIncomes : totalIncomes;
+        final balance = displayIncomes - displayExpenses;
 
         return Card(
           elevation: 4,
@@ -55,11 +77,61 @@ class BalanceSummaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Saldo Bulan Ini',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _showCurrentMonth
+                          ? 'Saldo Bulan Ini'
+                          : 'Saldo Keseluruhan',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white70,
+                          ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _showCurrentMonth = !_showCurrentMonth;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _showCurrentMonth
+                                  ? Icons.calendar_month
+                                  : Icons.timeline,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _showCurrentMonth ? 'Total' : 'Bulan',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSizes.paddingSmall),
                 Text(
@@ -76,7 +148,7 @@ class BalanceSummaryCard extends StatelessWidget {
                       child: _buildBalanceItem(
                         context,
                         'Pemasukan',
-                        currentMonthIncomes,
+                        displayIncomes,
                         AppColors.income,
                         Icons.arrow_upward,
                         userSettings,
@@ -88,7 +160,7 @@ class BalanceSummaryCard extends StatelessWidget {
                       child: _buildBalanceItem(
                         context,
                         'Pengeluaran',
-                        currentMonthExpenses,
+                        displayExpenses,
                         AppColors.expense,
                         Icons.arrow_downward,
                         userSettings,
@@ -248,11 +320,39 @@ class QuickActionsCard extends StatelessWidget {
   }
 
   void _showAddExpenseDialog(BuildContext context) {
-    // Implementation for add expense dialog
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLarge),
+        ),
+      ),
+      builder: (context) {
+        return AddTransactionSheet(
+          key: key,
+          initialTabIndex: 0,
+        );
+      },
+    );
   }
 
   void _showAddIncomeDialog(BuildContext context) {
-    // Implementation for add income dialog
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLarge),
+        ),
+      ),
+      builder: (context) {
+        return AddTransactionSheet(
+          key: key,
+          initialTabIndex: 1,
+        );
+      },
+    );
   }
 
   void _showAddBudgetDialog(BuildContext context) {
@@ -543,49 +643,66 @@ class RecentTransactionsCard extends StatelessWidget {
       builder: (context, categoryProvider, userSettings, child) {
         final category = categoryProvider.getCategoryById(data.categoryId);
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSizes.paddingSmall),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: (isExpense ? AppColors.expense : AppColors.income)
-                      .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                ),
-                child: Icon(
-                  isExpense ? Icons.remove : Icons.add,
-                  color: isExpense ? AppColors.expense : AppColors.income,
+        return InkWell(
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppSizes.radiusLarge),
                 ),
               ),
-              const SizedBox(width: AppSizes.paddingMedium),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data.description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    Text(
-                      '${category?.name ?? 'Unknown'} • ${data.date.day}/${data.date.month}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+              builder: (context) => EditTransactionSheet(
+                transactionId: data.id,
+                isExpense: isExpense,
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: AppSizes.paddingSmall),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: (isExpense ? AppColors.expense : AppColors.income)
+                        .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  ),
+                  child: Icon(
+                    isExpense ? Icons.remove : Icons.add,
+                    color: isExpense ? AppColors.expense : AppColors.income,
+                  ),
                 ),
-              ),
-              Text(
-                '${isExpense ? '-' : '+'}${userSettings.formatCurrency(data.amount)}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: isExpense ? AppColors.expense : AppColors.income,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
+                const SizedBox(width: AppSizes.paddingMedium),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.description,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      Text(
+                        '${category?.name ?? 'Unknown'} • ${data.date.day}/${data.date.month}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${isExpense ? '-' : '+'}${userSettings.formatCurrency(data.amount)}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: isExpense ? AppColors.expense : AppColors.income,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
           ),
         );
       },

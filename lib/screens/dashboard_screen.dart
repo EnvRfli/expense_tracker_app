@@ -80,6 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       floatingActionButton: _selectedIndex == 0 || _selectedIndex == 1
           ? FloatingActionButton(
+              heroTag: "dashboard_fab",
               onPressed: _showAddTransactionBottomSheet,
               child: const Icon(Icons.add),
             )
