@@ -63,9 +63,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppSizes.radiusLarge),
         ),
       ),
@@ -77,7 +77,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             height: 4,
             margin: const EdgeInsets.only(top: 12, bottom: 8),
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -112,7 +112,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 Text(
                   'Catat keuangan Anda dengan mudah',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.7),
                       ),
                 ),
               ],
@@ -126,17 +129,20 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               vertical: AppSizes.paddingMedium,
             ),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -144,7 +150,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               indicatorPadding: const EdgeInsets.all(2),
               labelColor: AppTheme.primaryColor,
-              unselectedLabelColor: Colors.grey[600],
+              unselectedLabelColor:
+                  Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -279,21 +286,22 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
             ],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             decoration: InputDecoration(
               hintText: '0',
               hintStyle: TextStyle(
-                color: Colors.grey[400],
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 16,
               ),
               prefixText: 'Rp ',
               prefixStyle: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               ),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
@@ -319,10 +327,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingMedium),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.03),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey[200]!,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
           width: 1,
         ),
       ),
@@ -334,12 +342,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(
                   Icons.description,
-                  color: Colors.grey[700],
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   size: 18,
                 ),
               ),
@@ -349,7 +359,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                 ),
               ),
             ],
@@ -357,13 +368,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
           const SizedBox(height: 12),
           TextFormField(
             controller: _descriptionController,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             decoration: InputDecoration(
               hintText: 'Contoh: Makan siang di restoran',
               hintStyle: TextStyle(
-                color: Colors.grey[400],
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 14,
               ),
               border: InputBorder.none,
@@ -437,9 +449,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
 
               return DropdownButtonFormField<CategoryModel>(
                 value: _selectedCategory,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.black87,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 decoration: const InputDecoration(
                   hintText: 'Pilih kategori',
@@ -485,10 +497,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
       child: Container(
         padding: const EdgeInsets.all(AppSizes.paddingMedium),
         decoration: BoxDecoration(
-          color: Colors.blue[50],
+          color: AppColors.info.withOpacity(0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.blue[200]!,
+            color: AppColors.info.withOpacity(0.2),
             width: 1,
           ),
         ),
@@ -500,12 +512,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.blue[100],
+                    color: AppColors.info.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
                     Icons.calendar_today,
-                    color: Colors.blue[700],
+                    color: AppColors.info,
                     size: 18,
                   ),
                 ),
@@ -515,13 +527,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.blue[700],
+                    color: AppColors.info,
                   ),
                 ),
                 const Spacer(),
                 Icon(
                   Icons.edit,
-                  color: Colors.blue[400],
+                  color: AppColors.info.withOpacity(0.6),
                   size: 14,
                 ),
               ],
@@ -529,9 +541,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             const SizedBox(height: 12),
             Text(
               '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -611,8 +624,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             colorScheme: Theme.of(context).colorScheme.copyWith(
                   primary: AppTheme.primaryColor,
                   onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: Colors.black87,
+                  surface: Theme.of(context).colorScheme.surface,
+                  onSurface: Theme.of(context).colorScheme.onSurface,
                 ),
           ),
           child: child!,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../utils/theme.dart';
+import '../screens/transaction_list_screen.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -716,14 +717,13 @@ class SpendingByCategoryCard extends StatelessWidget {
 }
 
 // Placeholder widgets for other tabs
+
 class TransactionsList extends StatelessWidget {
   const TransactionsList({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Transactions List - Coming Soon'),
-    );
+    return const TransactionListScreen();
   }
 }
 

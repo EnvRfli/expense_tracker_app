@@ -4,6 +4,7 @@ import '../providers/providers.dart';
 import '../utils/theme.dart';
 import '../widgets/dashboard_widgets.dart';
 import '../widgets/add_transaction_sheet.dart';
+import '../screens/transaction_list_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -220,7 +221,6 @@ class DashboardTransactionsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      appBar: CustomAppBar(title: 'Transaksi'),
       body: TransactionsList(),
     );
   }
