@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../models/models.dart';
 import '../providers/providers.dart';
@@ -837,61 +836,57 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
             onTap: () async {
               HapticFeedback.selectionClick();
 
-              // Show image source selection dialog
-              final ImageSource? source =
-                  await ImagePickerService.showImageSourceDialog(context);
-              if (source != null) {
-                // Pick image from selected source
-                final File? imageFile =
-                    await ImagePickerService.pickImage(source: source);
-                if (imageFile != null) {
-                  setState(() {
-                    _receiptPhotoPath = imageFile.path;
-                  });
+              // Show image source selection dialog and pick image
+              final File? imageFile =
+                  await ImagePickerService.showImageSourceDialogAndPick(
+                      context);
+              if (imageFile != null) {
+                setState(() {
+                  _receiptPhotoPath = imageFile.path;
+                });
 
-                  // Show success message
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Row(
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text('Foto berhasil diperbarui'),
-                          ],
-                        ),
-                        backgroundColor: AppColors.success,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        margin: const EdgeInsets.all(16),
-                        duration: const Duration(seconds: 2),
+                // Show success message
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text('Foto berhasil diperbarui'),
+                        ],
                       ),
-                    );
-                  }
-                } else {
-                  // Show error message if image picking failed
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Row(
-                          children: [
-                            Icon(Icons.error, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text('Gagal mengambil foto'),
-                          ],
-                        ),
-                        backgroundColor: AppColors.error,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        margin: const EdgeInsets.all(16),
-                        duration: const Duration(seconds: 2),
+                      backgroundColor: AppColors.success,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    );
-                  }
+                      margin: const EdgeInsets.all(16),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } else {
+                // Show error message if image picking failed
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Row(
+                        children: [
+                          Icon(Icons.error, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text('Gagal mengambil foto'),
+                        ],
+                      ),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      margin: const EdgeInsets.all(16),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
                 }
               }
             },
