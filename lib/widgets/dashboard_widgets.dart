@@ -564,6 +564,7 @@ class BudgetOverviewCard extends StatelessWidget {
   Color _getBudgetStatusColor(String status) {
     switch (status) {
       case 'exceeded':
+      case 'full':
         return AppColors.error;
       case 'warning':
         return AppColors.warning;

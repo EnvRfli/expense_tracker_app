@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../providers/base_provider.dart';
 import '../services/services.dart';
+import '../services/budget_notification_service.dart';
 import '../utils/theme.dart';
 import 'dashboard_screen.dart';
 import 'onboarding_screen.dart';
@@ -94,6 +95,9 @@ class _SplashScreenState extends State<SplashScreen>
       // Handle error silently for background task
       print('Error checking budget alerts during startup: $e');
     }
+
+    // Enable notifications after startup is complete
+    BudgetNotificationService.instance.enableNotifications();
 
     // Initialize recurring budget service
     try {

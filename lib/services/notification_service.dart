@@ -1,8 +1,8 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'database_service.dart';
 import 'budget_notification_service.dart';
+import '../models/category.dart';
 
 class NotificationService {
   static NotificationService? _instance;
@@ -178,14 +178,55 @@ class NotificationService {
   }
 
   // Check and notify budget alerts (delegated to BudgetNotificationService)
-  Future<void> checkBudgetAlerts() async {
+  Future<void> checkBudgetAlerts(
+      {String? specificCategoryId,
+      bool forceReset = false,
+      bool isFromUserAction = false}) async {
     try {
+      // Get fresh data from database - data should already be latest from ExpenseProvider refresh
       final budgets = DatabaseService.instance.budgets.values.toList();
       final categories = DatabaseService.instance.categories.values.toList();
 
+      print('=== Checking Budget Alerts ===');
+      print('Specific category: $specificCategoryId');
+      print('Force reset: $forceReset');
+      print('Is from user action: $isFromUserAction');
+      print('Total budgets in database: ${budgets.length}');
+
       // Use the specialized budget notification service
       final budgetNotificationService = BudgetNotificationService.instance;
-      await budgetNotificationService.checkBudgetAlerts(budgets, categories);
+
+      // Force reset tracking if requested
+      if (forceReset && specificCategoryId != null) {
+        budgetNotificationService.forceResetCategoryTracking(
+            specificCategoryId, budgets);
+      }
+
+      // Filter and show budget info for debugging
+      final relevantBudgets = specificCategoryId != null
+          ? budgets.where((b) => b.categoryId == specificCategoryId).toList()
+          : budgets;
+
+      for (final budget in relevantBudgets) {
+        final category = categories.firstWhere(
+          (c) => c.id == budget.categoryId,
+          orElse: () => CategoryModel(
+            id: '',
+            name: 'Unknown',
+            type: 'expense',
+            iconCodePoint: '57898',
+            colorValue: '4280391411',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        print(
+            'Budget ${category.name}: ${budget.spent}/${budget.amount} (${budget.usagePercentage.toStringAsFixed(1)}%) - Status: ${budget.status}');
+      }
+
+      await budgetNotificationService.checkBudgetAlerts(budgets, categories,
+          specificCategoryId: specificCategoryId,
+          isFromUserAction: isFromUserAction);
     } catch (e) {
       print('Error checking budget alerts: $e');
     }

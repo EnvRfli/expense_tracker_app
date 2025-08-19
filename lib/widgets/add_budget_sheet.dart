@@ -637,7 +637,6 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
             ThousandsFormatter(),
           ],
           decoration: InputDecoration(
-            labelText: 'Jumlah Budget',
             hintText: 'Masukkan jumlah budget',
             prefixText: 'Rp ',
             border: OutlineInputBorder(
@@ -950,8 +949,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       controller: _notesController,
       maxLines: 3,
       decoration: InputDecoration(
-        labelText: 'Catatan',
-        hintText: 'Tambahkan catatan untuk budget ini...',
+        hintText: 'Contoh: Budget untuk belanja bulanan',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         ),

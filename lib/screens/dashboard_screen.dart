@@ -4,7 +4,6 @@ import '../providers/providers.dart';
 import '../utils/theme.dart';
 import '../widgets/dashboard_widgets.dart';
 import '../widgets/add_transaction_sheet.dart';
-import '../screens/transaction_list_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -26,6 +25,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final expenseProvider = context.read<ExpenseProvider>();
     final incomeProvider = context.read<IncomeProvider>();
     final budgetProvider = context.read<BudgetProvider>();
+
+    // Setup callback untuk refresh budget saat expense berubah
+    expenseProvider.onExpenseChanged = () async {
+      print('=== Expense Changed - Refreshing Budget Data ===');
+      await budgetProvider.loadBudgets();
+      await budgetProvider.refreshAllBudgetSpentAmounts();
+    };
 
     await Future.wait([
       expenseProvider.loadExpenses(),

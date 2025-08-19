@@ -119,6 +119,10 @@ class BudgetProvider extends BaseProvider {
           budgetWithSpent,
           category,
         );
+
+        // Reset notification tracking for this budget since it's new
+        BudgetNotificationService.instance
+            .resetBudgetNotificationTracking(budgetWithSpent.id);
       } catch (e) {
         // Handle notification error silently
         print('Error sending budget creation notification: $e');
@@ -333,6 +337,7 @@ class BudgetProvider extends BaseProvider {
     for (final budget in activeBudgets) {
       switch (budget.status) {
         case 'exceeded':
+        case 'full':
           budgetsExceeded++;
           break;
         case 'warning':
@@ -502,6 +507,9 @@ class BudgetProvider extends BaseProvider {
       // Get categories for notification
       final categories = DatabaseService.instance.categories.values.toList();
 
+      // Reset tracking for budgets that have started a new period
+      _resetTrackingForNewPeriods();
+
       // Check alerts
       await BudgetNotificationService.instance
           .checkBudgetAlerts(_budgets, categories);
@@ -511,12 +519,29 @@ class BudgetProvider extends BaseProvider {
     }
   }
 
+  // Helper method to reset notification tracking for budgets that started a new period
+  void _resetTrackingForNewPeriods() {
+    final now = DateTime.now();
+    for (final budget in _budgets) {
+      if (!budget.isActive) continue;
+
+      // Check if this budget just started (within last 24 hours)
+      final timeSinceStart = now.difference(budget.startDate).inHours;
+      if (timeSinceStart >= 0 && timeSinceStart <= 24) {
+        BudgetNotificationService.instance
+            .resetBudgetNotificationTracking(budget.id);
+      }
+    }
+  }
+
   // Method untuk mendapatkan budget yang mendekati atau melampaui batas
   List<BudgetModel> getBudgetsNeedingAttention() {
     return _budgets
         .where((budget) =>
             budget.isActive &&
-            (budget.status == 'warning' || budget.status == 'exceeded'))
+            (budget.status == 'warning' ||
+                budget.status == 'exceeded' ||
+                budget.status == 'full'))
         .toList();
   }
 

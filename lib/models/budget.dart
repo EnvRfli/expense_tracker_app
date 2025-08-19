@@ -71,7 +71,9 @@ class BudgetModel extends HiveObject {
 
   // Getter untuk status budget
   String get status {
-    if (spent >= amount) return 'exceeded';
+    if (spent > amount) return 'exceeded';
+    if (spent == amount)
+      return 'full'; // New status for exactly at budget limit
     if (usagePercentage >= alertPercentage) return 'warning';
     return 'normal';
   }

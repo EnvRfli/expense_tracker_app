@@ -8,6 +8,9 @@ class ExpenseProvider extends BaseProvider {
   List<ExpenseModel> _expenses = [];
   ExpenseModel? _selectedExpense;
 
+  // Callback untuk refresh providers lain setelah expense ditambahkan
+  Function()? onExpenseChanged;
+
   List<ExpenseModel> get expenses => _expenses;
   ExpenseModel? get selectedExpense => _selectedExpense;
 
@@ -59,6 +62,9 @@ class ExpenseProvider extends BaseProvider {
       // Save to database
       await DatabaseService.instance.expenses.put(expense.id, expense);
 
+      // Small delay to ensure expense is written to database
+      await Future.delayed(const Duration(milliseconds: 50));
+
       // Track change for sync
       await SyncService.instance.trackChange(
         dataType: 'expense',
@@ -67,14 +73,37 @@ class ExpenseProvider extends BaseProvider {
         dataSnapshot: expense.toJson(),
       );
 
-      // Update budget if exists
+      // Update budget if exists and ensure fresh data
+      print('=== Adding Expense ===');
+      print('Category ID: $categoryId');
+      print('Amount: $amount');
+      print('Expense ID: ${expense.id}');
+      print('Expense Date: ${expense.date}');
+
       await _updateBudgetSpent(categoryId);
+
+      // Force refresh budget data to ensure latest spent amounts
+      await _refreshBudgetData(categoryId);
+
+      // Small delay to ensure database operations are complete
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Reload expenses
       await loadExpenses();
 
-      // Check budget alerts
-      await NotificationService.instance.checkBudgetAlerts();
+      print('=== Budget Updated, Checking Alerts ===');
+
+      // Check budget alerts only for the related category
+      // Don't use forceReset to avoid triggering notifications for other categories
+      await NotificationService.instance.checkBudgetAlerts(
+          specificCategoryId: categoryId,
+          forceReset: false,
+          isFromUserAction: true);
+
+      // Trigger callback to refresh other providers (BudgetProvider, etc.)
+      if (onExpenseChanged != null) {
+        onExpenseChanged!();
+      }
 
       return true;
     });
@@ -134,11 +163,30 @@ class ExpenseProvider extends BaseProvider {
         await _updateBudgetSpent(categoryId);
       }
 
+      // Refresh budget data for affected categories
+      await _refreshBudgetData(oldCategoryId);
+      if (categoryId != null && categoryId != oldCategoryId) {
+        await _refreshBudgetData(categoryId);
+      }
+
+      // Small delay to ensure database operations are complete
+      await Future.delayed(const Duration(milliseconds: 100));
+
       // Reload expenses
       await loadExpenses();
 
-      // Check budget alerts
-      await NotificationService.instance.checkBudgetAlerts();
+      // Check budget alerts for affected categories only
+      await NotificationService.instance
+          .checkBudgetAlerts(specificCategoryId: oldCategoryId);
+      if (categoryId != null && categoryId != oldCategoryId) {
+        await NotificationService.instance
+            .checkBudgetAlerts(specificCategoryId: categoryId);
+      }
+
+      // Trigger callback to refresh other providers
+      if (onExpenseChanged != null) {
+        onExpenseChanged!();
+      }
 
       return true;
     });
@@ -170,6 +218,11 @@ class ExpenseProvider extends BaseProvider {
 
       // Reload expenses
       await loadExpenses();
+
+      // Trigger callback to refresh other providers
+      if (onExpenseChanged != null) {
+        onExpenseChanged!();
+      }
 
       return true;
     });
@@ -250,18 +303,88 @@ class ExpenseProvider extends BaseProvider {
         .where((budget) => budget.categoryId == categoryId && budget.isActive)
         .toList();
 
+    print('=== Update Budget Spent Debug ===');
+    print('Found ${budgets.length} active budgets for category $categoryId');
+
     for (final budget in budgets) {
-      final categoryExpenses = getExpensesByCategory(categoryId);
+      // Get expenses directly from database to ensure we have the latest data
+      final allExpenses = DatabaseService.instance.expenses.values.toList();
+      print('Total expenses in database: ${allExpenses.length}');
+
+      final categoryExpenses = allExpenses
+          .where((expense) => expense.categoryId == categoryId)
+          .toList();
+      print('Expenses for category $categoryId: ${categoryExpenses.length}');
+      print(
+          'Category expense amounts: ${categoryExpenses.map((e) => e.amount).toList()}');
+
+      final periodExpenses = categoryExpenses.where((expense) {
+        final isInPeriod = expense.date
+                .isAfter(budget.startDate.subtract(const Duration(days: 1))) &&
+            expense.date.isBefore(budget.endDate.add(const Duration(days: 1)));
+        print(
+            'Expense ${expense.amount} on ${expense.date}: inPeriod=$isInPeriod');
+        return isInPeriod;
+      }).toList();
+
+      final totalSpent =
+          periodExpenses.fold(0.0, (sum, expense) => sum + expense.amount);
+      final updatedBudget = budget.updateSpent(totalSpent);
+
+      // Update in database
+      await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
+
+      // Add debug info
+      print('=== Budget Update Details ===');
+      print('Budget ID: ${budget.id}');
+      print('Category: $categoryId');
+      print('Period: ${budget.startDate} to ${budget.endDate}');
+      print('Category expenses found: ${categoryExpenses.length}');
+      print('Period expenses found: ${periodExpenses.length}');
+      print('Total spent calculated: $totalSpent');
+      print('Budget amount: ${budget.amount}');
+      print(
+          'Updated budget ${budget.id} for category $categoryId: spent $totalSpent / ${budget.amount}');
+    }
+  }
+
+  // Refresh budget data for specific category to ensure latest values
+  Future<void> _refreshBudgetData(String categoryId) async {
+    // Force reload from database
+    final budgets = DatabaseService.instance.budgets.values
+        .where((budget) => budget.categoryId == categoryId && budget.isActive)
+        .toList();
+
+    // Recalculate spent amounts with latest expense data from database
+    for (final budget in budgets) {
+      final allExpenses = DatabaseService.instance.expenses.values.toList();
+      final categoryExpenses = allExpenses
+          .where((expense) => expense.categoryId == categoryId)
+          .toList();
+
       final periodExpenses = categoryExpenses.where((expense) {
         return expense.date
                 .isAfter(budget.startDate.subtract(const Duration(days: 1))) &&
             expense.date.isBefore(budget.endDate.add(const Duration(days: 1)));
       }).toList();
 
-      final totalSpent = getTotalAmount(periodExpenses);
-      final updatedBudget = budget.updateSpent(totalSpent);
+      final totalSpent =
+          periodExpenses.fold(0.0, (sum, expense) => sum + expense.amount);
 
-      await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
+      // Only update if there's a difference
+      if (budget.spent != totalSpent) {
+        final updatedBudget = budget.updateSpent(totalSpent);
+        await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
+        print('=== Budget Refresh Details ===');
+        print(
+            'Refreshed budget ${budget.id}: corrected spent from ${budget.spent} to $totalSpent');
+        print(
+            'Category expenses in period: ${periodExpenses.map((e) => e.amount).toList()}');
+      } else {
+        print('=== Budget Already Up-to-Date ===');
+        print(
+            'Budget ${budget.id}: spent amount already correct ($totalSpent)');
+      }
     }
   }
 

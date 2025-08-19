@@ -21,6 +21,21 @@ class _BudgetListScreenState extends State<BudgetListScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _setupExpenseCallback();
+  }
+
+  void _setupExpenseCallback() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final expenseProvider = context.read<ExpenseProvider>();
+      final budgetProvider = context.read<BudgetProvider>();
+
+      // Setup callback untuk refresh budget saat expense berubah
+      expenseProvider.onExpenseChanged = () async {
+        print('=== Expense Changed - Refreshing Budget in Budget Screen ===');
+        await budgetProvider.loadBudgets();
+        await budgetProvider.refreshAllBudgetSpentAmounts();
+      };
+    });
   }
 
   @override
@@ -54,12 +69,16 @@ class _BudgetListScreenState extends State<BudgetListScreen>
           return TabBarView(
             controller: _tabController,
             children: [
-              _buildBudgetList(budgetProvider.activeBudgets, 'active'),
               _buildBudgetList(
-                budgetProvider.budgets.where((b) => !b.isActive).toList(),
+                  _filterBudgetsByPeriod(budgetProvider.activeBudgets),
+                  'active'),
+              _buildBudgetList(
+                _filterBudgetsByPeriod(
+                    budgetProvider.budgets.where((b) => !b.isActive).toList()),
                 'inactive',
               ),
-              _buildBudgetList(budgetProvider.budgets, 'all'),
+              _buildBudgetList(
+                  _filterBudgetsByPeriod(budgetProvider.budgets), 'all'),
             ],
           );
         },
@@ -73,31 +92,111 @@ class _BudgetListScreenState extends State<BudgetListScreen>
   }
 
   Widget _buildBudgetList(List<BudgetModel> budgets, String type) {
-    if (budgets.isEmpty) {
+    // Get original budgets before filtering untuk statistik
+    final originalBudgets = _getOriginalBudgets(type);
+
+    // Check if no data at all (before filtering)
+    if (originalBudgets.isEmpty) {
       return _buildEmptyState(type);
     }
 
+    // Data ada, tapi mungkin kosong setelah filtering
     return Column(
       children: [
-        // Statistics Card
-        _buildStatisticsCard(budgets),
+        // Statistics Card - gunakan data asli sebelum filter
+        _buildStatisticsCard(originalBudgets),
 
         // Filter
         _buildPeriodFilter(),
 
-        // Budget List
+        // Budget List - gunakan data setelah filter
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(AppSizes.paddingMedium),
-            itemCount: budgets.length,
-            itemBuilder: (context, index) {
-              final budget = budgets[index];
-              return _buildBudgetCard(budget);
-            },
-          ),
+          child: budgets.isEmpty
+              ? _buildFilteredEmptyState()
+              : ListView.builder(
+                  padding: const EdgeInsets.all(AppSizes.paddingMedium),
+                  itemCount: budgets.length,
+                  itemBuilder: (context, index) {
+                    final budget = budgets[index];
+                    return _buildBudgetCard(budget);
+                  },
+                ),
         ),
       ],
     );
+  }
+
+  // Fungsi untuk mendapatkan data budget asli sebelum filtering
+  List<BudgetModel> _getOriginalBudgets(String type) {
+    final budgetProvider = context.read<BudgetProvider>();
+
+    switch (type) {
+      case 'active':
+        return budgetProvider.activeBudgets;
+      case 'inactive':
+        return budgetProvider.budgets.where((b) => !b.isActive).toList();
+      case 'all':
+      default:
+        return budgetProvider.budgets;
+    }
+  }
+
+  // Widget untuk empty state karena filter (bukan karena tidak ada data)
+  Widget _buildFilteredEmptyState() {
+    final filterText = _getFilterText();
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingLarge),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.filter_list_off,
+              size: 60,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+            ),
+            const SizedBox(height: AppSizes.paddingLarge),
+            Text(
+              'Tidak ada budget $filterText',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSizes.paddingSmall),
+            Text(
+              'Coba pilih filter periode yang berbeda atau buat budget $filterText baru',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.5),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Fungsi untuk mendapatkan text filter yang dipilih
+  String _getFilterText() {
+    switch (_selectedPeriod) {
+      case 'daily':
+        return 'harian';
+      case 'weekly':
+        return 'mingguan';
+      case 'monthly':
+        return 'bulanan';
+      case 'all':
+      default:
+        return '';
+    }
   }
 
   Widget _buildEmptyState(String type) {
@@ -180,11 +279,13 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     final totalBudget = budgets.fold(0.0, (sum, budget) => sum + budget.amount);
     final totalSpent = budgets.fold(0.0, (sum, budget) => sum + budget.spent);
     final averageUsage = totalBudget > 0 ? (totalSpent / totalBudget * 100) : 0;
-    final exceededCount = budgets.where((b) => b.status == 'exceeded').length;
+    final exceededCount = budgets
+        .where((b) => b.status == 'exceeded' || b.status == 'full')
+        .length;
 
     return Container(
       margin: const EdgeInsets.all(AppSizes.paddingMedium),
-      padding: const EdgeInsets.all(AppSizes.paddingLarge),
+      padding: const EdgeInsets.all(AppSizes.paddingMedium),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -261,6 +362,26 @@ class _BudgetListScreenState extends State<BudgetListScreen>
         ],
       ),
     );
+  }
+
+  // Fungsi untuk memfilter budget berdasarkan periode yang dipilih
+  List<BudgetModel> _filterBudgetsByPeriod(List<BudgetModel> budgets) {
+    if (_selectedPeriod == 'all') {
+      return budgets;
+    }
+
+    return budgets.where((budget) {
+      switch (_selectedPeriod) {
+        case 'daily':
+          return budget.period == 'daily';
+        case 'weekly':
+          return budget.period == 'weekly';
+        case 'monthly':
+          return budget.period == 'monthly';
+        default:
+          return true;
+      }
+    }).toList();
   }
 
   Widget _buildPeriodFilter() {
@@ -467,6 +588,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
   Color _getBudgetStatusColor(String status) {
     switch (status) {
       case 'exceeded':
+      case 'full':
         return AppColors.error;
       case 'warning':
         return AppColors.warning;
@@ -479,6 +601,8 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     switch (status) {
       case 'exceeded':
         return 'Melampaui';
+      case 'full':
+        return 'Habis';
       case 'warning':
         return 'Peringatan';
       default:
