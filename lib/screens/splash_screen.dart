@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../providers/base_provider.dart';
+import '../services/services.dart';
 import '../utils/theme.dart';
 import 'dashboard_screen.dart';
 import 'onboarding_screen.dart';
@@ -92,6 +93,14 @@ class _SplashScreenState extends State<SplashScreen>
     } catch (e) {
       // Handle error silently for background task
       print('Error checking budget alerts during startup: $e');
+    }
+
+    // Initialize recurring budget service
+    try {
+      RecurringBudgetService.instance.initialize(budgetProvider);
+      print('Recurring budget service initialized');
+    } catch (e) {
+      print('Error initializing recurring budget service: $e');
     }
   }
 

@@ -38,6 +38,7 @@ class BudgetProvider extends BaseProvider {
     bool alertEnabled = true,
     int alertPercentage = 80,
     String? notes,
+    bool isRecurring = false,
   }) async {
     final result = await handleAsync(() async {
       // Check if budget already exists for this category and period
@@ -77,6 +78,7 @@ class BudgetProvider extends BaseProvider {
         alertEnabled: alertEnabled,
         alertPercentage: alertPercentage,
         notes: notes,
+        isRecurring: isRecurring,
       );
 
       // Calculate initial spent amount
@@ -140,6 +142,7 @@ class BudgetProvider extends BaseProvider {
     bool? alertEnabled,
     int? alertPercentage,
     String? notes,
+    bool? isRecurring,
   }) async {
     final result = await handleAsync(() async {
       final existingBudget = DatabaseService.instance.budgets.get(id);
@@ -157,6 +160,7 @@ class BudgetProvider extends BaseProvider {
         alertEnabled: alertEnabled,
         alertPercentage: alertPercentage,
         notes: notes,
+        isRecurring: isRecurring,
         updatedAt: DateTime.now(),
       );
 
@@ -569,5 +573,159 @@ class BudgetProvider extends BaseProvider {
       'averageUsagePercentage': averageUsage,
       'budgetCount': weeklyBudgets.length,
     };
+  }
+
+  // Auto-create recurring budgets
+  Future<void> createRecurringBudgets() async {
+    await handleAsync(() async {
+      final now = DateTime.now();
+      final recurringBudgets = _budgets
+          .where((budget) => budget.isRecurring && budget.isActive)
+          .toList();
+
+      for (final budget in recurringBudgets) {
+        // Check if budget period has ended
+        if (now.isAfter(budget.endDate)) {
+          // Calculate next period dates
+          final nextPeriodDates =
+              _calculateNextPeriodDates(budget.period, budget.endDate);
+
+          // Check if next period budget already exists
+          final existingNextBudget = _budgets.firstWhere(
+            (b) =>
+                b.categoryId == budget.categoryId &&
+                b.period == budget.period &&
+                b.isActive &&
+                _isOverlappingPeriod(b.startDate, b.endDate,
+                    nextPeriodDates['start']!, nextPeriodDates['end']!),
+            orElse: () => BudgetModel(
+              id: '',
+              categoryId: '',
+              amount: 0,
+              period: '',
+              startDate: DateTime.now(),
+              endDate: DateTime.now(),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          );
+
+          // Create next period budget if doesn't exist
+          if (existingNextBudget.id.isEmpty) {
+            final success = await addBudget(
+              categoryId: budget.categoryId,
+              amount: budget.amount,
+              period: budget.period,
+              startDate: nextPeriodDates['start']!,
+              endDate: nextPeriodDates['end']!,
+              alertEnabled: budget.alertEnabled,
+              alertPercentage: budget.alertPercentage,
+              notes: budget.notes,
+              isRecurring: true, // Keep recurring
+            );
+
+            if (success) {
+              print(
+                  'Auto-created recurring budget for category ${budget.categoryId}, period ${budget.period}');
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Calculate next period dates based on period type
+  Map<String, DateTime> _calculateNextPeriodDates(
+      String period, DateTime lastEndDate) {
+    switch (period) {
+      case 'daily':
+        final nextStart =
+            DateTime(lastEndDate.year, lastEndDate.month, lastEndDate.day + 1);
+        final nextEnd = DateTime(
+            nextStart.year, nextStart.month, nextStart.day, 23, 59, 59);
+        return {'start': nextStart, 'end': nextEnd};
+
+      case 'weekly':
+        final nextStart = lastEndDate.add(const Duration(days: 1));
+        final nextEnd = nextStart
+            .add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+        return {'start': nextStart, 'end': nextEnd};
+
+      case 'monthly':
+        final nextStart = DateTime(lastEndDate.year, lastEndDate.month + 1, 1);
+        final nextEnd =
+            DateTime(nextStart.year, nextStart.month + 1, 0, 23, 59, 59);
+        return {'start': nextStart, 'end': nextEnd};
+
+      default:
+        // For custom periods, default to monthly
+        final nextStart = DateTime(lastEndDate.year, lastEndDate.month + 1, 1);
+        final nextEnd =
+            DateTime(nextStart.year, nextStart.month + 1, 0, 23, 59, 59);
+        return {'start': nextStart, 'end': nextEnd};
+    }
+  }
+
+  // Get recurring budgets
+  List<BudgetModel> getRecurringBudgets() {
+    return _budgets
+        .where((budget) => budget.isRecurring && budget.isActive)
+        .toList();
+  }
+
+  // Check and create overdue recurring budgets (untuk budget yang terlewat)
+  Future<void> checkAndCreateOverdueBudgets() async {
+    await handleAsync(() async {
+      final now = DateTime.now();
+      final recurringBudgets = _budgets
+          .where((budget) => budget.isRecurring && budget.isActive)
+          .toList();
+
+      for (final budget in recurringBudgets) {
+        // Check for multiple missing periods
+        var currentEndDate = budget.endDate;
+
+        while (now.isAfter(currentEndDate)) {
+          final nextPeriodDates =
+              _calculateNextPeriodDates(budget.period, currentEndDate);
+
+          // Check if budget for this period exists
+          final existingBudget = _budgets.firstWhere(
+            (b) =>
+                b.categoryId == budget.categoryId &&
+                b.period == budget.period &&
+                b.isActive &&
+                _isOverlappingPeriod(b.startDate, b.endDate,
+                    nextPeriodDates['start']!, nextPeriodDates['end']!),
+            orElse: () => BudgetModel(
+              id: '',
+              categoryId: '',
+              amount: 0,
+              period: '',
+              startDate: DateTime.now(),
+              endDate: DateTime.now(),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          );
+
+          if (existingBudget.id.isEmpty) {
+            await addBudget(
+              categoryId: budget.categoryId,
+              amount: budget.amount,
+              period: budget.period,
+              startDate: nextPeriodDates['start']!,
+              endDate: nextPeriodDates['end']!,
+              alertEnabled: budget.alertEnabled,
+              alertPercentage: budget.alertPercentage,
+              notes: budget.notes,
+              isRecurring: true,
+            );
+          }
+
+          currentEndDate = nextPeriodDates['end']!;
+        }
+      }
+    });
   }
 }

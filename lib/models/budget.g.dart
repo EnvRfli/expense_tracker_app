@@ -30,13 +30,14 @@ class BudgetModelAdapter extends TypeAdapter<BudgetModel> {
       alertEnabled: fields[10] as bool,
       alertPercentage: fields[11] as int,
       notes: fields[12] as String?,
+      isRecurring: fields[13] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, BudgetModel obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -62,7 +63,9 @@ class BudgetModelAdapter extends TypeAdapter<BudgetModel> {
       ..writeByte(11)
       ..write(obj.alertPercentage)
       ..writeByte(12)
-      ..write(obj.notes);
+      ..write(obj.notes)
+      ..writeByte(13)
+      ..write(obj.isRecurring);
   }
 
   @override

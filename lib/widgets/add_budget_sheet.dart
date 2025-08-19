@@ -32,6 +32,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
   DateTime? _endDate;
   bool _alertEnabled = true;
   int _alertPercentage = 80;
+  bool _isRecurring = false;
   bool _isLoading = false;
 
   // Predefined periods
@@ -55,6 +56,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       _alertEnabled = budget.alertPercentage > 0;
       _alertPercentage =
           budget.alertPercentage > 0 ? budget.alertPercentage : 80;
+      _isRecurring = budget.isRecurring;
       _amountController.text = budget.amount.toStringAsFixed(0);
       _notesController.text = budget.notes ?? '';
     } else {
@@ -119,6 +121,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
           endDate: _endDate!,
           alertEnabled: _alertEnabled,
           alertPercentage: _alertPercentage,
+          isRecurring: _isRecurring,
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
@@ -139,6 +142,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
           endDate: _endDate!,
           alertEnabled: _alertEnabled,
           alertPercentage: _alertPercentage,
+          isRecurring: _isRecurring,
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
@@ -342,6 +346,11 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                     // Alert Settings
                     _buildSectionTitle('Pengaturan Notifikasi'),
                     _buildAlertSettings(),
+                    const SizedBox(height: AppSizes.paddingLarge),
+
+                    // Recurring Settings
+                    _buildSectionTitle('Budget Berulang'),
+                    _buildRecurringSettings(),
                     const SizedBox(height: AppSizes.paddingLarge),
 
                     // Notes
@@ -812,6 +821,128 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
         ],
       ),
     );
+  }
+
+  Widget _buildRecurringSettings() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingMedium),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        border: Border.all(
+          color: _isRecurring
+              ? AppColors.budget.withOpacity(0.3)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingSmall),
+                decoration: BoxDecoration(
+                  color: _isRecurring
+                      ? AppColors.budget.withOpacity(0.1)
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                ),
+                child: Icon(
+                  Icons.repeat,
+                  color: _isRecurring
+                      ? AppColors.budget
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6),
+                  size: AppSizes.iconSmall,
+                ),
+              ),
+              const SizedBox(width: AppSizes.paddingMedium),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Budget Berulang Otomatis',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _getRecurringDescription(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: _isRecurring,
+                onChanged: (value) {
+                  setState(() {
+                    _isRecurring = value;
+                  });
+                },
+                activeColor: AppColors.budget,
+              ),
+            ],
+          ),
+          if (_isRecurring) ...[
+            const SizedBox(height: AppSizes.paddingMedium),
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingMedium),
+              decoration: BoxDecoration(
+                color: AppColors.budget.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                border: Border.all(
+                  color: AppColors.budget.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: AppColors.budget,
+                    size: AppSizes.iconSmall,
+                  ),
+                  const SizedBox(width: AppSizes.paddingSmall),
+                  Expanded(
+                    child: Text(
+                      'Budget baru akan otomatis dibuat dengan jumlah yang sama untuk periode berikutnya.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.budget,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _getRecurringDescription() {
+    switch (_selectedPeriod) {
+      case 'daily':
+        return 'Budget akan dibuat otomatis setiap hari';
+      case 'weekly':
+        return 'Budget akan dibuat otomatis setiap minggu';
+      case 'monthly':
+        return 'Budget akan dibuat otomatis setiap bulan';
+      default:
+        return 'Budget akan dibuat otomatis untuk periode berikutnya';
+    }
   }
 
   Widget _buildNotesInput() {
