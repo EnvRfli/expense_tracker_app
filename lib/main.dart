@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/services.dart';
+import 'services/budget_notification_service.dart';
 import 'providers/providers.dart';
 import 'screens/splash_screen.dart';
 import 'utils/theme.dart';
@@ -14,6 +15,9 @@ void main() async {
 
   // Initialize notification service
   await NotificationService.instance.initialize();
+
+  // Initialize budget notification service
+  await BudgetNotificationService.instance.initialize();
 
   runApp(const ExpenseTrackerApp());
 }

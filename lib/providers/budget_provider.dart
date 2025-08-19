@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
 import '../services/services.dart';
+import '../services/budget_notification_service.dart';
 import 'base_provider.dart';
 
 class BudgetProvider extends BaseProvider {
@@ -95,6 +96,31 @@ class BudgetProvider extends BaseProvider {
 
       // Reload budgets
       await loadBudgets();
+
+      // Send notification for budget creation
+      try {
+        final categories = DatabaseService.instance.categories.values.toList();
+        final category = categories.firstWhere(
+          (cat) => cat.id == categoryId,
+          orElse: () => CategoryModel(
+            id: '',
+            name: 'Unknown',
+            type: 'expense',
+            iconCodePoint: '57898', // Icons.category.codePoint
+            colorValue: '4280391411', // Colors.grey.value
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        await BudgetNotificationService.instance.showBudgetCreatedNotification(
+          budgetWithSpent,
+          category,
+        );
+      } catch (e) {
+        // Handle notification error silently
+        print('Error sending budget creation notification: $e');
+      }
 
       return true;
     });
@@ -430,5 +456,118 @@ class BudgetProvider extends BaseProvider {
     }
 
     return performance;
+  }
+
+  // Method untuk refresh semua budget dengan spent amounts yang terbaru
+  Future<void> refreshAllBudgetSpentAmounts() async {
+    await handleAsync(() async {
+      for (int i = 0; i < _budgets.length; i++) {
+        final budget = _budgets[i];
+        if (!budget.isActive) continue;
+
+        final spent = _calculateSpentAmount(
+          budget.categoryId,
+          budget.startDate,
+          budget.endDate,
+        );
+
+        if (spent != budget.spent) {
+          final updatedBudget = budget.updateSpent(spent);
+          _budgets[i] = updatedBudget;
+
+          // Update in database
+          await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
+
+          // Track change for sync
+          await SyncService.instance.trackChange(
+            dataType: 'budget',
+            dataId: budget.id,
+            action: SyncAction.update,
+            dataSnapshot: updatedBudget.toJson(),
+          );
+        }
+      }
+    });
+  }
+
+  // Method untuk check budget alerts dan kirim notifikasi jika perlu
+  Future<void> checkBudgetAlerts() async {
+    try {
+      await refreshAllBudgetSpentAmounts();
+
+      // Get categories for notification
+      final categories = DatabaseService.instance.categories.values.toList();
+
+      // Check alerts
+      await BudgetNotificationService.instance
+          .checkBudgetAlerts(_budgets, categories);
+    } catch (e) {
+      // Handle error silently for background task
+      print('Error checking budget alerts: $e');
+    }
+  }
+
+  // Method untuk mendapatkan budget yang mendekati atau melampaui batas
+  List<BudgetModel> getBudgetsNeedingAttention() {
+    return _budgets
+        .where((budget) =>
+            budget.isActive &&
+            (budget.status == 'warning' || budget.status == 'exceeded'))
+        .toList();
+  }
+
+  // Method untuk mendapatkan total sisa budget hari ini
+  double getTodayRemainingBudget() {
+    final today = DateTime.now();
+    final dailyBudgets = _budgets.where((budget) =>
+        budget.isActive &&
+        budget.period == 'daily' &&
+        budget.startDate.year == today.year &&
+        budget.startDate.month == today.month &&
+        budget.startDate.day == today.day);
+
+    return dailyBudgets.fold(0.0, (sum, budget) => sum + budget.remaining);
+  }
+
+  // Method untuk mendapatkan progress budget minggu ini
+  Map<String, dynamic> getWeeklyBudgetProgress() {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+
+    final weeklyBudgets = _budgets
+        .where((budget) =>
+            budget.isActive &&
+            budget.period == 'weekly' &&
+            budget.startDate.isBefore(endOfWeek.add(const Duration(days: 1))) &&
+            budget.endDate
+                .isAfter(startOfWeek.subtract(const Duration(days: 1))))
+        .toList();
+
+    if (weeklyBudgets.isEmpty) {
+      return {
+        'totalBudget': 0.0,
+        'totalSpent': 0.0,
+        'totalRemaining': 0.0,
+        'averageUsagePercentage': 0.0,
+        'budgetCount': 0,
+      };
+    }
+
+    final totalBudget =
+        weeklyBudgets.fold(0.0, (sum, budget) => sum + budget.amount);
+    final totalSpent =
+        weeklyBudgets.fold(0.0, (sum, budget) => sum + budget.spent);
+    final totalRemaining =
+        weeklyBudgets.fold(0.0, (sum, budget) => sum + budget.remaining);
+    final averageUsage = totalBudget > 0 ? (totalSpent / totalBudget * 100) : 0;
+
+    return {
+      'totalBudget': totalBudget,
+      'totalSpent': totalSpent,
+      'totalRemaining': totalRemaining,
+      'averageUsagePercentage': averageUsage,
+      'budgetCount': weeklyBudgets.length,
+    };
   }
 }

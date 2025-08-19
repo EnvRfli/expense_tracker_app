@@ -85,6 +85,14 @@ class _SplashScreenState extends State<SplashScreen>
       _initializeProviderSilently(budgetProvider),
       _initializeProviderSilently(syncProvider),
     ]);
+
+    // Check budget alerts after providers are loaded
+    try {
+      await budgetProvider.checkBudgetAlerts();
+    } catch (e) {
+      // Handle error silently for background task
+      print('Error checking budget alerts during startup: $e');
+    }
   }
 
   Future<void> _initializeProviderSilently(BaseProvider provider) async {

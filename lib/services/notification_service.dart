@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'database_service.dart';
+import 'budget_notification_service.dart';
 
 class NotificationService {
   static NotificationService? _instance;
@@ -176,31 +177,17 @@ class NotificationService {
     }
   }
 
-  // Check and notify budget alerts
+  // Check and notify budget alerts (delegated to BudgetNotificationService)
   Future<void> checkBudgetAlerts() async {
-    final budgets = DatabaseService.instance.budgets.values.toList();
-    final now = DateTime.now();
+    try {
+      final budgets = DatabaseService.instance.budgets.values.toList();
+      final categories = DatabaseService.instance.categories.values.toList();
 
-    for (final budget in budgets) {
-      if (!budget.isActive || !budget.alertEnabled) continue;
-
-      // Check if budget period is current
-      if (now.isBefore(budget.startDate) || now.isAfter(budget.endDate)) {
-        continue;
-      }
-
-      // Check if alert threshold is reached
-      if (budget.usagePercentage >= budget.alertPercentage) {
-        final category =
-            DatabaseService.instance.categories.get(budget.categoryId);
-        if (category != null) {
-          await showBudgetAlert(
-            categoryName: category.name,
-            percentage: budget.usagePercentage,
-            remaining: budget.remaining,
-          );
-        }
-      }
+      // Use the specialized budget notification service
+      final budgetNotificationService = BudgetNotificationService.instance;
+      await budgetNotificationService.checkBudgetAlerts(budgets, categories);
+    } catch (e) {
+      print('Error checking budget alerts: $e');
     }
   }
 

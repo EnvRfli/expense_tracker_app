@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import './add_transaction_sheet.dart';
 import './edit_transaction_sheet.dart';
+import './add_budget_sheet.dart';
 import '../utils/theme.dart';
 import '../screens/transaction_list_screen.dart';
+import '../screens/budget_list_screen.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -356,7 +358,16 @@ class QuickActionsCard extends StatelessWidget {
   }
 
   void _showAddBudgetDialog(BuildContext context) {
-    // Implementation for add budget dialog
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLarge),
+        ),
+      ),
+      builder: (context) => const AddBudgetSheet(),
+    );
   }
 }
 
@@ -415,7 +426,11 @@ class BudgetOverviewCard extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: () {
-                        // Navigate to budget details
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const BudgetListScreen(),
+                          ),
+                        );
                       },
                       child: const Text('Lihat Semua'),
                     ),
@@ -849,9 +864,7 @@ class BudgetList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Budget List - Coming Soon'),
-    );
+    return const BudgetListScreen();
   }
 }
 

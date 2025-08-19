@@ -233,7 +233,6 @@ class DashboardBudgetTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      appBar: CustomAppBar(title: 'Budget'),
       body: BudgetList(),
     );
   }
