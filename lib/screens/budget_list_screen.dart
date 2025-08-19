@@ -582,6 +582,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
 
               // Header
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 50,
@@ -609,7 +610,11 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
+                          overflow: TextOverflow.visible,
+                          softWrap: true,
+                          maxLines: 2,
                         ),
+                        const SizedBox(height: 4),
                         Text(
                           _getPeriodText(budget),
                           style:
@@ -619,6 +624,8 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                                         .onSurface
                                         .withOpacity(0.6),
                                   ),
+                          overflow: TextOverflow.visible,
+                          softWrap: true,
                         ),
                       ],
                     ),
@@ -686,19 +693,21 @@ class _BudgetListScreenState extends State<BudgetListScreen>
 
               // Details
               Expanded(
-                child: Column(
-                  children: [
-                    _buildDetailRow('Budget Amount',
-                        userSettings.formatCurrency(budget.amount)),
-                    _buildDetailRow(
-                        'Spent', userSettings.formatCurrency(budget.spent)),
-                    _buildDetailRow('Remaining',
-                        userSettings.formatCurrency(budget.remaining)),
-                    _buildDetailRow(
-                        'Alert Threshold', '${budget.alertPercentage}%'),
-                    if (budget.notes?.isNotEmpty == true)
-                      _buildDetailRow('Notes', budget.notes!),
-                  ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildDetailRow('Budget Amount',
+                          userSettings.formatCurrency(budget.amount)),
+                      _buildDetailRow(
+                          'Spent', userSettings.formatCurrency(budget.spent)),
+                      _buildDetailRow('Remaining',
+                          userSettings.formatCurrency(budget.remaining)),
+                      _buildDetailRow(
+                          'Alert Threshold', '${budget.alertPercentage}%'),
+                      if (budget.notes?.isNotEmpty == true)
+                        _buildDetailRow('Notes', budget.notes!),
+                    ],
+                  ),
                 ),
               ),
 
@@ -706,26 +715,32 @@ class _BudgetListScreenState extends State<BudgetListScreen>
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        // Edit budget
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Edit'),
+                    child: OutlinedButton.icon(
+                      onPressed: () => _editBudget(context, budget),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit'),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.info),
+                        foregroundColor: AppColors.info,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSizes.paddingMedium,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSizes.paddingMedium),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Delete budget
-                        Navigator.pop(context);
-                      },
+                    child: ElevatedButton.icon(
+                      onPressed: () => _deleteBudget(context, budget),
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Hapus'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.error,
                         foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSizes.paddingMedium,
+                        ),
                       ),
-                      child: const Text('Hapus'),
                     ),
                   ),
                 ],
@@ -741,23 +756,204 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSizes.paddingMedium),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
+                  ),
+            ),
           ),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+          const SizedBox(width: AppSizes.paddingMedium),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.visible,
+              softWrap: true,
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  void _editBudget(BuildContext context, BudgetModel budget) {
+    Navigator.pop(context); // Close detail sheet first
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLarge),
+        ),
+      ),
+      builder: (context) => AddBudgetSheet(budgetToEdit: budget),
+    );
+  }
+
+  void _deleteBudget(BuildContext context, BudgetModel budget) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingSmall),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                ),
+                child: Icon(
+                  Icons.warning_outlined,
+                  color: AppColors.error,
+                  size: AppSizes.iconMedium,
+                ),
+              ),
+              const SizedBox(width: AppSizes.paddingMedium),
+              const Expanded(
+                child: Text('Hapus Budget'),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Apakah Anda yakin ingin menghapus budget ini?',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: AppSizes.paddingMedium),
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingMedium),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Consumer<CategoryProvider>(
+                      builder: (context, categoryProvider, child) {
+                        final category =
+                            categoryProvider.getCategoryById(budget.categoryId);
+                        return Text(
+                          category?.name ?? 'Unknown Category',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _getPeriodText(budget),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingMedium),
+              Text(
+                'Tindakan ini tidak dapat dibatalkan.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.error,
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop(); // Close dialog
+                Navigator.of(context).pop(); // Close detail sheet
+
+                final budgetProvider =
+                    Provider.of<BudgetProvider>(context, listen: false);
+
+                try {
+                  final success = await budgetProvider.deleteBudget(budget.id);
+
+                  if (success && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Budget berhasil dihapus'),
+                        backgroundColor: AppColors.success,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radiusSmall),
+                        ),
+                      ),
+                    );
+                  } else if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Gagal menghapus budget'),
+                        backgroundColor: AppColors.error,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radiusSmall),
+                        ),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: ${e.toString()}'),
+                        backgroundColor: AppColors.error,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radiusSmall),
+                        ),
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

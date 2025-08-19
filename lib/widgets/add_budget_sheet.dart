@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
+import '../models/models.dart';
 import '../utils/theme.dart';
 
 class AddBudgetSheet extends StatefulWidget {
   final String? categoryId;
   final String? period;
+  final BudgetModel? budgetToEdit;
 
   const AddBudgetSheet({
     super.key,
     this.categoryId,
     this.period,
+    this.budgetToEdit,
   });
 
   @override
@@ -41,9 +44,25 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedCategoryId = widget.categoryId;
-    _selectedPeriod = widget.period ?? 'monthly';
-    _setDefaultDates();
+
+    if (widget.budgetToEdit != null) {
+      // Initialize with existing budget data
+      final budget = widget.budgetToEdit!;
+      _selectedCategoryId = budget.categoryId;
+      _selectedPeriod = budget.period;
+      _startDate = budget.startDate;
+      _endDate = budget.endDate;
+      _alertEnabled = budget.alertPercentage > 0;
+      _alertPercentage =
+          budget.alertPercentage > 0 ? budget.alertPercentage : 80;
+      _amountController.text = budget.amount.toStringAsFixed(0);
+      _notesController.text = budget.notes ?? '';
+    } else {
+      // Initialize with provided values or defaults
+      _selectedCategoryId = widget.categoryId;
+      _selectedPeriod = widget.period ?? 'monthly';
+      _setDefaultDates();
+    }
   }
 
   @override
@@ -86,26 +105,53 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
 
     try {
       final budgetProvider = context.read<BudgetProvider>();
-      final success = await budgetProvider.addBudget(
-        categoryId: _selectedCategoryId!,
-        amount: double.parse(
-            _amountController.text.replaceAll('.', '').replaceAll(',', '')),
-        period: _selectedPeriod,
-        startDate: _startDate!,
-        endDate: _endDate!,
-        alertEnabled: _alertEnabled,
-        alertPercentage: _alertPercentage,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
+      bool success;
 
-      if (success && mounted) {
-        Navigator.of(context).pop();
-        _showSuccessSnackBar('Budget berhasil dibuat');
+      if (widget.budgetToEdit != null) {
+        // Update existing budget
+        success = await budgetProvider.updateBudget(
+          id: widget.budgetToEdit!.id,
+          categoryId: _selectedCategoryId!,
+          amount: double.parse(
+              _amountController.text.replaceAll('.', '').replaceAll(',', '')),
+          period: _selectedPeriod,
+          startDate: _startDate!,
+          endDate: _endDate!,
+          alertEnabled: _alertEnabled,
+          alertPercentage: _alertPercentage,
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+        );
+
+        if (success && mounted) {
+          Navigator.of(context).pop();
+          _showSuccessSnackBar('Budget berhasil diperbarui');
+        }
+      } else {
+        // Create new budget
+        success = await budgetProvider.addBudget(
+          categoryId: _selectedCategoryId!,
+          amount: double.parse(
+              _amountController.text.replaceAll('.', '').replaceAll(',', '')),
+          period: _selectedPeriod,
+          startDate: _startDate!,
+          endDate: _endDate!,
+          alertEnabled: _alertEnabled,
+          alertPercentage: _alertPercentage,
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+        );
+
+        if (success && mounted) {
+          Navigator.of(context).pop();
+          _showSuccessSnackBar('Budget berhasil dibuat');
+        }
       }
     } catch (e) {
-      _showErrorSnackBar('Gagal membuat budget: ${e.toString()}');
+      final action = widget.budgetToEdit != null ? 'memperbarui' : 'membuat';
+      _showErrorSnackBar('Gagal $action budget: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -230,7 +276,9 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Buat Budget Baru',
+                              widget.budgetToEdit != null
+                                  ? 'Edit Budget'
+                                  : 'Buat Budget Baru',
                               style: Theme.of(context)
                                   .textTheme
                                   .headlineSmall
@@ -340,9 +388,11 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                                 AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text(
-                          'Buat Budget',
-                          style: TextStyle(
+                      : Text(
+                          widget.budgetToEdit != null
+                              ? 'Update Budget'
+                              : 'Buat Budget',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
