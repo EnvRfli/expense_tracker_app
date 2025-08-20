@@ -42,6 +42,42 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
     'monthly': 'Bulanan',
   };
 
+  // Check if budget already exists
+  bool get _hasExistingBudget {
+    if (widget.budgetToEdit != null) return false; // Editing mode, no conflict
+    if (_selectedCategoryId == null || _startDate == null || _endDate == null) {
+      return false;
+    }
+
+    final budgetProvider = context.read<BudgetProvider>();
+    return budgetProvider.budgets.any((budget) =>
+        budget.categoryId == _selectedCategoryId &&
+        budget.period == _selectedPeriod &&
+        budget.isActive &&
+        _isOverlappingPeriod(
+            budget.startDate, budget.endDate, _startDate!, _endDate!));
+  }
+
+  bool _isOverlappingPeriod(
+      DateTime start1, DateTime end1, DateTime start2, DateTime end2) {
+    return start1.isBefore(end2) && end1.isAfter(start2);
+  }
+
+  BudgetModel? get _existingBudget {
+    if (_hasExistingBudget) {
+      final budgetProvider = context.read<BudgetProvider>();
+      return budgetProvider.budgets.firstWhere(
+        (budget) =>
+            budget.categoryId == _selectedCategoryId &&
+            budget.period == _selectedPeriod &&
+            budget.isActive &&
+            _isOverlappingPeriod(
+                budget.startDate, budget.endDate, _startDate!, _endDate!),
+      );
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -362,6 +398,81 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
               ),
             ),
 
+            // Warning for existing budget
+            Consumer<BudgetProvider>(
+              builder: (context, budgetProvider, child) {
+                if (_hasExistingBudget) {
+                  final existingBudget = _existingBudget;
+                  return Container(
+                    margin: const EdgeInsets.fromLTRB(
+                        AppSizes.paddingLarge, 0, AppSizes.paddingLarge, 0),
+                    padding: const EdgeInsets.all(AppSizes.paddingMedium),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                      border: Border.all(
+                        color: AppColors.warning.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: AppColors.warning,
+                              size: 20,
+                            ),
+                            const SizedBox(width: AppSizes.paddingSmall),
+                            Expanded(
+                              child: Text(
+                                'Budget Sudah Ada',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(
+                                      color: AppColors.warning,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSizes.paddingSmall),
+                        Text(
+                          'Budget untuk kategori ini dan periode yang sama sudah ada.',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.warning,
+                                  ),
+                        ),
+                        if (existingBudget != null) ...[
+                          const SizedBox(height: AppSizes.paddingSmall),
+                          Consumer<UserSettingsProvider>(
+                            builder: (context, userSettings, child) {
+                              return Text(
+                                'Budget saat ini: ${userSettings.formatCurrency(existingBudget.amount)}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: AppColors.warning,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              );
+                            },
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+
             // Submit Button
             Container(
               padding: const EdgeInsets.all(AppSizes.paddingLarge),
@@ -374,39 +485,74 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   ),
                 ),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitBudget,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.budget,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: AppSizes.paddingMedium),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+              child: Consumer<BudgetProvider>(
+                builder: (context, budgetProvider, child) {
+                  final isButtonDisabled = _isLoading || _hasExistingBudget;
+
+                  return Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isButtonDisabled ? null : _submitBudget,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isButtonDisabled
+                                ? Theme.of(context)
+                                    .colorScheme
+                                    .outline
+                                    .withOpacity(0.3)
+                                : AppColors.budget,
+                            foregroundColor: isButtonDisabled
+                                ? Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.5)
+                                : Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSizes.paddingMedium),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppSizes.radiusSmall),
+                            ),
                           ),
-                        )
-                      : Text(
-                          widget.budgetToEdit != null
-                              ? 'Update Budget'
-                              : 'Buat Budget',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  widget.budgetToEdit != null
+                                      ? 'Update Budget'
+                                      : 'Buat Budget',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
-                ),
+                      ),
+                      if (_hasExistingBudget) ...[
+                        const SizedBox(height: AppSizes.paddingSmall),
+                        Text(
+                          'Hapus budget yang ada terlebih dahulu atau pilih kategori/periode yang berbeda',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
             ),
           ],

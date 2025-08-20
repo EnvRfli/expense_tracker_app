@@ -1,505 +1,588 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/expense_provider.dart';
-import '../providers/income_provider.dart';
-import '../providers/category_provider.dart';
-import '../providers/budget_provider.dart';
+import '../providers/providers.dart';
 import '../utils/theme.dart';
-import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({Key? key}) : super(key: key);
+  const ReportsScreen({super.key});
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
 
-class _ReportsScreenState extends State<ReportsScreen> {
-  String _selectedPeriod = 'monthly';
-  DateTime _selectedDate = DateTime.now();
+// --- helper classes for charts ---
+class _TimeSeriesPoint {
+  final DateTime date;
+  final double income;
+  final double expense;
+
+  _TimeSeriesPoint(
+      {required this.date, required this.income, required this.expense});
+}
+
+class _TimeseriesChart extends StatelessWidget {
+  final List<_TimeSeriesPoint> data;
+
+  const _TimeseriesChart({required this.data, super.key});
 
   @override
   Widget build(BuildContext context) {
-    final expenseProvider = Provider.of<ExpenseProvider>(context);
-    final incomeProvider = Provider.of<IncomeProvider>(context);
-    final categoryProvider = Provider.of<CategoryProvider>(context);
-    final budgetProvider = Provider.of<BudgetProvider>(context);
+    if (data.isEmpty) {
+      return Center(child: Text('Tidak ada data'));
+    }
 
-    // Filter data by period
-    DateTime start, end;
-    if (_selectedPeriod == 'daily') {
-      start =
-          DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
-      end = start;
-    } else if (_selectedPeriod == 'weekly') {
-      start = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
-      end = start.add(const Duration(days: 6));
+    // Map data points to FlSpot using index as x value
+    final spotsIncome = <FlSpot>[];
+    final spotsExpense = <FlSpot>[];
+    for (var i = 0; i < data.length; i++) {
+      spotsIncome.add(FlSpot(i.toDouble(), data[i].income));
+      spotsExpense.add(FlSpot(i.toDouble(), data[i].expense));
+    }
+
+    final interval =
+        (data.length / 6).ceilToDouble().clamp(1.0, data.length.toDouble());
+
+    // Hitung max value untuk menentukan interval yang tepat
+    final maxValue = data
+        .map((e) => e.income)
+        .followedBy(data.map((e) => e.expense))
+        .reduce((a, b) => a > b ? a : b);
+
+    // Tentukan interval horizontal yang lebih baik untuk menghindari tumpang tindih
+    double horizontalInterval;
+    if (maxValue <= 0) {
+      horizontalInterval = 1;
+    } else if (maxValue <= 50000) {
+      horizontalInterval = 10000;
+    } else if (maxValue <= 100000) {
+      horizontalInterval = 20000;
+    } else if (maxValue <= 500000) {
+      horizontalInterval = 100000;
     } else {
-      // monthly
-      start = DateTime(_selectedDate.year, _selectedDate.month, 1);
-      end = DateTime(_selectedDate.year, _selectedDate.month + 1, 0);
+      horizontalInterval = maxValue / 4;
     }
 
-    final expenses = expenseProvider.getExpensesByDateRange(start, end);
-    final incomes = incomeProvider.getIncomesByDateRange(start, end);
-    final totalExpense = expenseProvider.getTotalAmount(expenses);
-    final totalIncome = incomeProvider.getTotalAmount(incomes);
-    final balance = totalIncome - totalExpense;
-
-    // Grouped by category
-    final Map<String, double> expenseByCategory = {};
-    for (final expense in expenses) {
-      expenseByCategory[expense.categoryId] =
-          (expenseByCategory[expense.categoryId] ?? 0) + expense.amount;
-    }
-    final Map<String, double> incomeByCategory = {};
-    for (final income in incomes) {
-      incomeByCategory[income.categoryId] =
-          (incomeByCategory[income.categoryId] ?? 0) + income.amount;
-    }
-
-    // Budget analysis
-    final budgetStats = budgetProvider.getBudgetStatistics();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Laporan'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingMedium),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _PeriodSelector(
-                selectedPeriod: _selectedPeriod,
-                selectedDate: _selectedDate,
-                onPeriodChanged: (period) =>
-                    setState(() => _selectedPeriod = period),
-                onDateChanged: (date) => setState(() => _selectedDate = date),
-              ),
-              const SizedBox(height: AppSizes.paddingLarge),
-              _SummaryCard(
-                totalIncome: totalIncome,
-                totalExpense: totalExpense,
-                balance: balance,
-                periodLabel: _periodLabel(_selectedPeriod, _selectedDate),
-              ),
-              const SizedBox(height: AppSizes.paddingLarge),
-              _CategoryAnalysis(
-                expenseByCategory: expenseByCategory,
-                incomeByCategory: incomeByCategory,
-                categoryProvider: categoryProvider,
-              ),
-              const SizedBox(height: AppSizes.paddingLarge),
-              _BudgetAnalysis(budgetStats: budgetStats),
-              const SizedBox(height: AppSizes.paddingLarge),
-              _ExpenseIncomeChart(
-                expenses: expenses,
-                incomes: incomes,
-                start: start,
-                end: end,
-                period: _selectedPeriod,
-              ),
-            ],
+    return LineChart(
+      LineChartData(
+        lineTouchData: LineTouchData(enabled: true),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: horizontalInterval,
+        ),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: interval,
+              reservedSize: 32,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= data.length)
+                  return const SizedBox.shrink();
+                final d = data[idx].date;
+                final label = '${d.day}/${d.month}';
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6.0),
+                  child:
+                      Text(label, style: Theme.of(context).textTheme.bodySmall),
+                );
+              },
+            ),
           ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              interval: horizontalInterval,
+              getTitlesWidget: (value, meta) {
+                String formatValue(double val) {
+                  if (val >= 1000000) {
+                    return '${(val / 1000000).toStringAsFixed(1)}M';
+                  } else if (val >= 1000) {
+                    return '${(val / 1000).toStringAsFixed(0)}K';
+                  } else {
+                    return val.toStringAsFixed(0);
+                  }
+                }
+
+                return Text(
+                  formatValue(value),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 10, // Ukuran font yang lebih kecil
+                      ),
+                  textAlign: TextAlign.right,
+                );
+              },
+            ),
+          ),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        minX: 0,
+        maxX: (data.length - 1).toDouble(),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spotsExpense,
+            isCurved: true,
+            color: AppColors.expense,
+            barWidth: 2,
+            dotData: FlDotData(show: false),
+            belowBarData: BarAreaData(
+                show: true, color: AppColors.expense.withOpacity(0.08)),
+          ),
+          LineChartBarData(
+            spots: spotsIncome,
+            isCurved: true,
+            color: AppColors.income,
+            barWidth: 2,
+            dotData: FlDotData(show: false),
+            belowBarData: BarAreaData(
+                show: true, color: AppColors.income.withOpacity(0.08)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CatDatum {
+  final String name;
+  final double amount;
+  final Color color;
+  _CatDatum({required this.name, required this.amount, required this.color});
+}
+
+class _ReportsScreenState extends State<ReportsScreen> {
+  DateTimeRange _range = DateTimeRange(
+    start: DateTime.now().subtract(const Duration(days: 29)),
+    end: DateTime.now(),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: RefreshIndicator(
+        onRefresh: () async {
+          await context.read<ExpenseProvider>().loadExpenses();
+          await context.read<IncomeProvider>().loadIncomes();
+        },
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              title: const Text('Laporan'),
+              automaticallyImplyLeading: false,
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              expandedHeight: 0,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(56),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingMedium,
+                      vertical: AppSizes.paddingSmall),
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildRangeButton(context)),
+                      const SizedBox(width: AppSizes.paddingSmall),
+                      IconButton(
+                        onPressed: () async {
+                          // simple export placeholder
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Export CSV')));
+                        },
+                        icon: const Icon(Icons.download),
+                        color: Colors.white,
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(AppSizes.paddingMedium),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildSummaryCards(),
+                  const SizedBox(height: AppSizes.paddingMedium),
+                  _buildTimeSeriesPlaceholder(),
+                  const SizedBox(height: AppSizes.paddingMedium),
+                  LayoutBuilder(builder: (context, constraints) {
+                    // if narrow, stack vertically for breathing room
+                    if (constraints.maxWidth < 700) {
+                      return Column(
+                        children: [
+                          _buildCategoryBreakdown(),
+                          const SizedBox(height: AppSizes.paddingMedium),
+                          _buildTopTransactions(),
+                        ],
+                      );
+                    }
+
+                    // otherwise keep side-by-side
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildCategoryBreakdown()),
+                        const SizedBox(width: AppSizes.paddingMedium),
+                        Expanded(child: _buildTopTransactions()),
+                      ],
+                    );
+                  }),
+                  const SizedBox(height: AppSizes.paddingLarge),
+                ]),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  String _periodLabel(String period, DateTime date) {
-    if (period == 'daily') {
-      return DateFormat('dd MMM yyyy').format(date);
-    } else if (period == 'weekly') {
-      final start = date.subtract(Duration(days: date.weekday - 1));
-      final end = start.add(const Duration(days: 6));
-      return '${DateFormat('dd MMM').format(start)} - ${DateFormat('dd MMM yyyy').format(end)}';
-    } else {
-      return DateFormat('MMMM yyyy').format(date);
-    }
+  Widget _buildRangeButton(BuildContext context) {
+    final label =
+        '${_range.start.day}/${_range.start.month}/${_range.start.year} - ${_range.end.day}/${_range.end.month}/${_range.end.year}';
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white.withOpacity(0.08),
+        foregroundColor: Colors.white,
+      ),
+      onPressed: () async {
+        final picked = await showDateRangePicker(
+          context: context,
+          firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+          lastDate: DateTime.now(),
+          initialDateRange: _range,
+        );
+        if (picked != null) {
+          setState(() => _range = picked);
+        }
+      },
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.calendar_today, size: 16),
+          const SizedBox(width: 8),
+          Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+        ],
+      ),
+    );
   }
-}
 
-class _PeriodSelector extends StatelessWidget {
-  final String selectedPeriod;
-  final DateTime selectedDate;
-  final ValueChanged<String> onPeriodChanged;
-  final ValueChanged<DateTime> onDateChanged;
+  Widget _buildSummaryCards() {
+    return Consumer3<ExpenseProvider, IncomeProvider, UserSettingsProvider>(
+      builder: (context, expenseProvider, incomeProvider, userSettings, child) {
+        final expenses =
+            expenseProvider.getExpensesByDateRange(_range.start, _range.end);
+        final incomes =
+            incomeProvider.getIncomesByDateRange(_range.start, _range.end);
 
-  const _PeriodSelector({
-    required this.selectedPeriod,
-    required this.selectedDate,
-    required this.onPeriodChanged,
-    required this.onDateChanged,
-  });
+        final totalExpense = expenseProvider.getTotalAmount(expenses);
+        final totalIncome = incomeProvider.getTotalAmount(incomes);
+        final net = totalIncome - totalExpense;
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        DropdownButton<String>(
-          value: selectedPeriod,
-          items: const [
-            DropdownMenuItem(value: 'daily', child: Text('Harian')),
-            DropdownMenuItem(value: 'weekly', child: Text('Mingguan')),
-            DropdownMenuItem(value: 'monthly', child: Text('Bulanan')),
+        Widget card(String title, String value, Color color) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.paddingMedium),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: AppSizes.paddingSmall),
+                  Text(
+                    value,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(color: color, fontSize: 18),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            card('Saldo', userSettings.formatCurrency(net),
+                net >= 0 ? AppColors.success : AppColors.error),
+            const SizedBox(height: AppSizes.paddingSmall),
+            Row(children: [
+              Expanded(
+                  flex: 1,
+                  child: card(
+                      'Pemasukan',
+                      userSettings.formatCurrency(totalIncome),
+                      AppColors.income)),
+              const SizedBox(width: AppSizes.paddingSmall),
+              Expanded(
+                  flex: 1,
+                  child: card(
+                      'Pengeluaran',
+                      userSettings.formatCurrency(totalExpense),
+                      AppColors.expense)),
+            ]),
           ],
-          onChanged: (val) {
-            if (val != null) onPeriodChanged(val);
-          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTimeSeriesPlaceholder() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Trend ${_rangeLabel()}',
+                style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: AppSizes.paddingSmall),
+            SizedBox(
+              height: 200,
+              child: Consumer2<ExpenseProvider, IncomeProvider>(
+                builder: (context, expenseProvider, incomeProvider, child) {
+                  final expenses = expenseProvider.getExpensesByDateRange(
+                      _range.start, _range.end);
+                  final incomes = incomeProvider.getIncomesByDateRange(
+                      _range.start, _range.end);
+
+                  // aggregate per day
+                  final map = <DateTime, Map<String, double>>{};
+                  DateTime cur = _range.start;
+                  while (!cur.isAfter(_range.end)) {
+                    map[DateTime(cur.year, cur.month, cur.day)] = {
+                      'expense': 0.0,
+                      'income': 0.0
+                    };
+                    cur = cur.add(const Duration(days: 1));
+                  }
+
+                  for (final e in expenses) {
+                    final d = DateTime(e.date.year, e.date.month, e.date.day);
+                    map[d] = map[d] ?? {'expense': 0.0, 'income': 0.0};
+                    map[d]!['expense'] = (map[d]!['expense'] ?? 0) + e.amount;
+                  }
+
+                  for (final i in incomes) {
+                    final d = DateTime(i.date.year, i.date.month, i.date.day);
+                    map[d] = map[d] ?? {'expense': 0.0, 'income': 0.0};
+                    map[d]!['income'] = (map[d]!['income'] ?? 0) + i.amount;
+                  }
+
+                  final days = map.keys.toList()..sort();
+                  final data = days
+                      .map((d) => _TimeSeriesPoint(
+                          date: d,
+                          income: map[d]!['income'] ?? 0.0,
+                          expense: map[d]!['expense'] ?? 0.0))
+                      .toList();
+
+                  return _TimeseriesChart(data: data);
+                },
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: AppSizes.paddingMedium),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.calendar_today),
-          label: Text(_dateLabel(selectedPeriod, selectedDate)),
-          onPressed: () async {
-            DateTime? picked;
-            if (selectedPeriod == 'monthly') {
-              picked = await showMonthPicker(
-                  context: context, initialDate: selectedDate);
-            } else {
-              picked = await showDatePicker(
-                context: context,
-                initialDate: selectedDate,
-                firstDate: DateTime(2000),
-                lastDate: DateTime.now(),
+      ),
+    );
+  }
+
+  String _rangeLabel() {
+    final diff = _range.end.difference(_range.start).inDays;
+    if (diff <= 1) return 'Harian';
+    if (diff <= 31) return 'Bulanan';
+    return 'Periode';
+  }
+
+  Widget _buildCategoryBreakdown() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        child: Consumer2<ExpenseProvider, CategoryProvider>(
+          builder: (context, expenseProvider, categoryProvider, child) {
+            final expenses = expenseProvider.getExpensesByDateRange(
+                _range.start, _range.end);
+            final byCat = <String, double>{};
+            for (final e in expenses) {
+              byCat[e.categoryId] = (byCat[e.categoryId] ?? 0) + e.amount;
+            }
+
+            final entries = byCat.entries.toList()
+              ..sort((a, b) => b.value.compareTo(a.value));
+
+            if (entries.isEmpty) {
+              return SizedBox(
+                height: 120,
+                child:
+                    Center(child: Text('Tidak ada pengeluaran di periode ini')),
               );
             }
-            if (picked != null) onDateChanged(picked);
+
+            // Prepare pie data (top 6)
+            final topEntries = entries.take(6).toList();
+            final pieData = List.generate(topEntries.length, (i) {
+              final cat = categoryProvider.getCategoryById(topEntries[i].key);
+              return _CatDatum(
+                name: cat?.name ?? 'Lainnya',
+                amount: topEntries[i].value,
+                color: AppColors.getCategoryColor(i),
+              );
+            });
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Breakdown Kategori',
+                    style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: AppSizes.paddingSmall),
+                SizedBox(
+                  height: 140,
+                  child: PieChart(
+                    PieChartData(
+                      sections: pieData
+                          .asMap()
+                          .entries
+                          .map((e) => PieChartSectionData(
+                                value: e.value.amount,
+                                color: e.value.color,
+                                title: '',
+                                radius: 40,
+                              ))
+                          .toList(),
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 20,
+                      pieTouchData: PieTouchData(enabled: true),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.paddingSmall),
+                ...List.generate(entries.length.clamp(0, 6), (i) {
+                  final cat = categoryProvider.getCategoryById(entries[i].key);
+                  final name = cat?.name ?? 'Lainnya';
+                  final amount = entries[i].value;
+                  final color = AppColors.getCategoryColor(i);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                    child: Row(
+                      children: [
+                        Container(width: 12, height: 12, color: color),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(name)),
+                        Text(Provider.of<UserSettingsProvider>(context,
+                                listen: false)
+                            .formatCurrency(amount)),
+                      ],
+                    ),
+                  );
+                }),
+                if (entries.length > 6)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSizes.paddingSmall),
+                    child: Text('+ ${entries.length - 6} lainnya'),
+                  )
+              ],
+            );
           },
         ),
-      ],
-    );
-  }
-
-  String _dateLabel(String period, DateTime date) {
-    if (period == 'daily') {
-      return DateFormat('dd MMM yyyy').format(date);
-    } else if (period == 'weekly') {
-      final start = date.subtract(Duration(days: date.weekday - 1));
-      final end = start.add(const Duration(days: 6));
-      return '${DateFormat('dd MMM').format(start)} - ${DateFormat('dd MMM yyyy').format(end)}';
-    } else {
-      return DateFormat('MMMM yyyy').format(date);
-    }
-  }
-}
-
-class _SummaryCard extends StatelessWidget {
-  final double totalIncome;
-  final double totalExpense;
-  final double balance;
-  final String periodLabel;
-
-  const _SummaryCard({
-    required this.totalIncome,
-    required this.totalExpense,
-    required this.balance,
-    required this.periodLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(periodLabel,
-                style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: AppSizes.paddingMedium),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _SummaryItem(
-                  label: 'Pemasukan',
-                  value: totalIncome,
-                  color: AppColors.income,
-                ),
-                _SummaryItem(
-                  label: 'Pengeluaran',
-                  value: totalExpense,
-                  color: AppColors.expense,
-                ),
-                _SummaryItem(
-                  label: 'Saldo',
-                  value: balance,
-                  color: AppColors.budget,
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
-}
 
-class _SummaryItem extends StatelessWidget {
-  final String label;
-  final double value;
-  final Color color;
-
-  const _SummaryItem(
-      {required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(height: 4),
-        Text(
-          NumberFormat.currency(locale: 'id', symbol: 'Rp').format(value),
-          style: Theme.of(context)
-              .textTheme
-              .bodyLarge
-              ?.copyWith(color: color, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-}
-
-class _CategoryAnalysis extends StatelessWidget {
-  final Map<String, double> expenseByCategory;
-  final Map<String, double> incomeByCategory;
-  final CategoryProvider categoryProvider;
-
-  const _CategoryAnalysis({
-    required this.expenseByCategory,
-    required this.incomeByCategory,
-    required this.categoryProvider,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildTopTransactions() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Analisis Kategori',
-                style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: AppSizes.paddingMedium),
-            if (expenseByCategory.isEmpty && incomeByCategory.isEmpty)
-              const Text('Tidak ada data'),
-            if (expenseByCategory.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Pengeluaran per Kategori:'),
-                  ...expenseByCategory.entries.map((e) {
-                    final cat = categoryProvider.getCategoryById(e.key);
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        child: Consumer3<ExpenseProvider, IncomeProvider, UserSettingsProvider>(
+          builder:
+              (context, expenseProvider, incomeProvider, userSettings, child) {
+            final expenses = expenseProvider.getExpensesByDateRange(
+                _range.start, _range.end);
+            final incomes =
+                incomeProvider.getIncomesByDateRange(_range.start, _range.end);
+            final all = [
+              ...expenses.map((e) => {'type': 'expense', 'data': e}),
+              ...incomes.map((i) => {'type': 'income', 'data': i}),
+            ];
+
+            all.sort((a, b) {
+              final aData = a['data'];
+              final bData = b['data'];
+              final aAmt = (aData != null)
+                  ? ((a['type'] == 'expense'
+                      ? (aData as dynamic).amount
+                      : (aData as dynamic).amount) as double)
+                  : 0.0;
+              final bAmt = (bData != null)
+                  ? ((b['type'] == 'expense'
+                      ? (bData as dynamic).amount
+                      : (bData as dynamic).amount) as double)
+                  : 0.0;
+              return bAmt.compareTo(aAmt);
+            });
+
+            final top = all.take(6).toList();
+
+            if (top.isEmpty) {
+              return SizedBox(
+                height: 120,
+                child:
+                    Center(child: Text('Tidak ada transaksi di periode ini')),
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Top Transaksi',
+                    style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: AppSizes.paddingSmall),
+                ...top.map((t) {
+                  final isExpense = t['type'] == 'expense';
+                  final raw = t['data'];
+                  if (raw == null) return const SizedBox.shrink();
+
+                  if (isExpense) {
+                    final data = raw as dynamic; // ExpenseModel
+                    final amt = data.amount as double;
+                    final desc = (data.description as String?) ?? '';
+                    final date = data.date as DateTime;
                     return ListTile(
-                      leading: Icon(Icons.label, color: AppColors.expense),
-                      title: Text(cat?.name ?? '-'),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(desc.isEmpty ? 'Pengeluaran' : desc),
                       trailing: Text(
-                          NumberFormat.currency(locale: 'id', symbol: 'Rp')
-                              .format(e.value)),
+                        '-${userSettings.formatCurrency(amt)}',
+                        style: const TextStyle(color: AppColors.expense),
+                      ),
+                      subtitle: Text('${date.day}/${date.month}/${date.year}'),
                     );
-                  }).toList(),
-                ],
-              ),
-            if (incomeByCategory.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Pemasukan per Kategori:'),
-                  ...incomeByCategory.entries.map((e) {
-                    final cat = categoryProvider.getCategoryById(e.key);
+                  } else {
+                    final data = raw as dynamic; // IncomeModel
+                    final amt = data.amount as double;
+                    final desc = (data.description as String?) ?? '';
+                    final date = data.date as DateTime;
                     return ListTile(
-                      leading: Icon(Icons.label, color: AppColors.income),
-                      title: Text(cat?.name ?? '-'),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(desc.isEmpty ? 'Pemasukan' : desc),
                       trailing: Text(
-                          NumberFormat.currency(locale: 'id', symbol: 'Rp')
-                              .format(e.value)),
+                        '+${userSettings.formatCurrency(amt)}',
+                        style: const TextStyle(color: AppColors.income),
+                      ),
+                      subtitle: Text('${date.day}/${date.month}/${date.year}'),
                     );
-                  }).toList(),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BudgetAnalysis extends StatelessWidget {
-  final Map<String, dynamic> budgetStats;
-  const _BudgetAnalysis({required this.budgetStats});
-
-  @override
-  Widget build(BuildContext context) {
-    if (budgetStats.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingLarge),
-          child: const Text('Tidak ada data budget aktif'),
-        ),
-      );
-    }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Analisis Budget',
-                style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: AppSizes.paddingMedium),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _BudgetStat(
-                    label: 'Total Budget',
-                    value: budgetStats['totalBudgetAmount'] ?? 0,
-                    color: AppColors.budget),
-                _BudgetStat(
-                    label: 'Total Spent',
-                    value: budgetStats['totalSpent'] ?? 0,
-                    color: AppColors.expense),
-                _BudgetStat(
-                    label: 'Sisa',
-                    value: budgetStats['totalRemaining'] ?? 0,
-                    color: AppColors.success),
+                  }
+                })
               ],
-            ),
-            const SizedBox(height: AppSizes.paddingMedium),
-            LinearProgressIndicator(
-              value: ((budgetStats['averageUsagePercentage'] ?? 0) / 100)
-                  .clamp(0.0, 1.0),
-              backgroundColor: AppColors.budget.withOpacity(0.2),
-              color: AppColors.expense,
-            ),
-            const SizedBox(height: 8),
-            Text(
-                'Rata-rata penggunaan: ${budgetStats['averageUsagePercentage']?.toStringAsFixed(1) ?? '0'}%'),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _BudgetChip(
-                    label: 'On Track',
-                    count: budgetStats['budgetsOnTrack'] ?? 0,
-                    color: AppColors.success),
-                const SizedBox(width: 8),
-                _BudgetChip(
-                    label: 'Warning',
-                    count: budgetStats['budgetsWarning'] ?? 0,
-                    color: AppColors.warning),
-                const SizedBox(width: 8),
-                _BudgetChip(
-                    label: 'Exceeded',
-                    count: budgetStats['budgetsExceeded'] ?? 0,
-                    color: AppColors.error),
-              ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
   }
-}
-
-class _BudgetStat extends StatelessWidget {
-  final String label;
-  final double value;
-  final Color color;
-  const _BudgetStat(
-      {required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(height: 4),
-        Text(
-          NumberFormat.currency(locale: 'id', symbol: 'Rp').format(value),
-          style: Theme.of(context)
-              .textTheme
-              .bodyLarge
-              ?.copyWith(color: color, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-}
-
-class _BudgetChip extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color color;
-  const _BudgetChip(
-      {required this.label, required this.count, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      label: Text('$label: $count'),
-      backgroundColor: color.withOpacity(0.15),
-      labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
-    );
-  }
-}
-
-class _ExpenseIncomeChart extends StatelessWidget {
-  final List expenses;
-  final List incomes;
-  final DateTime start;
-  final DateTime end;
-  final String period;
-
-  const _ExpenseIncomeChart({
-    required this.expenses,
-    required this.incomes,
-    required this.start,
-    required this.end,
-    required this.period,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Placeholder for chart, you can use charts_flutter or fl_chart for real chart
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Grafik Pemasukan & Pengeluaran',
-                style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: AppSizes.paddingMedium),
-            Container(
-              height: 180,
-              width: double.infinity,
-              color: AppColors.budget.withOpacity(0.08),
-              child: const Center(
-                  child: Text(
-                      'Chart Placeholder')), // TODO: Integrate with chart package
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Helper for month picker (you can use a package like flutter_month_picker_dialog)
-Future<DateTime?> showMonthPicker(
-    {required BuildContext context, required DateTime initialDate}) async {
-  // For now, fallback to date picker
-  return showDatePicker(
-    context: context,
-    initialDate: initialDate,
-    firstDate: DateTime(2000),
-    lastDate: DateTime.now(),
-    helpText: 'Pilih Bulan',
-    fieldLabelText: 'Bulan',
-    fieldHintText: 'Bulan/Tahun',
-    initialDatePickerMode: DatePickerMode.year,
-  );
 }

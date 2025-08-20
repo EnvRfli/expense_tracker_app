@@ -94,6 +94,28 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
+      tabBarTheme: TabBarTheme(
+        labelColor: AppColors.budget,
+        unselectedLabelColor: Colors.black,
+        labelStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
+        ),
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(
+            color: AppColors.budget,
+            width: 3,
+          ),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        overlayColor: MaterialStateProperty.all(
+          AppColors.budget.withOpacity(0.1),
+        ),
+      ),
       useMaterial3: true,
     );
   }
@@ -176,6 +198,28 @@ class AppTheme {
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
+      ),
+      tabBarTheme: TabBarTheme(
+        labelColor: AppColors.budget, // Blue color for active tab
+        unselectedLabelColor: Colors.grey[400],
+        labelStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
+        ),
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(
+            color: AppColors.budget,
+            width: 3,
+          ),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        overlayColor: MaterialStateProperty.all(
+          AppColors.budget.withOpacity(0.1),
+        ),
       ),
       useMaterial3: true,
     );

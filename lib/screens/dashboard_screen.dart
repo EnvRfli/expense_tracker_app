@@ -4,6 +4,7 @@ import '../providers/providers.dart';
 import '../utils/theme.dart';
 import '../widgets/dashboard_widgets.dart';
 import '../widgets/add_transaction_sheet.dart';
+import 'reports_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -249,9 +250,9 @@ class DashboardReportsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      appBar: CustomAppBar(title: 'Laporan'),
-      body: ReportsView(),
+    return Scaffold(
+      appBar: const CustomAppBar(title: 'Laporan'),
+      body: const ReportsScreen(),
     );
   }
 }

@@ -60,7 +60,7 @@ dependencies:
   
   # UI Components
   flutter_slidable: ^3.0.1
-  syncfusion_flutter_charts: ^24.2.9
+  fl_chart: ^1.0.0
 
 dev_dependencies:
   flutter_test:

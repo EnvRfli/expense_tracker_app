@@ -50,7 +50,6 @@ class BudgetProvider extends BaseProvider {
     bool isRecurring = false,
   }) async {
     final result = await handleAsync(() async {
-      // Check if budget already exists for this category and period
       final existingBudget = _budgets.firstWhere(
         (budget) =>
             budget.categoryId == categoryId &&
