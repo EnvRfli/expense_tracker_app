@@ -183,7 +183,10 @@ class NotificationService {
       bool forceReset = false,
       bool isFromUserAction = false}) async {
     try {
-      // Get fresh data from database - data should already be latest from ExpenseProvider refresh
+      // First, refresh all budget spent amounts to ensure accurate calculations
+      await _refreshBudgetSpentAmounts();
+
+      // Get fresh data from database after refresh
       final budgets = DatabaseService.instance.budgets.values.toList();
       final categories = DatabaseService.instance.categories.values.toList();
 
@@ -230,6 +233,52 @@ class NotificationService {
     } catch (e) {
       print('Error checking budget alerts: $e');
     }
+  }
+
+  // Helper method to refresh budget spent amounts
+  Future<void> _refreshBudgetSpentAmounts() async {
+    try {
+      final budgets = DatabaseService.instance.budgets.values.toList();
+      for (final budget in budgets) {
+        if (!budget.isActive) continue;
+
+        // Calculate spent amount using the corrected logic
+        final spent = _calculateSpentAmount(
+          budget.categoryId,
+          budget.startDate,
+          budget.endDate,
+        );
+
+        if (spent != budget.spent) {
+          final updatedBudget = budget.updateSpent(spent);
+          await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
+          print(
+              'Updated budget ${budget.id}: spent amount corrected from ${budget.spent} to $spent');
+        }
+      }
+    } catch (e) {
+      print('Error refreshing budget spent amounts: $e');
+    }
+  }
+
+  // Calculate spent amount for a category in a period (same logic as BudgetProvider)
+  double _calculateSpentAmount(
+      String categoryId, DateTime startDate, DateTime endDate) {
+    final expenses = DatabaseService.instance.expenses.values.where((expense) {
+      // Check category match
+      if (expense.categoryId != categoryId) return false;
+
+      // Check if expense date is within budget period (inclusive)
+      final expenseDate = expense.date;
+      final isAfterStart = expenseDate.isAfter(startDate) ||
+          expenseDate.isAtSameMomentAs(startDate);
+      final isBeforeEnd = expenseDate.isBefore(endDate) ||
+          expenseDate.isAtSameMomentAs(endDate);
+
+      return isAfterStart && isBeforeEnd;
+    }).toList();
+
+    return expenses.fold(0.0, (sum, expense) => sum + expense.amount);
   }
 
   // Setup notifications based on user preferences

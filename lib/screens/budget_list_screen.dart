@@ -676,6 +676,342 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     );
   }
 
+  void _showBudgetExpenseDetails(BudgetModel budget) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLarge),
+        ),
+      ),
+      builder: (context) => _buildBudgetExpenseDetailsSheet(budget),
+    );
+  }
+
+  Widget _buildBudgetExpenseDetailsSheet(BudgetModel budget) {
+    return Consumer2<CategoryProvider, UserSettingsProvider>(
+      builder: (context, categoryProvider, userSettings, child) {
+        final category = categoryProvider.getCategoryById(budget.categoryId);
+        final statusColor = _getBudgetStatusColor(budget.status);
+
+        // Get expenses for this budget period
+        final expenses = _getBudgetExpenses(budget);
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          padding: const EdgeInsets.all(AppSizes.paddingLarge),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSizes.paddingLarge),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                    ),
+                    child: Icon(
+                      Icons.receipt_long,
+                      color: statusColor,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.paddingMedium),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pengeluaran ${category?.name ?? 'Unknown'}',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        Text(
+                          _getPeriodText(budget),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: AppSizes.paddingLarge),
+
+              // Budget Summary
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingMedium),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  border: Border.all(
+                    color: statusColor.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Terpakai',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                        ),
+                        Text(
+                          userSettings.formatCurrency(budget.spent),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: statusColor,
+                                  ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Budget',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                        ),
+                        Text(
+                          userSettings.formatCurrency(budget.amount),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSizes.paddingLarge),
+
+              // Expense List Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Detail Pengeluaran (${expenses.length})',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  if (expenses.isNotEmpty)
+                    Text(
+                      'Total: ${userSettings.formatCurrency(expenses.fold(0.0, (sum, e) => sum + e.amount))}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                ],
+              ),
+
+              const SizedBox(height: AppSizes.paddingMedium),
+
+              // Expense List
+              Expanded(
+                child: expenses.isEmpty
+                    ? _buildEmptyExpenseState()
+                    : ListView.separated(
+                        itemCount: expenses.length,
+                        separatorBuilder: (context, index) =>
+                            const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final expense = expenses[index];
+                          return _buildExpenseItem(expense, userSettings);
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyExpenseState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+          ),
+          const SizedBox(height: AppSizes.paddingMedium),
+          Text(
+            'Belum ada pengeluaran',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+          ),
+          const SizedBox(height: AppSizes.paddingSmall),
+          Text(
+            'Pengeluaran dalam periode ini akan muncul di sini',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpenseItem(
+      ExpenseModel expense, UserSettingsProvider userSettings) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingSmall,
+        vertical: AppSizes.paddingSmall,
+      ),
+      leading: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppColors.expense.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+        ),
+        child: Icon(
+          Icons.shopping_cart,
+          color: AppColors.expense,
+          size: 24,
+        ),
+      ),
+      title: Text(
+        expense.description,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          Text(
+            _formatDate(expense.date),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+          ),
+          if (expense.paymentMethod.isNotEmpty)
+            Text(
+              expense.paymentMethod,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.5),
+                  ),
+            ),
+        ],
+      ),
+      trailing: Text(
+        userSettings.formatCurrency(expense.amount),
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.expense,
+            ),
+      ),
+    );
+  }
+
+  List<ExpenseModel> _getBudgetExpenses(BudgetModel budget) {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final allExpenses = expenseProvider.expenses;
+
+    return allExpenses.where((expense) {
+      // Check category match
+      if (expense.categoryId != budget.categoryId) return false;
+
+      // Check if expense date is within budget period (inclusive)
+      final expenseDate = expense.date;
+      final isAfterStart = expenseDate.isAfter(budget.startDate) ||
+          expenseDate.isAtSameMomentAs(budget.startDate);
+      final isBeforeEnd = expenseDate.isBefore(budget.endDate) ||
+          expenseDate.isAtSameMomentAs(budget.endDate);
+
+      return isAfterStart && isBeforeEnd;
+    }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date)); // Sort by date descending
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
+    ];
+
+    final day = date.day.toString().padLeft(2, '0');
+    final month = months[date.month - 1];
+    final year = date.year;
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+
+    return '$day $month $year • $hour:$minute';
+  }
+
   Widget _buildBudgetDetailsSheet(BudgetModel budget) {
     return Consumer2<CategoryProvider, UserSettingsProvider>(
       builder: (context, categoryProvider, userSettings, child) {
@@ -760,56 +1096,70 @@ class _BudgetListScreenState extends State<BudgetListScreen>
               const SizedBox(height: AppSizes.paddingLarge),
 
               // Progress Section
-              Container(
-                padding: const EdgeInsets.all(AppSizes.paddingLarge),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${budget.usagePercentage.toStringAsFixed(1)}%',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
-                              ?.copyWith(
-                                color: statusColor,
-                                fontWeight: FontWeight.bold,
+              InkWell(
+                onTap: () => _showBudgetExpenseDetails(budget),
+                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingLarge),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${budget.usagePercentage.toStringAsFixed(1)}%',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.paddingMedium,
+                                  vertical: AppSizes.paddingSmall,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  _getStatusText(budget.status),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.paddingMedium,
-                            vertical: AppSizes.paddingSmall,
+                              const SizedBox(width: AppSizes.paddingSmall),
+                              Icon(
+                                Icons.receipt_long,
+                                color: statusColor.withOpacity(0.7),
+                                size: 20,
+                              ),
+                            ],
                           ),
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            _getStatusText(budget.status),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSizes.paddingMedium),
-                    LinearProgressIndicator(
-                      value: (budget.usagePercentage / 100) > 1
-                          ? 1
-                          : (budget.usagePercentage / 100),
-                      backgroundColor: Colors.white.withOpacity(0.3),
-                      valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                      minHeight: 8,
-                    ),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: AppSizes.paddingMedium),
+                      LinearProgressIndicator(
+                        value: (budget.usagePercentage / 100) > 1
+                            ? 1
+                            : (budget.usagePercentage / 100),
+                        backgroundColor: Colors.white.withOpacity(0.3),
+                        valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                        minHeight: 8,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -836,39 +1186,41 @@ class _BudgetListScreenState extends State<BudgetListScreen>
               ),
 
               // Actions
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _editBudget(context, budget),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit'),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.info),
-                        foregroundColor: AppColors.info,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSizes.paddingMedium,
+              !budget.isActive
+                  ? const SizedBox()
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _editBudget(context, budget),
+                            icon: const Icon(Icons.edit_outlined),
+                            label: const Text('Edit'),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: AppColors.info),
+                              foregroundColor: AppColors.info,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: AppSizes.paddingMedium,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSizes.paddingMedium),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _deleteBudget(context, budget),
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text('Hapus'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSizes.paddingMedium,
+                        const SizedBox(width: AppSizes.paddingMedium),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _deleteBudget(context, budget),
+                            icon: const Icon(Icons.delete_outline),
+                            label: const Text('Hapus'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.error,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: AppSizes.paddingMedium,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ],
           ),
         );

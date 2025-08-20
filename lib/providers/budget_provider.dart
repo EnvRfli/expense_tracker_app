@@ -19,12 +19,21 @@ class BudgetProvider extends BaseProvider {
     await loadBudgets();
   }
 
-  // Load all budgets
   Future<void> loadBudgets() async {
     await handleAsync(() async {
       _budgets = DatabaseService.instance.budgets.values.toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      // Don't call notifyListeners() here - handleAsync will handle it
+
+      // Auto-deactivate budgets whose period has ended
+      final now = DateTime.now();
+      for (int i = 0; i < _budgets.length; i++) {
+        final budget = _budgets[i];
+        if (budget.isActive && now.isAfter(budget.endDate)) {
+          final deactivated = budget.copyWith(isActive: false, updatedAt: now);
+          _budgets[i] = deactivated;
+          await DatabaseService.instance.budgets.put(budget.id, deactivated);
+        }
+      }
     });
   }
 
@@ -233,8 +242,10 @@ class BudgetProvider extends BaseProvider {
       (budget) =>
           budget.categoryId == categoryId &&
           budget.isActive &&
-          now.isAfter(budget.startDate.subtract(const Duration(days: 1))) &&
-          now.isBefore(budget.endDate.add(const Duration(days: 1))),
+          (now.isAfter(budget.startDate) ||
+              now.isAtSameMomentAs(budget.startDate)) &&
+          (now.isBefore(budget.endDate) ||
+              now.isAtSameMomentAs(budget.endDate)),
       orElse: () => BudgetModel(
         id: '',
         categoryId: '',
@@ -254,8 +265,10 @@ class BudgetProvider extends BaseProvider {
     return _budgets
         .where((budget) =>
             budget.isActive &&
-            now.isAfter(budget.startDate.subtract(const Duration(days: 1))) &&
-            now.isBefore(budget.endDate.add(const Duration(days: 1))))
+            (now.isAfter(budget.startDate) ||
+                now.isAtSameMomentAs(budget.startDate)) &&
+            (now.isBefore(budget.endDate) ||
+                now.isAtSameMomentAs(budget.endDate)))
         .toList();
   }
 
@@ -288,12 +301,19 @@ class BudgetProvider extends BaseProvider {
   // Calculate spent amount for a category in a period
   double _calculateSpentAmount(
       String categoryId, DateTime startDate, DateTime endDate) {
-    final expenses = DatabaseService.instance.expenses.values
-        .where((expense) =>
-            expense.categoryId == categoryId &&
-            expense.date.isAfter(startDate.subtract(const Duration(days: 1))) &&
-            expense.date.isBefore(endDate.add(const Duration(days: 1))))
-        .toList();
+    final expenses = DatabaseService.instance.expenses.values.where((expense) {
+      // Check category match
+      if (expense.categoryId != categoryId) return false;
+
+      // Check if expense date is within budget period (inclusive)
+      final expenseDate = expense.date;
+      final isAfterStart = expenseDate.isAfter(startDate) ||
+          expenseDate.isAtSameMomentAs(startDate);
+      final isBeforeEnd = expenseDate.isBefore(endDate) ||
+          expenseDate.isAtSameMomentAs(endDate);
+
+      return isAfterStart && isBeforeEnd;
+    }).toList();
 
     return expenses.fold(0.0, (sum, expense) => sum + expense.amount);
   }
@@ -301,8 +321,9 @@ class BudgetProvider extends BaseProvider {
   // Check if two periods overlap
   bool _isOverlappingPeriod(
       DateTime start1, DateTime end1, DateTime start2, DateTime end2) {
-    return start1.isBefore(end2.add(const Duration(days: 1))) &&
-        end1.isAfter(start2.subtract(const Duration(days: 1)));
+    // Two periods overlap if one starts before the other ends
+    return (start1.isBefore(end2) || start1.isAtSameMomentAs(end2)) &&
+        (end1.isAfter(start2) || end1.isAtSameMomentAs(start2));
   }
 
   // Get budget statistics
@@ -568,9 +589,8 @@ class BudgetProvider extends BaseProvider {
         .where((budget) =>
             budget.isActive &&
             budget.period == 'weekly' &&
-            budget.startDate.isBefore(endOfWeek.add(const Duration(days: 1))) &&
-            budget.endDate
-                .isAfter(startOfWeek.subtract(const Duration(days: 1))))
+            _isOverlappingPeriod(
+                budget.startDate, budget.endDate, startOfWeek, endOfWeek))
         .toList();
 
     if (weeklyBudgets.isEmpty) {
