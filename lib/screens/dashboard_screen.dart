@@ -251,7 +251,6 @@ class DashboardReportsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Laporan'),
       body: const ReportsScreen(),
     );
   }

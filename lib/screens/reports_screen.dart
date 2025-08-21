@@ -24,7 +24,7 @@ class _TimeSeriesPoint {
 class _TimeseriesChart extends StatelessWidget {
   final List<_TimeSeriesPoint> data;
 
-  const _TimeseriesChart({required this.data, super.key});
+  const _TimeseriesChart({required this.data, Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -162,79 +162,82 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: RefreshIndicator(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Laporan'),
+        automaticallyImplyLeading: false,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        actions: [
+          IconButton(
+            onPressed: () async {
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(const SnackBar(content: Text('Export CSV')));
+            },
+            icon: const Icon(Icons.download),
+            tooltip: 'Export CSV',
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
         onRefresh: () async {
           await context.read<ExpenseProvider>().loadExpenses();
           await context.read<IncomeProvider>().loadIncomes();
         },
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              title: const Text('Laporan'),
-              automaticallyImplyLeading: false,
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              expandedHeight: 0,
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(56),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingMedium,
-                      vertical: AppSizes.paddingSmall),
-                  child: Row(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSizes.paddingMedium),
+          child: Column(
+            children: [
+              // Filter Range Section
+              _buildFilterSection(),
+              const SizedBox(height: AppSizes.paddingMedium),
+              _buildSummaryCards(),
+              const SizedBox(height: AppSizes.paddingMedium),
+              _buildTimeSeriesPlaceholder(),
+              const SizedBox(height: AppSizes.paddingMedium),
+              LayoutBuilder(builder: (context, constraints) {
+                // if narrow, stack vertically for breathing room
+                if (constraints.maxWidth < 700) {
+                  return Column(
                     children: [
-                      Expanded(child: _buildRangeButton(context)),
-                      const SizedBox(width: AppSizes.paddingSmall),
-                      IconButton(
-                        onPressed: () async {
-                          // simple export placeholder
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Export CSV')));
-                        },
-                        icon: const Icon(Icons.download),
-                        color: Colors.white,
-                      )
+                      _buildCategoryBreakdown(),
+                      const SizedBox(height: AppSizes.paddingMedium),
+                      _buildTopTransactions(),
                     ],
-                  ),
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.all(AppSizes.paddingMedium),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildSummaryCards(),
-                  const SizedBox(height: AppSizes.paddingMedium),
-                  _buildTimeSeriesPlaceholder(),
-                  const SizedBox(height: AppSizes.paddingMedium),
-                  LayoutBuilder(builder: (context, constraints) {
-                    // if narrow, stack vertically for breathing room
-                    if (constraints.maxWidth < 700) {
-                      return Column(
-                        children: [
-                          _buildCategoryBreakdown(),
-                          const SizedBox(height: AppSizes.paddingMedium),
-                          _buildTopTransactions(),
-                        ],
-                      );
-                    }
+                  );
+                }
 
-                    // otherwise keep side-by-side
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildCategoryBreakdown()),
-                        const SizedBox(width: AppSizes.paddingMedium),
-                        Expanded(child: _buildTopTransactions()),
-                      ],
-                    );
-                  }),
-                  const SizedBox(height: AppSizes.paddingLarge),
-                ]),
-              ),
+                // otherwise keep side-by-side
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildCategoryBreakdown()),
+                    const SizedBox(width: AppSizes.paddingMedium),
+                    Expanded(child: _buildTopTransactions()),
+                  ],
+                );
+              }),
+              const SizedBox(height: AppSizes.paddingLarge),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Filter Periode',
+              style: Theme.of(context).textTheme.titleSmall,
             ),
+            const SizedBox(height: AppSizes.paddingSmall),
+            _buildRangeButton(context),
           ],
         ),
       ),
@@ -244,29 +247,34 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _buildRangeButton(BuildContext context) {
     final label =
         '${_range.start.day}/${_range.start.month}/${_range.start.year} - ${_range.end.day}/${_range.end.month}/${_range.end.year}';
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white.withOpacity(0.08),
-        foregroundColor: Colors.white,
-      ),
-      onPressed: () async {
-        final picked = await showDateRangePicker(
-          context: context,
-          firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
-          lastDate: DateTime.now(),
-          initialDateRange: _range,
-        );
-        if (picked != null) {
-          setState(() => _range = picked);
-        }
-      },
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.calendar_today, size: 16),
-          const SizedBox(width: 8),
-          Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
-        ],
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.paddingMedium,
+            vertical: AppSizes.paddingSmall,
+          ),
+          side: BorderSide(color: AppTheme.primaryColor),
+        ),
+        onPressed: () async {
+          final picked = await showDateRangePicker(
+            context: context,
+            firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+            lastDate: DateTime.now(),
+            initialDateRange: _range,
+          );
+          if (picked != null) {
+            setState(() => _range = picked);
+          }
+        },
+        icon:
+            Icon(Icons.calendar_today, size: 18, color: AppTheme.primaryColor),
+        label: Text(
+          label,
+          style: TextStyle(color: AppTheme.primaryColor),
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     );
   }
