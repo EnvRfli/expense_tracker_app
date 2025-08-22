@@ -376,8 +376,8 @@ class BudgetOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<BudgetProvider>(
-      builder: (context, budgetProvider, child) {
+    return Consumer2<BudgetProvider, UserSettingsProvider>(
+      builder: (context, budgetProvider, userSettings, child) {
         final budgetStats = budgetProvider.getBudgetStatistics();
         final activeBudgets = budgetProvider.getCurrentActiveBudgets();
 
@@ -437,11 +437,10 @@ class BudgetOverviewCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppSizes.paddingMedium),
-                _buildBudgetSummary(context, budgetStats),
+                _buildBudgetSummary(context, budgetStats, userSettings),
                 const SizedBox(height: AppSizes.paddingMedium),
-                ...activeBudgets
-                    .take(3)
-                    .map((budget) => _buildBudgetItem(context, budget)),
+                ...activeBudgets.take(3).map((budget) =>
+                    _buildBudgetItem(context, budget, userSettings)),
               ],
             ),
           ),
@@ -450,7 +449,8 @@ class BudgetOverviewCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBudgetSummary(BuildContext context, Map<String, dynamic> stats) {
+  Widget _buildBudgetSummary(BuildContext context, Map<String, dynamic> stats,
+      UserSettingsProvider userSettings) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingMedium),
       decoration: BoxDecoration(
@@ -463,7 +463,7 @@ class BudgetOverviewCard extends StatelessWidget {
             child: _buildSummaryItem(
               context,
               'Total Budget',
-              stats['totalBudgetAmount']?.toStringAsFixed(0) ?? '0',
+              userSettings.formatCurrency(stats['totalBudgetAmount'] ?? 0),
               AppColors.budget,
             ),
           ),
@@ -498,7 +498,7 @@ class BudgetOverviewCard extends StatelessWidget {
       children: [
         Text(
           value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,
               ),
@@ -512,7 +512,8 @@ class BudgetOverviewCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBudgetItem(BuildContext context, budget) {
+  Widget _buildBudgetItem(
+      BuildContext context, budget, UserSettingsProvider userSettings) {
     return Consumer<CategoryProvider>(
       builder: (context, categoryProvider, child) {
         final category = categoryProvider.getCategoryById(budget.categoryId);
@@ -541,7 +542,7 @@ class BudgetOverviewCard extends StatelessWidget {
                           ),
                     ),
                     Text(
-                      '${budget.spent.toStringAsFixed(0)} / ${budget.amount.toStringAsFixed(0)}',
+                      '${userSettings.formatCurrency(budget.spent)} / ${userSettings.formatCurrency(budget.amount)}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
