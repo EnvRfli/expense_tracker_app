@@ -28,7 +28,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final incomeProvider = context.read<IncomeProvider>();
     final budgetProvider = context.read<BudgetProvider>();
 
-    // Setup callback untuk refresh budget saat expense berubah
     expenseProvider.onExpenseChanged = () async {
       print('=== Expense Changed - Refreshing Budget Data ===');
       await budgetProvider.loadBudgets();

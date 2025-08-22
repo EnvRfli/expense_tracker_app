@@ -4,6 +4,7 @@ import '../providers/providers.dart';
 import './add_transaction_sheet.dart';
 import './edit_transaction_sheet.dart';
 import './add_budget_sheet.dart';
+import './budget_details_sheet.dart';
 import '../utils/theme.dart';
 import '../screens/transaction_list_screen.dart';
 import '../screens/budget_list_screen.dart';
@@ -518,44 +519,48 @@ class BudgetOverviewCard extends StatelessWidget {
       builder: (context, categoryProvider, child) {
         final category = categoryProvider.getCategoryById(budget.categoryId);
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSizes.paddingSmall),
-          child: Row(
-            children: [
-              Container(
-                width: 8,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _getBudgetStatusColor(budget.status),
-                  borderRadius: BorderRadius.circular(4),
+        return InkWell(
+          onTap: () => BudgetDetailsSheet.show(context, budget),
+          borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: AppSizes.paddingSmall),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _getBudgetStatusColor(budget.status),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSizes.paddingMedium),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category?.name ?? 'Unknown',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    Text(
-                      '${userSettings.formatCurrency(budget.spent)} / ${userSettings.formatCurrency(budget.amount)}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+                const SizedBox(width: AppSizes.paddingMedium),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category?.name ?? 'Unknown',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      Text(
+                        '${userSettings.formatCurrency(budget.spent)} / ${userSettings.formatCurrency(budget.amount)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Text(
-                '${budget.usagePercentage.toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: _getBudgetStatusColor(budget.status),
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
+                Text(
+                  '${budget.usagePercentage.toStringAsFixed(0)}%',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: _getBudgetStatusColor(budget.status),
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
           ),
         );
       },
