@@ -13,14 +13,40 @@ class BudgetListScreen extends StatefulWidget {
 }
 
 class _BudgetListScreenState extends State<BudgetListScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
+  late AnimationController _animationController;
+  late Animation<double> _expandAnimation;
+  late Animation<double> _rotationAnimation;
   String _selectedPeriod = 'all';
+  bool _isStatisticsExpanded = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 350),
+      vsync: this,
+    );
+
+    _expandAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOutCubic,
+    );
+
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.5,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    if (_isStatisticsExpanded) {
+      _animationController.value = 1.0;
+    }
+
     _setupExpenseCallback();
   }
 
@@ -28,10 +54,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final expenseProvider = context.read<ExpenseProvider>();
       final budgetProvider = context.read<BudgetProvider>();
-
-      // Setup callback untuk refresh budget saat expense berubah
       expenseProvider.onExpenseChanged = () async {
-        print('=== Expense Changed - Refreshing Budget in Budget Screen ===');
         await budgetProvider.loadBudgets();
         await budgetProvider.refreshAllBudgetSpentAmounts();
       };
@@ -41,6 +64,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -92,41 +116,44 @@ class _BudgetListScreenState extends State<BudgetListScreen>
   }
 
   Widget _buildBudgetList(List<BudgetModel> budgets, String type) {
-    // Get original budgets before filtering untuk statistik
     final originalBudgets = _getOriginalBudgets(type);
-
-    // Check if no data at all (before filtering)
     if (originalBudgets.isEmpty) {
       return _buildEmptyState(type);
     }
-
-    // Data ada, tapi mungkin kosong setelah filtering
-    return Column(
-      children: [
-        // Statistics Card - gunakan data asli sebelum filter
-        _buildStatisticsCard(originalBudgets),
-
-        // Filter
-        _buildPeriodFilter(),
-
-        // Budget List - gunakan data setelah filter
-        Expanded(
-          child: budgets.isEmpty
-              ? _buildFilteredEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(AppSizes.paddingMedium),
-                  itemCount: budgets.length,
-                  itemBuilder: (context, index) {
-                    final budget = budgets[index];
-                    return _buildBudgetCard(budget);
-                  },
-                ),
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: _buildStatisticsCard(originalBudgets),
         ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _FilterHeaderDelegate(
+            child: Container(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: _buildPeriodFilter(),
+            ),
+          ),
+        ),
+        budgets.isEmpty
+            ? SliverFillRemaining(
+                child: _buildFilteredEmptyState(),
+              )
+            : SliverPadding(
+                padding: const EdgeInsets.all(AppSizes.paddingMedium),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final budget = budgets[index];
+                      return _buildBudgetCard(budget);
+                    },
+                    childCount: budgets.length,
+                  ),
+                ),
+              ),
       ],
     );
   }
 
-  // Fungsi untuk mendapatkan data budget asli sebelum filtering
   List<BudgetModel> _getOriginalBudgets(String type) {
     final budgetProvider = context.read<BudgetProvider>();
 
@@ -285,7 +312,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
 
     return Container(
       margin: const EdgeInsets.all(AppSizes.paddingMedium),
-      padding: const EdgeInsets.all(AppSizes.paddingMedium),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -299,38 +325,139 @@ class _BudgetListScreenState extends State<BudgetListScreen>
       ),
       child: Column(
         children: [
-          Text(
-            'Budget Overview',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+          // Header dengan tombol expand/collapse
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppSizes.radiusMedium),
+                topRight: Radius.circular(AppSizes.radiusMedium),
+              ),
+              splashColor: Colors.white.withOpacity(0.1),
+              highlightColor: Colors.white.withOpacity(0.05),
+              onTap: () {
+                setState(() {
+                  _isStatisticsExpanded = !_isStatisticsExpanded;
+                });
+
+                if (_isStatisticsExpanded) {
+                  _animationController.forward();
+                } else {
+                  _animationController.reverse();
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.paddingMedium),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.bar_chart,
+                          color: Colors.white.withOpacity(0.9),
+                          size: 20,
+                        ),
+                        const SizedBox(width: AppSizes.paddingSmall),
+                        Text(
+                          'Budget Overview',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                      ],
+                    ),
+                    AnimatedBuilder(
+                      animation: _rotationAnimation,
+                      builder: (context, child) {
+                        return Transform.rotate(
+                          angle: _rotationAnimation.value *
+                              3.14159, // Convert to radians
+                          child: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.white,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
+              ),
+            ),
           ),
-          const SizedBox(height: AppSizes.paddingLarge),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  'Total Budget',
-                  'Rp ${_formatNumber(totalBudget)}',
-                  Icons.pie_chart,
-                ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  'Terpakai',
-                  '${averageUsage.toStringAsFixed(0)}%',
-                  Icons.trending_up,
-                ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  'Melebihi',
-                  '$exceededCount Budget',
-                  Icons.warning,
-                ),
-              ),
-            ],
+
+          // Content yang bisa di-expand/collapse dengan animasi smooth
+          ClipRect(
+            child: AnimatedBuilder(
+              animation: _expandAnimation,
+              builder: (context, child) {
+                return Align(
+                  alignment: Alignment.topCenter,
+                  heightFactor: _expandAnimation.value,
+                  child: FadeTransition(
+                    opacity: _expandAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: AppSizes.paddingMedium,
+                        right: AppSizes.paddingMedium,
+                        bottom: AppSizes.paddingMedium,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: AnimatedBuilder(
+                              animation: _expandAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _expandAnimation.value,
+                                  child: _buildStatItem(
+                                    'Total Budget',
+                                    'Rp ${_formatNumber(totalBudget)}',
+                                    Icons.pie_chart,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: AnimatedBuilder(
+                              animation: _expandAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _expandAnimation.value,
+                                  child: _buildStatItem(
+                                    'Terpakai',
+                                    '${averageUsage.toStringAsFixed(0)}%',
+                                    Icons.trending_up,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: AnimatedBuilder(
+                              animation: _expandAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _expandAnimation.value,
+                                  child: _buildStatItem(
+                                    'Melebihi',
+                                    '$exceededCount Budget',
+                                    Icons.warning,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -386,10 +513,16 @@ class _BudgetListScreenState extends State<BudgetListScreen>
 
   Widget _buildPeriodFilter() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingMedium),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingMedium,
+        vertical: AppSizes.paddingSmall, // Mengurangi padding vertikal
+      ),
       child: Row(
         children: [
-          const Text('Filter: '),
+          const Text(
+            'Filter: ',
+            style: TextStyle(fontSize: 12), // Font lebih kecil
+          ),
           const SizedBox(width: AppSizes.paddingSmall),
           Expanded(
             child: SingleChildScrollView(
@@ -414,8 +547,14 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     return Padding(
       padding: const EdgeInsets.only(right: AppSizes.paddingSmall),
       child: FilterChip(
-        label: Text(label),
+        label: Text(
+          label,
+          style: const TextStyle(fontSize: 12), // Font lebih kecil
+        ),
         selected: isSelected,
+        materialTapTargetSize:
+            MaterialTapTargetSize.shrinkWrap, // Mengurangi tap target
+        visualDensity: VisualDensity.compact, // Density yang lebih kompak
         onSelected: (selected) {
           setState(() {
             _selectedPeriod = value;
@@ -448,7 +587,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   Row(
                     children: [
                       Container(
@@ -513,10 +651,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                       ),
                     ],
                   ),
-
                   const SizedBox(height: AppSizes.paddingMedium),
-
-                  // Progress
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -694,8 +829,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
       builder: (context, categoryProvider, userSettings, child) {
         final category = categoryProvider.getCategoryById(budget.categoryId);
         final statusColor = _getBudgetStatusColor(budget.status);
-
-        // Get expenses for this budget period
         final expenses = _getBudgetExpenses(budget);
 
         return Container(
@@ -704,7 +837,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle bar
               Center(
                 child: Container(
                   width: 40,
@@ -719,8 +851,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                 ),
               ),
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Header
               Row(
                 children: [
                   Container(
@@ -763,10 +893,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Budget Summary
               Container(
                 padding: const EdgeInsets.all(AppSizes.paddingMedium),
                 decoration: BoxDecoration(
@@ -827,10 +954,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                   ],
                 ),
               ),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Expense List Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -850,10 +974,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                     ),
                 ],
               ),
-
               const SizedBox(height: AppSizes.paddingMedium),
-
-              // Expense List
               Expanded(
                 child: expenses.isEmpty
                     ? _buildEmptyExpenseState()
@@ -972,10 +1093,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     final allExpenses = expenseProvider.expenses;
 
     return allExpenses.where((expense) {
-      // Check category match
       if (expense.categoryId != budget.categoryId) return false;
-
-      // Check if expense date is within budget period (inclusive)
       final expenseDate = expense.date;
       final isAfterStart = expenseDate.isAfter(budget.startDate) ||
           expenseDate.isAtSameMomentAs(budget.startDate);
@@ -1024,7 +1142,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle bar
               Center(
                 child: Container(
                   width: 40,
@@ -1039,8 +1156,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                 ),
               ),
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Header
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1092,10 +1207,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Progress Section
               InkWell(
                 onTap: () => _showBudgetExpenseDetails(budget),
                 borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -1162,10 +1274,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                   ),
                 ),
               ),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Details
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -1184,8 +1293,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                   ),
                 ),
               ),
-
-              // Actions
               !budget.isActive
                   ? const SizedBox()
                   : Row(
@@ -1431,5 +1538,30 @@ class _BudgetListScreenState extends State<BudgetListScreen>
         );
       },
     );
+  }
+}
+
+// Custom SliverPersistentHeaderDelegate untuk filter yang sticky
+class _FilterHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _FilterHeaderDelegate({required this.child});
+
+  @override
+  double get minExtent => 45; // Tinggi minimum yang lebih kecil
+
+  @override
+  double get maxExtent =>
+      45; // Tinggi maksimum (sama dengan minimum untuk fixed height)
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return true;
   }
 }
