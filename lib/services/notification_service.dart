@@ -1,5 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import 'database_service.dart';
 import 'budget_notification_service.dart';
 import '../models/category.dart';
@@ -15,9 +17,61 @@ class NotificationService {
 
   bool _isInitialized = false;
 
+  // Helper method to safely convert DateTime to TZDateTime
+  tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {
+    try {
+      // Ensure timezone is initialized
+      tz.initializeTimeZones();
+
+      // Try to get local timezone, with fallback
+      tz.Location location;
+      try {
+        location = tz.local;
+      } catch (e) {
+        try {
+          location = tz.getLocation('Asia/Jakarta');
+        } catch (e2) {
+          location = tz.UTC;
+        }
+      }
+
+      return tz.TZDateTime.from(dateTime, location);
+    } catch (e) {
+      // Create TZDateTime manually as last resort
+      return tz.TZDateTime(
+        tz.UTC,
+        dateTime.year,
+        dateTime.month,
+        dateTime.day,
+        dateTime.hour,
+        dateTime.minute,
+        dateTime.second,
+        dateTime.millisecond,
+        dateTime.microsecond,
+      );
+    }
+  }
+
   // Initialize notification service
   Future<void> initialize() async {
     if (_isInitialized) return;
+
+    try {
+      // Initialize timezone
+      tz.initializeTimeZones();
+
+      // Try to set local timezone, fallback to UTC if not available
+      try {
+        tz.setLocalLocation(
+            tz.getLocation('Asia/Jakarta')); // Adjust to your timezone
+        print('Timezone set to Asia/Jakarta');
+      } catch (e) {
+        print('Failed to set Asia/Jakarta timezone, trying UTC: $e');
+        tz.setLocalLocation(tz.UTC);
+      }
+    } catch (e) {
+      print('Timezone initialization failed: $e');
+    }
 
     // Request permission
     await _requestPermission();
@@ -44,16 +98,33 @@ class NotificationService {
     _isInitialized = true;
   }
 
-  // Request notification permission
+  // Check if exact alarms are available
+  Future<bool> _canUseExactAlarms() async {
+    try {
+      final status = await Permission.scheduleExactAlarm.status;
+      return status.isGranted;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<bool> _requestPermission() async {
-    final status = await Permission.notification.request();
-    return status.isGranted;
+    // Request basic notification permission
+    final notificationStatus = await Permission.notification.request();
+
+    // For Android 12+, also try to request SCHEDULE_EXACT_ALARM permission
+    try {
+      await Permission.scheduleExactAlarm.request();
+    } catch (e) {
+      // Permission not available on this device
+    }
+
+    return notificationStatus.isGranted;
   }
 
   // Handle notification tap
   void _onNotificationTap(NotificationResponse notificationResponse) {
-    // Handle notification tap
-    print('Notification tapped: ${notificationResponse.payload}');
+    // Handle notification tap if needed
   }
 
   // Show immediate notification
@@ -96,6 +167,9 @@ class NotificationService {
   }) async {
     if (!_isInitialized) await initialize();
 
+    // Cancel existing daily reminder first
+    await cancelDailyReminder();
+
     const androidDetails = AndroidNotificationDetails(
       'daily_reminder_channel',
       'Daily Reminder',
@@ -111,15 +185,51 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    // For now, we'll use a simple periodic notification
-    // You can implement timezone-based scheduling later
-    await _flutterLocalNotificationsPlugin.periodicallyShow(
-      1001, // Unique ID for daily reminder
-      'Jangan Lupa Catat Pengeluaran!',
-      'Sudahkah Anda mencatat pengeluaran hari ini?',
-      RepeatInterval.daily,
-      notificationDetails,
-    );
+    // Calculate the next notification time
+    final now = DateTime.now();
+    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
+
+    // If the scheduled time has already passed today, schedule for tomorrow
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    // Check if we can use exact alarms
+    final canUseExact = await _canUseExactAlarms();
+    final scheduleMode = canUseExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
+    // Schedule the actual daily reminder
+    final scheduledTzDate = _convertToTZDateTime(scheduledDate);
+
+    try {
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        1001,
+        'Jangan Lupa Catat Pengeluaran!',
+        'Sudahkah Anda mencatat pengeluaran hari ini?',
+        scheduledTzDate,
+        notificationDetails,
+        androidScheduleMode: scheduleMode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents:
+            DateTimeComponents.time, // Repeat daily at same time
+      );
+    } catch (e) {
+      // Try fallback with periodic notification (less precise but more compatible)
+      try {
+        await _flutterLocalNotificationsPlugin.periodicallyShow(
+          1001,
+          'Jangan Lupa Catat Pengeluaran!',
+          'Sudahkah Anda mencatat pengeluaran hari ini?',
+          RepeatInterval.daily,
+          notificationDetails,
+        );
+      } catch (e2) {
+        // Silent fail - notification scheduling not critical
+      }
+    }
   }
 
   // Cancel daily reminder
@@ -267,8 +377,6 @@ class NotificationService {
     final expenses = DatabaseService.instance.expenses.values.where((expense) {
       // Check category match
       if (expense.categoryId != categoryId) return false;
-
-      // Check if expense date is within budget period (inclusive)
       final expenseDate = expense.date;
       final isAfterStart = expenseDate.isAfter(startDate) ||
           expenseDate.isAtSameMomentAs(startDate);
@@ -284,19 +392,27 @@ class NotificationService {
   // Setup notifications based on user preferences
   Future<void> setupUserNotifications() async {
     final user = DatabaseService.instance.getCurrentUser();
+
     if (user == null || !user.notificationEnabled) {
       await cancelDailyReminder();
       return;
     }
 
-    // Setup daily reminder if time is set
-    if (user.notificationTime != null) {
-      final timeParts = user.notificationTime!.split(':');
-      if (timeParts.length == 2) {
-        final hour = int.tryParse(timeParts[0]) ?? 20;
-        final minute = int.tryParse(timeParts[1]) ?? 0;
-        await scheduleDailyReminder(hour: hour, minute: minute);
+    // Setup daily reminder - default to 20:00 if enabled
+    if (user.notificationEnabled) {
+      // Use stored time or default to 20:00
+      int hour = 20;
+      int minute = 0;
+
+      if (user.notificationTime != null) {
+        final timeParts = user.notificationTime!.split(':');
+        if (timeParts.length == 2) {
+          hour = int.tryParse(timeParts[0]) ?? 20;
+          minute = int.tryParse(timeParts[1]) ?? 0;
+        }
       }
+
+      await scheduleDailyReminder(hour: hour, minute: minute);
     }
   }
 

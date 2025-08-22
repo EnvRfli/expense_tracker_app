@@ -116,7 +116,9 @@ class UserSettingsProvider extends BaseProvider {
     String? time,
   }) async {
     final result = await handleAsync(() async {
-      if (_user == null) return false;
+      if (_user == null) {
+        return false;
+      }
 
       final updatedUser = _user!.copyWith(
         notificationEnabled: enabled,
@@ -125,6 +127,7 @@ class UserSettingsProvider extends BaseProvider {
       );
 
       await DatabaseService.instance.updateUser(updatedUser);
+
       await SyncService.instance.trackChange(
         dataType: 'user',
         dataId: updatedUser.id,

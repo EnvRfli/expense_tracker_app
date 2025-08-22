@@ -5,7 +5,6 @@ import '../providers/income_provider.dart';
 import '../providers/category_provider.dart';
 import '../models/expense.dart';
 import '../models/income.dart';
-import '../models/category.dart';
 import '../widgets/add_transaction_sheet.dart';
 import '../widgets/edit_transaction_sheet.dart';
 import '../utils/theme.dart';

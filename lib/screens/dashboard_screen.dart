@@ -5,6 +5,7 @@ import '../utils/theme.dart';
 import '../widgets/dashboard_widgets.dart';
 import '../widgets/add_transaction_sheet.dart';
 import 'reports_screen.dart';
+import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -261,10 +262,7 @@ class DashboardSettingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      appBar: CustomAppBar(title: 'Pengaturan'),
-      body: SettingsView(),
-    );
+    return const SettingsScreen();
   }
 }
 
