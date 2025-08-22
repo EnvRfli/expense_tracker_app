@@ -36,13 +36,16 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             filtered.where((e) => e.categoryId == _selectedCategoryId).toList();
       }
       if (_selectedDateRange != null) {
-        filtered = filtered
-            .where((e) =>
-                e.date.isAfter(_selectedDateRange!.start
-                    .subtract(const Duration(days: 1))) &&
-                e.date.isBefore(
-                    _selectedDateRange!.end.add(const Duration(days: 1))))
-            .toList();
+        filtered = filtered.where((e) {
+          final expenseDate = DateTime(e.date.year, e.date.month, e.date.day);
+          final startDate = DateTime(_selectedDateRange!.start.year,
+              _selectedDateRange!.start.month, _selectedDateRange!.start.day);
+          final endDate = DateTime(_selectedDateRange!.end.year,
+              _selectedDateRange!.end.month, _selectedDateRange!.end.day);
+          return expenseDate.isAtSameMomentAs(startDate) ||
+              expenseDate.isAtSameMomentAs(endDate) ||
+              (expenseDate.isAfter(startDate) && expenseDate.isBefore(endDate));
+        }).toList();
       }
       transactions.addAll(filtered.map((e) => _TransactionItem.expense(e)));
     }
@@ -53,13 +56,16 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             filtered.where((i) => i.categoryId == _selectedCategoryId).toList();
       }
       if (_selectedDateRange != null) {
-        filtered = filtered
-            .where((i) =>
-                i.date.isAfter(_selectedDateRange!.start
-                    .subtract(const Duration(days: 1))) &&
-                i.date.isBefore(
-                    _selectedDateRange!.end.add(const Duration(days: 1))))
-            .toList();
+        filtered = filtered.where((i) {
+          final incomeDate = DateTime(i.date.year, i.date.month, i.date.day);
+          final startDate = DateTime(_selectedDateRange!.start.year,
+              _selectedDateRange!.start.month, _selectedDateRange!.start.day);
+          final endDate = DateTime(_selectedDateRange!.end.year,
+              _selectedDateRange!.end.month, _selectedDateRange!.end.day);
+          return incomeDate.isAtSameMomentAs(startDate) ||
+              incomeDate.isAtSameMomentAs(endDate) ||
+              (incomeDate.isAfter(startDate) && incomeDate.isBefore(endDate));
+        }).toList();
       }
       transactions.addAll(filtered.map((i) => _TransactionItem.income(i)));
     }
