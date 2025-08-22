@@ -148,25 +148,37 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildBalanceItem(
-                        context,
-                        'Pemasukan',
-                        displayIncomes,
-                        AppColors.income,
-                        Icons.arrow_upward,
-                        userSettings,
+                      child: InkWell(
+                        onTap: () => _navigateToFilteredTransactions(
+                            context, true), // true = income
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusSmall),
+                        child: _buildBalanceItem(
+                          context,
+                          'Pemasukan',
+                          displayIncomes,
+                          AppColors.income,
+                          Icons.arrow_upward,
+                          userSettings,
+                        ),
                       ),
                     ),
                     const SizedBox(
                         width: AppSizes.paddingSmall), // Reduced spacing
                     Expanded(
-                      child: _buildBalanceItem(
-                        context,
-                        'Pengeluaran',
-                        displayExpenses,
-                        AppColors.expense,
-                        Icons.arrow_downward,
-                        userSettings,
+                      child: InkWell(
+                        onTap: () => _navigateToFilteredTransactions(
+                            context, false), // false = expense
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusSmall),
+                        child: _buildBalanceItem(
+                          context,
+                          'Pengeluaran',
+                          displayExpenses,
+                          AppColors.expense,
+                          Icons.arrow_downward,
+                          userSettings,
+                        ),
                       ),
                     ),
                   ],
@@ -221,6 +233,280 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                 ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToFilteredTransactions(BuildContext context, bool isIncome) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLarge),
+        ),
+      ),
+      builder: (context) => _FilteredTransactionsSheet(
+        isIncome: isIncome,
+        showCurrentMonth: _showCurrentMonth,
+      ),
+    );
+  }
+}
+
+class _FilteredTransactionsSheet extends StatelessWidget {
+  final bool isIncome;
+  final bool showCurrentMonth;
+
+  const _FilteredTransactionsSheet({
+    required this.isIncome,
+    required this.showCurrentMonth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      padding: const EdgeInsets.all(AppSizes.paddingLarge),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSizes.paddingLarge),
+
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingSmall),
+                decoration: BoxDecoration(
+                  color: (isIncome ? AppColors.income : AppColors.expense)
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
+                ),
+                child: Icon(
+                  isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+                  color: isIncome ? AppColors.income : AppColors.expense,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: AppSizes.paddingMedium),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${isIncome ? 'Pemasukan' : 'Pengeluaran'} ${showCurrentMonth ? 'Bulan Ini' : 'Keseluruhan'}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    Consumer2<ExpenseProvider, IncomeProvider>(
+                      builder:
+                          (context, expenseProvider, incomeProvider, child) {
+                        final total = isIncome
+                            ? (showCurrentMonth
+                                ? incomeProvider.getCurrentMonthTotal()
+                                : incomeProvider
+                                    .getTotalAmount(incomeProvider.incomes))
+                            : (showCurrentMonth
+                                ? expenseProvider.getCurrentMonthTotal()
+                                : expenseProvider
+                                    .getTotalAmount(expenseProvider.expenses));
+
+                        return Consumer<UserSettingsProvider>(
+                          builder: (context, userSettings, child) {
+                            return Text(
+                              'Total: ${userSettings.formatCurrency(total)}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: isIncome
+                                        ? AppColors.income
+                                        : AppColors.expense,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.paddingLarge),
+
+          // Transaction List
+          Expanded(
+            child: Consumer3<ExpenseProvider, IncomeProvider, CategoryProvider>(
+              builder: (context, expenseProvider, incomeProvider,
+                  categoryProvider, child) {
+                List<dynamic> transactions;
+
+                if (isIncome) {
+                  final allIncomes = incomeProvider.incomes;
+                  transactions = showCurrentMonth
+                      ? allIncomes
+                          .where((income) =>
+                              income.date.month == DateTime.now().month &&
+                              income.date.year == DateTime.now().year)
+                          .toList()
+                      : allIncomes;
+                } else {
+                  final allExpenses = expenseProvider.expenses;
+                  transactions = showCurrentMonth
+                      ? allExpenses
+                          .where((expense) =>
+                              expense.date.month == DateTime.now().month &&
+                              expense.date.year == DateTime.now().year)
+                          .toList()
+                      : allExpenses;
+                }
+
+                // Sort by date (newest first)
+                transactions.sort((a, b) => b.date.compareTo(a.date));
+
+                if (transactions.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isIncome ? Icons.trending_up : Icons.trending_down,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: AppSizes.paddingMedium),
+                        Text(
+                          'Belum ada ${isIncome ? 'pemasukan' : 'pengeluaran'}',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                        ),
+                        const SizedBox(height: AppSizes.paddingSmall),
+                        Text(
+                          '${showCurrentMonth ? 'bulan ini' : 'yang tercatat'}',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[500],
+                                  ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  itemCount: transactions.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final transaction = transactions[index];
+                    final category = categoryProvider
+                        .getCategoryById(transaction.categoryId);
+
+                    return Consumer<UserSettingsProvider>(
+                      builder: (context, userSettings, child) {
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.paddingSmall,
+                            vertical: AppSizes.paddingSmall,
+                          ),
+                          leading: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: (isIncome
+                                      ? AppColors.income
+                                      : AppColors.expense)
+                                  .withOpacity(0.1),
+                              borderRadius:
+                                  BorderRadius.circular(AppSizes.radiusSmall),
+                            ),
+                            child: Icon(
+                              isIncome ? Icons.add : Icons.remove,
+                              color: isIncome
+                                  ? AppColors.income
+                                  : AppColors.expense,
+                              size: 24,
+                            ),
+                          ),
+                          title: Text(
+                            transaction.description,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(
+                                category?.name ?? 'Unknown',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                    ),
+                              ),
+                              Text(
+                                '${transaction.date.day}/${transaction.date.month}/${transaction.date.year}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.5),
+                                    ),
+                              ),
+                            ],
+                          ),
+                          trailing: Text(
+                            userSettings.formatCurrency(transaction.amount),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isIncome
+                                      ? AppColors.income
+                                      : AppColors.expense,
+                                ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -602,7 +888,11 @@ class RecentTransactionsCard extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigate to all transactions
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const TransactionListScreen(),
+                      ),
+                    );
                   },
                   child: const Text('Lihat Semua'),
                 ),

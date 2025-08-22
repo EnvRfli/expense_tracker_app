@@ -7,6 +7,63 @@ import '../models/models.dart';
 import '../utils/theme.dart';
 import '../services/image_picker_service.dart';
 
+// Custom formatter untuk format ribuan dengan koma
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Remove all non-digit characters
+    String newText = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    // If empty, return empty
+    if (newText.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Format with thousand separators
+    String formattedText = _addThousandSeparator(newText);
+
+    // Calculate cursor position
+    int selectionIndex = formattedText.length;
+    if (newValue.selection.end < newValue.text.length) {
+      // If cursor is not at the end, try to maintain relative position
+      int originalCursorPos = newValue.selection.end;
+      int separatorsBeforeCursor =
+          ','.allMatches(newValue.text.substring(0, originalCursorPos)).length;
+      int newSeparatorsBeforeCursor =
+          ','.allMatches(formattedText.substring(0, originalCursorPos)).length;
+      selectionIndex = originalCursorPos +
+          (newSeparatorsBeforeCursor - separatorsBeforeCursor);
+      selectionIndex = selectionIndex.clamp(0, formattedText.length);
+    }
+
+    return TextEditingValue(
+      text: formattedText,
+      selection: TextSelection.collapsed(offset: selectionIndex),
+    );
+  }
+
+  String _addThousandSeparator(String value) {
+    if (value.length <= 3) return value;
+
+    String result = '';
+    int counter = 0;
+
+    for (int i = value.length - 1; i >= 0; i--) {
+      if (counter == 3) {
+        result = ',$result';
+        counter = 0;
+      }
+      result = value[i] + result;
+      counter++;
+    }
+
+    return result;
+  }
+}
+
 class AddTransactionSheet extends StatefulWidget {
   final int initialTabIndex;
 
@@ -204,8 +261,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildTransactionForm(context, false), // Expense
-                _buildTransactionForm(context, true), // Income
+                _buildTransactionForm(context, false),
+                _buildTransactionForm(context, true),
               ],
             ),
           ),
@@ -313,7 +370,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             controller: _amountController,
             keyboardType: TextInputType.number,
             inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
+              ThousandsSeparatorInputFormatter(),
             ],
             style: TextStyle(
               fontSize: 16,
@@ -341,7 +398,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               if (value == null || value.isEmpty) {
                 return 'Jumlah tidak boleh kosong';
               }
-              if (double.tryParse(value) == null || double.parse(value) <= 0) {
+              // Remove commas for validation
+              String cleanValue = value.replaceAll(',', '');
+              if (double.tryParse(cleanValue) == null ||
+                  double.parse(cleanValue) <= 0) {
                 return 'Masukkan jumlah yang valid';
               }
               return null;
@@ -1099,7 +1159,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
     final formKey = isIncome ? _incomeFormKey : _expenseFormKey;
 
     if (formKey.currentState!.validate()) {
-      final amount = double.parse(_amountController.text);
+      // Remove commas before parsing
+      final cleanAmountText = _amountController.text.replaceAll(',', '');
+      final amount = double.parse(cleanAmountText);
       final description = _descriptionController.text;
 
       // Haptic feedback untuk success
