@@ -1,40 +1,43 @@
 # Expense Tracker App
 
-Aplikasi pengelola keuangan pribadi dengan backup ke Google Drive.
+A personal finance management application with Google Drive backup functionality.
 
-## Fitur Utama
+## Key Features
 
-### ✅ Sudah Dikembangkan
-- **Model Data Lengkap**: 7 model dengan Hive database dan JSON serialization
-- **Provider Architecture**: State management dengan Provider pattern
-- **Google Drive Integration**: Backup dan restore data otomatis
-- **Local Database**: Penyimpanan lokal dengan Hive
-- **Notification System**: Notifikasi pengingat dan alerts
-- **Splash Screen**: Animasi loading dengan provider initialization
-- **Onboarding**: Setup awal untuk pengaturan mata uang, bahasa, dan notifikasi
-- **Dashboard Utama**: Interface dengan bottom navigation dan widget dashboard
-- **Add Transaction Modal**: Form untuk menambah pemasukan dan pengeluaran
+### ✅ Completed
+- **Complete Data Models**: 7 models with Hive database and JSON serialization
+- **Provider Architecture**: State management with Provider pattern
+- **Google Drive Integration**: Automatic data backup and restore
+- **Local Database**: Local storage with Hive
+- **Notification System**: Reminder notifications and alerts
+- **Splash Screen**: Loading animation with provider initialization
+- **Onboarding**: Initial setup for currency, language, and notification settings
+- **Main Dashboard**: Interface with bottom navigation and dashboard widgets
+- **Add Transaction Modal**: Form for adding income and expenses with thousand separator formatting
+- **Transaction List Screen**: Complete transaction management with date filtering and search
+- **Budget Management**: Full budget creation, editing, deletion with progress tracking
+- **Budget List Screen**: Animated budget overview with collapsible statistics cards
+- **Reusable Widget Architecture**: Modular bottom sheets and dialogs for better code reusability
+- **Interactive Dashboard**: Clickable balance items with filtered transaction bottom sheets
 
-### 🔄 Dalam Pengembangan
-- Transaction List View
-- Budget Management Interface
+### 🔄 In Development
 - Reports & Analytics
 - Settings Screen
 - Google Account Linking UI
 
-### 📱 Layar Aplikasi
-1. **Splash Screen** - Loading dengan animasi
-2. **Onboarding** - Setup awal aplikasi
-3. **Dashboard** - Halaman utama dengan 5 tab:
-   - Home: Ringkasan saldo dan transaksi terbaru
-   - Transactions: Daftar semua transaksi
-   - Budget: Pengelolaan budget
-   - Reports: Laporan dan analisis
-   - Settings: Pengaturan aplikasi
+### 📱 Application Screens
+1. **Splash Screen** - Loading with animations
+2. **Onboarding** - Initial app setup
+3. **Dashboard** - Main page with 5 tabs:
+   - Home: Balance summary and recent transactions with interactive elements
+   - Transactions: Complete transaction list with filtering and search capabilities
+   - Budget: Budget management with visual progress indicators
+   - Reports: Reports and analytics
+   - Settings: Application settings
 
-### 💾 Arsitektur Data
+### 💾 Data Architecture
 - **Models**: ExpenseModel, IncomeModel, CategoryModel, UserModel, BudgetModel, TransactionModel, SyncDataModel
-- **Services**: DatabaseService, GoogleDriveService, SyncService, NotificationService
+- **Services**: DatabaseService, GoogleDriveService, SyncService, NotificationService, ImagePickerService
 - **Providers**: ExpenseProvider, IncomeProvider, CategoryProvider, BudgetProvider, SyncProvider, UserSettingsProvider
 
 ### 🎨 UI/UX Features
@@ -43,18 +46,23 @@ Aplikasi pengelola keuangan pribadi dengan backup ke Google Drive.
 - Google Fonts integration
 - Responsive design
 - Indonesian language support
-- Currency formatting (IDR)
+- Currency formatting (IDR) with thousand separators
+- Smooth animations and transitions
+- Custom sliver layouts for optimal scrolling
+- Interactive bottom sheets and modals
+- Haptic feedback integration
 
-## Teknologi
+## Technology Stack
 
-- **Flutter** - Framework UI
+- **Flutter** - UI Framework
 - **Hive** - Local database
 - **Provider** - State management
 - **Google Drive API** - Cloud backup
 - **Google Sign-In** - Authentication
 - **Local Notifications** - Push notifications
+- **Image Picker** - Receipt photo capture
 
-## Setup dan Instalasi
+## Setup and Installation
 
 1. Clone repository
 2. Install dependencies: `flutter pub get`
@@ -62,20 +70,19 @@ Aplikasi pengelola keuangan pribadi dengan backup ke Google Drive.
 4. Setup Google Drive API credentials
 5. Run: `flutter run`
 
-## Struktur Folder
+## Project Structure
 
 ```
 lib/
-├── models/          # Data models dengan Hive
+├── models/          # Data models with Hive
 ├── services/        # Backend services
 ├── providers/       # State management
 ├── screens/         # UI screens
 ├── widgets/         # Reusable widgets
-├── utils/           # Utilities dan theme
-└── main.dart        # Entry point
+└── utils/           # Utilities and theme
 ```
 
-## Progress
+## Progress Status
 
 - [x] Model Layer (100%)
 - [x] Service Layer (100%)
@@ -87,21 +94,36 @@ lib/
 - [x] Dashboard Structure (100%)
 - [x] Dashboard Widgets (100%)
 - [x] Add Transaction Modal (100%)
-- [ ] Transaction List (0%)
-- [ ] Budget Interface (0%)
-- [ ] Reports Screen (0%)
-- [ ] Settings Screen (0%)
+- [x] Transaction List Screen (100%)
+- [x] Budget Management System (100%)
+- [x] Budget List Interface (100%)
+- [x] Reusable Widget Architecture (100%)
+- [x] Interactive Dashboard Elements (100%)
+- [X] Reports Screen (80%)
+- [X] Settings Screen (50%)
 
-## Berikutnya
+## Recent Developments
 
-1. Implementasi layar daftar transaksi
-2. Interface pengelolaan budget
-3. Layar laporan dan analisis
-4. Pengaturan aplikasi
-5. Integrasi Google Drive UI
-6. Testing dan debugging
-7. Performance optimization
+### Enhanced User Experience
+- **Thousand Separator Input**: Automatic comma formatting for currency inputs
+- **Interactive Balance Cards**: Tap income/expense cards to view filtered transactions in bottom sheets
+- **Smart Budget Details**: Clickable budget progress cards showing detailed expense breakdowns
+- **Reusable Components**: Extracted common UI elements into standalone widgets for better maintainability
+
+### Architecture Improvements
+- **Widget Modularity**: Budget details, expense details, and delete dialogs as reusable components
+- **Responsive Layouts**: Custom sliver implementations for smooth scrolling experiences
+- **Animation System**: Smooth transitions with proper animation controllers
+
+## Next Steps
+
+1. Reports and analytics implementation
+2. Settings screen development
+3. Google Drive UI integration
+4. Performance optimization
+5. Testing and debugging
+6. Final polish and deployment
 
 ---
 
-**Status**: 🔥 **Siap untuk development UI lanjutan** - Backend architecture lengkap, dashboard utama sudah berjalan.
+**Status**: � **Ready for final features** - Core functionality complete with polished UI/UX, focusing on reports and settings.
