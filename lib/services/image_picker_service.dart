@@ -10,7 +10,6 @@ import 'package:device_info_plus/device_info_plus.dart';
 class ImagePickerService {
   static final ImagePicker _picker = ImagePicker();
 
-  /// Pick image from camera or gallery
   static Future<File?> pickImage({
     required ImageSource source,
     int maxWidth = 1024,
@@ -18,7 +17,6 @@ class ImagePickerService {
     int imageQuality = 85,
   }) async {
     try {
-      // Check and request permissions
       bool hasPermission = await _checkPermissions(source);
       if (!hasPermission) {
         if (kDebugMode) {
@@ -27,7 +25,6 @@ class ImagePickerService {
         return null;
       }
 
-      // Pick image
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: maxWidth.toDouble(),
@@ -38,7 +35,6 @@ class ImagePickerService {
 
       if (image == null) return null;
 
-      // Save to app directory
       final File savedFile = await _saveImageToAppDirectory(File(image.path));
       return savedFile;
     } catch (e) {
@@ -49,30 +45,24 @@ class ImagePickerService {
     }
   }
 
-  /// Check and request necessary permissions
   static Future<bool> _checkPermissions(ImageSource source) async {
     if (source == ImageSource.camera) {
-      // For camera, we need camera permission
       PermissionStatus cameraStatus = await Permission.camera.status;
       if (cameraStatus.isDenied) {
         cameraStatus = await Permission.camera.request();
       }
       return cameraStatus.isGranted;
     } else {
-      // For gallery, we need storage/photos permission
       if (Platform.isAndroid) {
-        // Check Android SDK version
         int androidVersion = await _getAndroidSdkVersion();
 
         if (androidVersion >= 33) {
-          // Android 13+ (API 33+) - use photos permission
           PermissionStatus photosStatus = await Permission.photos.status;
           if (photosStatus.isDenied) {
             photosStatus = await Permission.photos.request();
           }
           return photosStatus.isGranted;
         } else {
-          // Android < 13 - use storage permission
           PermissionStatus storageStatus = await Permission.storage.status;
           if (storageStatus.isDenied) {
             storageStatus = await Permission.storage.request();
@@ -84,7 +74,6 @@ class ImagePickerService {
     }
   }
 
-  /// Get Android SDK version
   static Future<int> _getAndroidSdkVersion() async {
     if (Platform.isAndroid) {
       try {
@@ -101,27 +90,22 @@ class ImagePickerService {
     return 0;
   }
 
-  /// Save image to app's private directory
   static Future<File> _saveImageToAppDirectory(File imageFile) async {
     final Directory appDir = await getApplicationDocumentsDirectory();
     final String receiptsDir = path.join(appDir.path, 'receipts');
 
-    // Create receipts directory if it doesn't exist
     final Directory receiptsDirectory = Directory(receiptsDir);
     if (!await receiptsDirectory.exists()) {
       await receiptsDirectory.create(recursive: true);
     }
 
-    // Generate unique filename
     final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     final String extension = path.extension(imageFile.path);
     final String fileName = 'receipt_$timestamp$extension';
     final String newPath = path.join(receiptsDir, fileName);
 
-    // Copy file to new location
     final File newFile = await imageFile.copy(newPath);
 
-    // Delete original temporary file
     try {
       await imageFile.delete();
     } catch (e) {
@@ -133,7 +117,6 @@ class ImagePickerService {
     return newFile;
   }
 
-  /// Delete image file
   static Future<bool> deleteImage(String imagePath) async {
     try {
       final File file = File(imagePath);
@@ -150,7 +133,6 @@ class ImagePickerService {
     }
   }
 
-  /// Get image size info
   static Future<Map<String, dynamic>?> getImageInfo(String imagePath) async {
     try {
       final File file = File(imagePath);
@@ -172,14 +154,12 @@ class ImagePickerService {
     }
   }
 
-  /// Format bytes to human readable string
   static String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  /// Show image source selection dialog
   static Future<ImageSource?> showImageSourceDialog(context) async {
     return await showModalBottomSheet<ImageSource>(
       context: context,
@@ -198,7 +178,6 @@ class ImagePickerService {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Handle bar
                   Container(
                     width: 40,
                     height: 4,
@@ -211,7 +190,6 @@ class ImagePickerService {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Text(
                     'Pilih Sumber Foto',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -219,8 +197,6 @@ class ImagePickerService {
                         ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Camera option
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -237,8 +213,6 @@ class ImagePickerService {
                     subtitle: const Text('Ambil foto menggunakan kamera'),
                     onTap: () => Navigator.of(context).pop(ImageSource.camera),
                   ),
-
-                  // Gallery option
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -255,10 +229,7 @@ class ImagePickerService {
                     subtitle: const Text('Pilih foto dari galeri'),
                     onTap: () => Navigator.of(context).pop(ImageSource.gallery),
                   ),
-
                   const SizedBox(height: 10),
-
-                  // Cancel button
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
@@ -275,7 +246,6 @@ class ImagePickerService {
     );
   }
 
-  /// Show permission denied dialog
   static Future<void> showPermissionDeniedDialog(
       BuildContext context, ImageSource source) async {
     String title = source == ImageSource.camera
@@ -313,7 +283,6 @@ class ImagePickerService {
     );
   }
 
-  /// Pick image with context for showing dialogs
   static Future<File?> pickImageWithContext({
     required BuildContext context,
     required ImageSource source,
@@ -322,15 +291,12 @@ class ImagePickerService {
     int imageQuality = 85,
   }) async {
     try {
-      // Check and request permissions
       bool hasPermission = await _checkPermissions(source);
       if (!hasPermission) {
-        // Show permission denied dialog
         await showPermissionDeniedDialog(context, source);
         return null;
       }
 
-      // Pick image
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: maxWidth.toDouble(),
@@ -341,14 +307,12 @@ class ImagePickerService {
 
       if (image == null) return null;
 
-      // Save to app directory
       final File savedFile = await _saveImageToAppDirectory(File(image.path));
       return savedFile;
     } catch (e) {
       if (kDebugMode) {
         print('Error picking image: $e');
       }
-      // Show error dialog
       if (context.mounted) {
         showDialog(
           context: context,
@@ -368,7 +332,6 @@ class ImagePickerService {
     }
   }
 
-  /// Show image source selection dialog and pick image
   static Future<File?> showImageSourceDialogAndPick(
       BuildContext context) async {
     final ImageSource? source = await showImageSourceDialog(context);

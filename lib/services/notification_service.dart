@@ -371,7 +371,6 @@ class NotificationService {
     }
   }
 
-  // Calculate spent amount for a category in a period (same logic as BudgetProvider)
   double _calculateSpentAmount(
       String categoryId, DateTime startDate, DateTime endDate) {
     final expenses = DatabaseService.instance.expenses.values.where((expense) {
