@@ -1,0 +1,156 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_settings_provider.dart';
+import 'app_localizations.dart';
+
+extension LocalizationExtension on BuildContext {
+  /// Get the current language code from user settings
+  String get languageCode {
+    return read<UserSettingsProvider>().language;
+  }
+
+  /// Translate a key to the current language
+  String tr(String key, {Map<String, String>? params}) {
+    return AppLocalizations.translate(key, languageCode, params: params);
+  }
+
+  /// Short alias for translate
+  String t(String key, {Map<String, String>? params}) {
+    return tr(key, params: params);
+  }
+
+  /// Get month name in current language
+  String getMonthName(int month) {
+    const monthKeys = [
+      'month_january',
+      'month_february',
+      'month_march',
+      'month_april',
+      'month_may',
+      'month_june',
+      'month_july',
+      'month_august',
+      'month_september',
+      'month_october',
+      'month_november',
+      'month_december'
+    ];
+
+    if (month >= 1 && month <= 12) {
+      return tr(monthKeys[month - 1]);
+    }
+    return month.toString();
+  }
+
+  /// Get day name in current language
+  String getDayName(int weekday) {
+    const dayKeys = [
+      'day_monday',
+      'day_tuesday',
+      'day_wednesday',
+      'day_thursday',
+      'day_friday',
+      'day_saturday',
+      'day_sunday'
+    ];
+
+    if (weekday >= 1 && weekday <= 7) {
+      return tr(dayKeys[weekday - 1]);
+    }
+    return weekday.toString();
+  }
+
+  /// Get currency name in current language
+  String getCurrencyName(String currencyCode) {
+    switch (currencyCode.toUpperCase()) {
+      case 'IDR':
+        return tr('currency_idr');
+      case 'USD':
+        return tr('currency_usd');
+      case 'EUR':
+        return tr('currency_eur');
+      case 'SGD':
+        return tr('currency_sgd');
+      case 'MYR':
+        return tr('currency_myr');
+      default:
+        return currencyCode;
+    }
+  }
+
+  /// Get theme name in current language
+  String getThemeName(String theme) {
+    switch (theme) {
+      case 'light':
+        return tr('theme_light');
+      case 'dark':
+        return tr('theme_dark');
+      case 'system':
+        return tr('theme_system');
+      default:
+        return theme;
+    }
+  }
+
+  /// Get language name in current language
+  String getLanguageName(String languageCode) {
+    switch (languageCode) {
+      case 'id':
+        return tr('language_indonesian');
+      case 'en':
+        return tr('language_english');
+      default:
+        return languageCode;
+    }
+  }
+
+  /// Get payment method name in current language
+  String getPaymentMethodName(String paymentMethod) {
+    switch (paymentMethod) {
+      case 'cash':
+        return tr('cash');
+      case 'credit_card':
+        return tr('credit_card');
+      case 'debit_card':
+        return tr('debit_card');
+      case 'e_wallet':
+        return tr('e_wallet');
+      case 'bank_transfer':
+        return tr('bank_transfer');
+      default:
+        return paymentMethod;
+    }
+  }
+
+  /// Get budget status name in current language
+  String getBudgetStatusName(String status) {
+    switch (status) {
+      case 'normal':
+        return tr('budget_status_normal');
+      case 'warning':
+        return tr('budget_status_warning');
+      case 'exceeded':
+        return tr('budget_status_exceeded');
+      case 'full':
+        return tr('budget_status_full');
+      default:
+        return status;
+    }
+  }
+
+  /// Get period name in current language
+  String getPeriodName(String period) {
+    switch (period) {
+      case 'daily':
+        return tr('daily');
+      case 'weekly':
+        return tr('weekly');
+      case 'monthly':
+        return tr('monthly');
+      case 'yearly':
+        return tr('yearly');
+      default:
+        return period;
+    }
+  }
+}

@@ -8,6 +8,7 @@ import './budget_details_sheet.dart';
 import '../utils/theme.dart';
 import '../screens/transaction_list_screen.dart';
 import '../screens/budget_list_screen.dart';
+import '../l10n/localization_extension.dart'; // Add this import
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -85,8 +86,8 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                   children: [
                     Text(
                       _showCurrentMonth
-                          ? 'Saldo Bulan Ini'
-                          : 'Saldo Keseluruhan',
+                          ? context.tr('balance_this_month')
+                          : context.tr('total_balance'),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white70,
                           ),
@@ -123,7 +124,9 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              _showCurrentMonth ? 'Total' : 'Bulan',
+                              _showCurrentMonth
+                                  ? context.tr('switch_to_total')
+                                  : context.tr('switch_to_monthly'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -155,7 +158,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                             BorderRadius.circular(AppSizes.radiusSmall),
                         child: _buildBalanceItem(
                           context,
-                          'Pemasukan',
+                          context.tr('income'),
                           displayIncomes,
                           AppColors.income,
                           Icons.arrow_upward,
@@ -173,7 +176,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                             BorderRadius.circular(AppSizes.radiusSmall),
                         child: _buildBalanceItem(
                           context,
-                          'Pengeluaran',
+                          context.tr('expense'),
                           displayExpenses,
                           AppColors.expense,
                           Icons.arrow_downward,
@@ -590,7 +593,7 @@ class QuickActionsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Aksi Cepat',
+              context.tr('quick_actions'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -602,7 +605,7 @@ class QuickActionsCard extends StatelessWidget {
                   Expanded(
                     child: _buildQuickAction(
                       context,
-                      'Tambah Pengeluaran',
+                      context.tr('add_expense'),
                       Icons.remove_circle,
                       AppColors.expense,
                       () => _showAddExpenseDialog(context),
@@ -612,7 +615,7 @@ class QuickActionsCard extends StatelessWidget {
                   Expanded(
                     child: _buildQuickAction(
                       context,
-                      'Tambah Pemasukan',
+                      context.tr('add_income'),
                       Icons.add_circle,
                       AppColors.income,
                       () => _showAddIncomeDialog(context),
@@ -622,7 +625,7 @@ class QuickActionsCard extends StatelessWidget {
                   Expanded(
                     child: _buildQuickAction(
                       context,
-                      'Buat Budget',
+                      context.tr('create_budget'),
                       Icons.pie_chart,
                       AppColors.budget,
                       () => _showAddBudgetDialog(context),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../utils/theme.dart';
+import '../l10n/localization_extension.dart'; // Add localization import
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -101,8 +102,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ListTile(
         leading:
             const Icon(Icons.currency_exchange, color: AppTheme.primaryColor),
-        title: const Text('Mata Uang'),
-        subtitle: Text(_getCurrencyName(userSettings.currency)),
+        title: Text(context.tr('currency')),
+        subtitle: Text(context.getCurrencyName(userSettings.currency)),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _showCurrencyDialog(userSettings),
       ),
@@ -113,8 +114,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.language, color: AppTheme.primaryColor),
-        title: const Text('Bahasa'),
-        subtitle: Text(_getLanguageName(userSettings.language)),
+        title: Text(context.tr('language')),
+        subtitle: Text(context.getLanguageName(userSettings.language)),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _showLanguageDialog(userSettings),
       ),
@@ -125,8 +126,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.palette, color: AppTheme.primaryColor),
-        title: const Text('Tema'),
-        subtitle: Text(_getThemeName(userSettings.theme)),
+        title: Text(context.tr('theme')),
+        subtitle: Text(context.getThemeName(userSettings.theme)),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _showThemeDialog(userSettings),
       ),
@@ -303,17 +304,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  String _getLanguageName(String language) {
-    switch (language) {
-      case 'id':
-        return 'Bahasa Indonesia';
-      case 'en':
-        return 'English';
-      default:
-        return language;
-    }
-  }
-
   String _getThemeName(String theme) {
     switch (theme) {
       case 'light':
@@ -357,12 +347,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Pilih Bahasa'),
+        title: Text(context.tr('language')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: userSettings.getSupportedLanguages().map((language) {
             return RadioListTile<String>(
-              title: Text(_getLanguageName(language)),
+              title: Text(context.getLanguageName(language)),
               value: language,
               groupValue: userSettings.language,
               onChanged: (value) {

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../utils/theme.dart';
 import '../widgets/dashboard_widgets.dart'; // Add this import for showFilteredTransactionsSheet
+import '../l10n/localization_extension.dart'; // Add localization import
 import 'package:fl_chart/fl_chart.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -165,18 +166,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Laporan'),
+        title: Text(context.tr('reports_title')),
         automaticallyImplyLeading: false,
         foregroundColor: Colors.white,
         elevation: 2,
         actions: [
           IconButton(
             onPressed: () async {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(const SnackBar(content: Text('Export CSV')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.tr('export_csv'))));
             },
             icon: const Icon(Icons.download),
-            tooltip: 'Export CSV',
+            tooltip: context.tr('export_csv'),
           ),
         ],
       ),
@@ -234,7 +235,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Filter Periode',
+              context.tr('filter_period'),
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: AppSizes.paddingSmall),
@@ -322,7 +323,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            card('Saldo', userSettings.formatCurrency(net),
+            card(context.tr('balance'), userSettings.formatCurrency(net),
                 net >= 0 ? AppColors.success : AppColors.error),
             const SizedBox(height: AppSizes.paddingSmall),
             Row(children: [
