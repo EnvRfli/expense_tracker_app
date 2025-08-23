@@ -8,23 +8,19 @@ class ExpenseProvider extends BaseProvider {
   List<ExpenseModel> _expenses = [];
   ExpenseModel? _selectedExpense;
 
-  // Callback untuk refresh providers lain setelah expense ditambahkan
   Function()? onExpenseChanged;
 
   List<ExpenseModel> get expenses => _expenses;
   ExpenseModel? get selectedExpense => _selectedExpense;
 
-  // Initialize provider
   Future<void> initialize() async {
     await loadExpenses();
   }
 
-  // Load all expenses
   Future<void> loadExpenses() async {
     await handleAsync(() async {
       _expenses = DatabaseService.instance.expenses.values.toList()
         ..sort((a, b) => b.date.compareTo(a.date));
-      // Don't call notifyListeners() here - handleAsync will handle it
     });
   }
 
@@ -300,11 +296,12 @@ class ExpenseProvider extends BaseProvider {
   // Update budget spent amount
   Future<void> _updateBudgetSpent(String categoryId) async {
     final budgets = DatabaseService.instance.budgets.values
-        .where((budget) => budget.categoryId == categoryId && budget.isActive)
+        .where((budget) => budget.categoryId == categoryId)
         .toList();
 
     print('=== Update Budget Spent Debug ===');
-    print('Found ${budgets.length} active budgets for category $categoryId');
+    print(
+        'Found ${budgets.length} budgets (active and inactive) for category $categoryId');
 
     for (final budget in budgets) {
       // Get expenses directly from database to ensure we have the latest data
@@ -352,7 +349,7 @@ class ExpenseProvider extends BaseProvider {
   Future<void> _refreshBudgetData(String categoryId) async {
     // Force reload from database
     final budgets = DatabaseService.instance.budgets.values
-        .where((budget) => budget.categoryId == categoryId && budget.isActive)
+        .where((budget) => budget.categoryId == categoryId)
         .toList();
 
     // Recalculate spent amounts with latest expense data from database

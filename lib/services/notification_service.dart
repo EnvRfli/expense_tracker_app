@@ -350,7 +350,8 @@ class NotificationService {
     try {
       final budgets = DatabaseService.instance.budgets.values.toList();
       for (final budget in budgets) {
-        if (!budget.isActive) continue;
+        // Remove the isActive check - update all budgets including inactive ones
+        // if (!budget.isActive) continue;
 
         // Calculate spent amount using the corrected logic
         final spent = _calculateSpentAmount(

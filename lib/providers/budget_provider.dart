@@ -492,7 +492,8 @@ class BudgetProvider extends BaseProvider {
     await handleAsync(() async {
       for (int i = 0; i < _budgets.length; i++) {
         final budget = _budgets[i];
-        if (!budget.isActive) continue;
+        // Remove the isActive check - update all budgets including inactive ones
+        // if (!budget.isActive) continue;
 
         final spent = _calculateSpentAmount(
           budget.categoryId,
