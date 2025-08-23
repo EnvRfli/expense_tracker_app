@@ -240,18 +240,10 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
   }
 
   void _navigateToFilteredTransactions(BuildContext context, bool isIncome) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSizes.radiusLarge),
-        ),
-      ),
-      builder: (context) => _FilteredTransactionsSheet(
-        isIncome: isIncome,
-        showCurrentMonth: _showCurrentMonth,
-      ),
+    showFilteredTransactionsSheet(
+      context,
+      isIncome: isIncome,
+      showCurrentMonth: _showCurrentMonth,
     );
   }
 }
@@ -259,10 +251,12 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
 class _FilteredTransactionsSheet extends StatelessWidget {
   final bool isIncome;
   final bool showCurrentMonth;
+  final DateTimeRange? dateRange; // Add date range parameter
 
   const _FilteredTransactionsSheet({
     required this.isIncome,
     required this.showCurrentMonth,
+    this.dateRange, // Optional date range
   });
 
   @override
@@ -308,7 +302,7 @@ class _FilteredTransactionsSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${isIncome ? 'Pemasukan' : 'Pengeluaran'} ${showCurrentMonth ? 'Bulan Ini' : 'Keseluruhan'}',
+                      '${isIncome ? 'Pemasukan' : 'Pengeluaran'} ${_getDisplayTitle()}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -316,15 +310,8 @@ class _FilteredTransactionsSheet extends StatelessWidget {
                     Consumer2<ExpenseProvider, IncomeProvider>(
                       builder:
                           (context, expenseProvider, incomeProvider, child) {
-                        final total = isIncome
-                            ? (showCurrentMonth
-                                ? incomeProvider.getCurrentMonthTotal()
-                                : incomeProvider
-                                    .getTotalAmount(incomeProvider.incomes))
-                            : (showCurrentMonth
-                                ? expenseProvider.getCurrentMonthTotal()
-                                : expenseProvider
-                                    .getTotalAmount(expenseProvider.expenses));
+                        final total =
+                            _calculateTotal(expenseProvider, incomeProvider);
 
                         return Consumer<UserSettingsProvider>(
                           builder: (context, userSettings, child) {
@@ -356,27 +343,8 @@ class _FilteredTransactionsSheet extends StatelessWidget {
             child: Consumer3<ExpenseProvider, IncomeProvider, CategoryProvider>(
               builder: (context, expenseProvider, incomeProvider,
                   categoryProvider, child) {
-                List<dynamic> transactions;
-
-                if (isIncome) {
-                  final allIncomes = incomeProvider.incomes;
-                  transactions = showCurrentMonth
-                      ? allIncomes
-                          .where((income) =>
-                              income.date.month == DateTime.now().month &&
-                              income.date.year == DateTime.now().year)
-                          .toList()
-                      : allIncomes;
-                } else {
-                  final allExpenses = expenseProvider.expenses;
-                  transactions = showCurrentMonth
-                      ? allExpenses
-                          .where((expense) =>
-                              expense.date.month == DateTime.now().month &&
-                              expense.date.year == DateTime.now().year)
-                          .toList()
-                      : allExpenses;
-                }
+                List<dynamic> transactions =
+                    _getFilteredTransactions(expenseProvider, incomeProvider);
 
                 // Sort by date (newest first)
                 transactions.sort((a, b) => b.date.compareTo(a.date));
@@ -401,7 +369,7 @@ class _FilteredTransactionsSheet extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSizes.paddingSmall),
                         Text(
-                          '${showCurrentMonth ? 'bulan ini' : 'yang tercatat'}',
+                          _getDisplayTitle().toLowerCase(),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Colors.grey[500],
@@ -512,6 +480,102 @@ class _FilteredTransactionsSheet extends StatelessWidget {
       ),
     );
   }
+
+  // Helper method to get display title based on filter type
+  String _getDisplayTitle() {
+    if (dateRange != null) {
+      final start = dateRange!.start;
+      final end = dateRange!.end;
+      return '${start.day}/${start.month}/${start.year} - ${end.day}/${end.month}/${end.year}';
+    } else if (showCurrentMonth) {
+      return 'Bulan Ini';
+    } else {
+      return 'Keseluruhan';
+    }
+  }
+
+  // Helper method to calculate total based on filter
+  double _calculateTotal(
+      ExpenseProvider expenseProvider, IncomeProvider incomeProvider) {
+    if (isIncome) {
+      if (dateRange != null) {
+        final incomes = incomeProvider.getIncomesByDateRange(
+            dateRange!.start, dateRange!.end);
+        return incomeProvider.getTotalAmount(incomes);
+      } else if (showCurrentMonth) {
+        return incomeProvider.getCurrentMonthTotal();
+      } else {
+        return incomeProvider.getTotalAmount(incomeProvider.incomes);
+      }
+    } else {
+      if (dateRange != null) {
+        final expenses = expenseProvider.getExpensesByDateRange(
+            dateRange!.start, dateRange!.end);
+        return expenseProvider.getTotalAmount(expenses);
+      } else if (showCurrentMonth) {
+        return expenseProvider.getCurrentMonthTotal();
+      } else {
+        return expenseProvider.getTotalAmount(expenseProvider.expenses);
+      }
+    }
+  }
+
+  // Helper method to get filtered transactions
+  List<dynamic> _getFilteredTransactions(
+      ExpenseProvider expenseProvider, IncomeProvider incomeProvider) {
+    if (isIncome) {
+      if (dateRange != null) {
+        return incomeProvider.getIncomesByDateRange(
+            dateRange!.start, dateRange!.end);
+      } else if (showCurrentMonth) {
+        final allIncomes = incomeProvider.incomes;
+        return allIncomes
+            .where((income) =>
+                income.date.month == DateTime.now().month &&
+                income.date.year == DateTime.now().year)
+            .toList();
+      } else {
+        return incomeProvider.incomes;
+      }
+    } else {
+      if (dateRange != null) {
+        return expenseProvider.getExpensesByDateRange(
+            dateRange!.start, dateRange!.end);
+      } else if (showCurrentMonth) {
+        final allExpenses = expenseProvider.expenses;
+        return allExpenses
+            .where((expense) =>
+                expense.date.month == DateTime.now().month &&
+                expense.date.year == DateTime.now().year)
+            .toList();
+      } else {
+        return expenseProvider.expenses;
+      }
+    }
+  }
+}
+
+// Helper function to show filtered transactions sheet
+void showFilteredTransactionsSheet(
+  BuildContext context, {
+  required bool isIncome,
+  bool showCurrentMonth = false,
+  DateTimeRange? dateRange,
+}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppSizes.radiusLarge),
+      ),
+    ),
+    builder: (context) => _FilteredTransactionsSheet(
+      isIncome: isIncome,
+      showCurrentMonth: showCurrentMonth,
+      dateRange: dateRange,
+    ),
+  );
 }
 
 class QuickActionsCard extends StatelessWidget {

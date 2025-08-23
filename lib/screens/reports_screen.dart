@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../utils/theme.dart';
+import '../widgets/dashboard_widgets.dart'; // Add this import for showFilteredTransactionsSheet
 import 'package:fl_chart/fl_chart.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -291,23 +292,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
         final totalIncome = incomeProvider.getTotalAmount(incomes);
         final net = totalIncome - totalExpense;
 
-        Widget card(String title, String value, Color color) {
+        Widget card(String title, String value, Color color,
+            {VoidCallback? onTap}) {
           return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.paddingMedium),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: AppSizes.paddingSmall),
-                  Text(
-                    value,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(color: color, fontSize: 18),
-                  ),
-                ],
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.paddingMedium),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: AppSizes.paddingSmall),
+                    Text(
+                      value,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(color: color, fontSize: 18),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -325,14 +331,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   child: card(
                       'Pemasukan',
                       userSettings.formatCurrency(totalIncome),
-                      AppColors.income)),
+                      AppColors.income,
+                      onTap: () => showFilteredTransactionsSheet(
+                            context,
+                            isIncome: true,
+                            dateRange: _range,
+                          ))),
               const SizedBox(width: AppSizes.paddingSmall),
               Expanded(
                   flex: 1,
                   child: card(
                       'Pengeluaran',
                       userSettings.formatCurrency(totalExpense),
-                      AppColors.expense)),
+                      AppColors.expense,
+                      onTap: () => showFilteredTransactionsSheet(
+                            context,
+                            isIncome: false,
+                            dateRange: _range,
+                          ))),
             ]),
           ],
         );
