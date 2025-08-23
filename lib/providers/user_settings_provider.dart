@@ -3,6 +3,7 @@ import '../services/services.dart';
 import 'base_provider.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 
 class UserSettingsProvider extends BaseProvider {
   UserModel? _user;
@@ -632,36 +633,92 @@ class UserSettingsProvider extends BaseProvider {
       }
 
       final content = await file.readAsString();
-      final lines =
-          content.split('\n').where((line) => line.trim().isNotEmpty).toList();
-
-      if (lines.isEmpty) {
-        throw Exception('File is empty');
-      }
-
-      final fileName = file.path.split('/').last.split('\\').last.toLowerCase();
-      final Map<String, int> importResults = {
-        'total': 0,
-        'success': 0,
-        'failed': 0,
-      };
-
-      if (fileName.contains('expenses')) {
-        importResults.addAll(await _importExpensesFromCSV(lines));
-      } else if (fileName.contains('incomes')) {
-        importResults.addAll(await _importIncomesFromCSV(lines));
-      } else if (fileName.contains('categories')) {
-        importResults.addAll(await _importCategoriesFromCSV(lines));
-      } else if (fileName.contains('budgets')) {
-        importResults.addAll(await _importBudgetsFromCSV(lines));
-      } else {
-        throw Exception('Unknown file type');
-      }
-
-      return importResults;
+      return await _processCSVContent(content, filePath);
     });
 
     return result ?? {'total': 0, 'success': 0, 'failed': 0};
+  }
+
+  // Import data from CSV content directly (USER FRIENDLY!)
+  Future<Map<String, int>> importDataFromCSVContent(String csvContent) async {
+    final result = await handleAsync(() async {
+      if (csvContent.trim().isEmpty) {
+        throw Exception('CSV content is empty');
+      }
+
+      return await _processCSVContent(csvContent, null);
+    });
+
+    return result ?? {'total': 0, 'success': 0, 'failed': 0};
+  }
+
+  // Process CSV content (shared logic)
+  Future<Map<String, int>> _processCSVContent(
+      String content, String? filePath) async {
+    final lines =
+        content.split('\n').where((line) => line.trim().isNotEmpty).toList();
+
+    if (lines.isEmpty) {
+      throw Exception('Content is empty');
+    }
+
+    // Detect file type from header or filename
+    String fileType = 'unknown';
+    if (filePath != null) {
+      final fileName = filePath.split('/').last.split('\\').last.toLowerCase();
+      if (fileName.contains('expenses'))
+        fileType = 'expenses';
+      else if (fileName.contains('incomes'))
+        fileType = 'incomes';
+      else if (fileName.contains('categories'))
+        fileType = 'categories';
+      else if (fileName.contains('budgets')) fileType = 'budgets';
+    }
+
+    // Auto-detect from CSV header if filename detection failed
+    if (fileType == 'unknown' && lines.isNotEmpty) {
+      final header = lines[0].toLowerCase();
+      if (header.contains('amount') &&
+          header.contains('description') &&
+          !header.contains('budget')) {
+        if (header.contains('category') || header.contains('expense')) {
+          fileType = 'expenses';
+        } else if (header.contains('income') || header.contains('source')) {
+          fileType = 'incomes';
+        }
+      } else if (header.contains('name') &&
+          (header.contains('color') || header.contains('icon'))) {
+        fileType = 'categories';
+      } else if (header.contains('budget') || header.contains('limit')) {
+        fileType = 'budgets';
+      }
+    }
+
+    final Map<String, int> importResults = {
+      'total': 0,
+      'success': 0,
+      'failed': 0,
+    };
+
+    switch (fileType) {
+      case 'expenses':
+        importResults.addAll(await _importExpensesFromCSV(lines));
+        break;
+      case 'incomes':
+        importResults.addAll(await _importIncomesFromCSV(lines));
+        break;
+      case 'categories':
+        importResults.addAll(await _importCategoriesFromCSV(lines));
+        break;
+      case 'budgets':
+        importResults.addAll(await _importBudgetsFromCSV(lines));
+        break;
+      default:
+        throw Exception(
+            'Cannot determine file type. Please check CSV format or include type hint in header.');
+    }
+
+    return importResults;
   }
 
   // Import expenses from CSV
@@ -981,5 +1038,725 @@ class UserSettingsProvider extends BaseProvider {
     });
 
     return result ?? false;
+  }
+
+  // ===== USER FRIENDLY METHODS =====
+
+  // Export to Downloads folder (USER FRIENDLY!)
+  Future<Map<String, String>> exportDataToDownloads() async {
+    final result = await handleAsync(() async {
+      // For Android, try to export to accessible location
+      if (Platform.isAndroid) {
+        try {
+          Directory? exportDir;
+
+          // Try to get a public accessible directory
+          // On Android 10+ (API 29+), we need to use app-specific external directory
+          // but create a subfolder that's more accessible
+          final externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            // Navigate up to get to the public storage area
+            final pathParts = externalDir.path.split('/');
+            print('External path parts: $pathParts');
+
+            // Try to find the storage root
+            final storageIndex =
+                pathParts.indexWhere((part) => part == 'storage');
+            if (storageIndex >= 0 && pathParts.length > storageIndex + 2) {
+              // Build path to Download folder
+              final storagePath =
+                  pathParts.sublist(0, storageIndex + 3).join('/');
+              final downloadPath = '$storagePath/Download';
+              final downloadDir = Directory(downloadPath);
+
+              print('Trying Download path: $downloadPath');
+              print('Download dir exists: ${await downloadDir.exists()}');
+
+              if (await downloadDir.exists()) {
+                exportDir = Directory('$downloadPath/ExpenseTracker');
+                print('Using Download folder: ${exportDir.path}');
+              }
+            }
+          }
+
+          // Fallback to Documents directory if Download not accessible
+          if (exportDir == null) {
+            final documentsDir = await getApplicationDocumentsDirectory();
+            exportDir = Directory('${documentsDir.path}/ExpenseTracker_Export');
+            print('Fallback to Documents: ${exportDir.path}');
+          }
+
+          // Create export directory
+          if (!await exportDir.exists()) {
+            await exportDir.create(recursive: true);
+            print('Created export directory: ${exportDir.path}');
+          }
+
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final Map<String, String> exportedFiles = {};
+
+          // Export expenses
+          final expensesPath =
+              await _exportExpensesToDownloads(exportDir, timestamp);
+          if (expensesPath != null) {
+            exportedFiles['expenses'] = expensesPath;
+            print('Exported expenses to: $expensesPath');
+          }
+
+          // Export incomes
+          final incomesPath =
+              await _exportIncomesToDownloads(exportDir, timestamp);
+          if (incomesPath != null) {
+            exportedFiles['incomes'] = incomesPath;
+            print('Exported incomes to: $incomesPath');
+          }
+
+          // Export categories
+          final categoriesPath =
+              await _exportCategoriesToDownloads(exportDir, timestamp);
+          if (categoriesPath != null) {
+            exportedFiles['categories'] = categoriesPath;
+            print('Exported categories to: $categoriesPath');
+          }
+
+          // Export budgets
+          final budgetsPath =
+              await _exportBudgetsToDownloads(exportDir, timestamp);
+          if (budgetsPath != null) {
+            exportedFiles['budgets'] = budgetsPath;
+            print('Exported budgets to: $budgetsPath');
+          }
+
+          print('Total exported files: ${exportedFiles.length}');
+          return exportedFiles;
+        } catch (e) {
+          print('Error in Android export: $e');
+          throw Exception('Export failed: ${e.toString()}');
+        }
+      } else {
+        // For other platforms, use Documents
+        final documentsDir = await getApplicationDocumentsDirectory();
+        final appExportDir = Directory('${documentsDir.path}/ExpenseTracker');
+        if (!await appExportDir.exists()) {
+          await appExportDir.create(recursive: true);
+        }
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final Map<String, String> exportedFiles = {};
+
+        // Export all data types
+        final expensesPath =
+            await _exportExpensesToDownloads(appExportDir, timestamp);
+        if (expensesPath != null) {
+          exportedFiles['expenses'] = expensesPath;
+        }
+
+        final incomesPath =
+            await _exportIncomesToDownloads(appExportDir, timestamp);
+        if (incomesPath != null) {
+          exportedFiles['incomes'] = incomesPath;
+        }
+
+        final categoriesPath =
+            await _exportCategoriesToDownloads(appExportDir, timestamp);
+        if (categoriesPath != null) {
+          exportedFiles['categories'] = categoriesPath;
+        }
+
+        final budgetsPath =
+            await _exportBudgetsToDownloads(appExportDir, timestamp);
+        if (budgetsPath != null) {
+          exportedFiles['budgets'] = budgetsPath;
+        }
+
+        return exportedFiles;
+      }
+    });
+
+    return result ?? {};
+  }
+
+  // Import using file picker (USER FRIENDLY!) with confirmation
+  Future<Map<String, dynamic>?> importDataWithFilePicker() async {
+    final result = await handleAsync(() async {
+      try {
+        // Open file picker for CSV files
+        FilePickerResult? result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['csv'],
+          allowMultiple: false,
+        );
+
+        if (result == null || result.files.isEmpty) {
+          throw Exception('No file selected');
+        }
+
+        final file = result.files.first;
+        if (file.path == null) {
+          throw Exception('Invalid file path');
+        }
+
+        // Read and preview the file first
+        final csvFile = File(file.path!);
+        final content = await csvFile.readAsString();
+
+        // Analyze content and show preview
+        final previewData = await _analyzeCSVContent(content, file.path);
+
+        return previewData;
+      } catch (e) {
+        print('Error in file picker import: $e');
+        throw Exception('Import failed: ${e.toString()}');
+      }
+    });
+
+    return result;
+  }
+
+  // Analyze CSV content and return preview info
+  Future<Map<String, dynamic>> _analyzeCSVContent(
+      String content, String? filePath) async {
+    final lines = content.split('\n');
+    if (lines.isEmpty) {
+      throw Exception('Empty CSV file');
+    }
+
+    // Determine file type
+    String fileName = filePath?.split('/').last.toLowerCase() ?? '';
+    String fileType = '';
+
+    if (fileName.contains('expense')) {
+      fileType = 'expenses';
+    } else if (fileName.contains('income')) {
+      fileType = 'incomes';
+    } else if (fileName.contains('categor')) {
+      fileType = 'categories';
+    } else if (fileName.contains('budget')) {
+      fileType = 'budgets';
+    } else {
+      // Try to detect from header
+      final header = lines.first.toLowerCase();
+      if (header.contains('payment method') || header.contains('receipt')) {
+        fileType = 'expenses';
+      } else if (header.contains('source')) {
+        fileType = 'incomes';
+      } else if (header.contains('icon') && header.contains('color')) {
+        fileType = 'categories';
+      } else if (header.contains('budget amount') || header.contains('spent')) {
+        fileType = 'budgets';
+      }
+    }
+
+    if (fileType.isEmpty) {
+      throw Exception(
+          'Could not determine file type. Please ensure the CSV file is properly formatted.');
+    }
+
+    // Count total records and check for duplicates
+    int totalRecords = lines.length - 1; // Excluding header
+    int duplicateCount = 0;
+    List<String> existingIds = [];
+
+    for (int i = 1; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (line.isEmpty) continue;
+
+      try {
+        final fields = _parseCSVLineForFilePicker(line);
+        if (fields.isNotEmpty) {
+          final id = fields[0];
+
+          // Check for duplicates based on file type
+          bool isDuplicate = false;
+          switch (fileType) {
+            case 'expenses':
+              isDuplicate = DatabaseService.instance.expenses.containsKey(id);
+              break;
+            case 'incomes':
+              isDuplicate = DatabaseService.instance.incomes.containsKey(id);
+              break;
+            case 'categories':
+              isDuplicate = DatabaseService.instance.categories.containsKey(id);
+              break;
+            case 'budgets':
+              isDuplicate = DatabaseService.instance.budgets.containsKey(id);
+              break;
+          }
+
+          if (isDuplicate) {
+            duplicateCount++;
+            existingIds.add(id);
+          }
+        }
+      } catch (e) {
+        // Continue processing other lines
+      }
+    }
+
+    return {
+      'fileType': fileType,
+      'totalRecords': totalRecords,
+      'duplicateCount': duplicateCount,
+      'newRecords': totalRecords - duplicateCount,
+      'content': content,
+      'filePath': filePath,
+      'existingIds':
+          existingIds.take(10).toList(), // Show only first 10 duplicates
+    };
+  }
+
+  // Process confirmed import
+  Future<Map<String, int>> processConfirmedImport(
+      String content, String? filePath) async {
+    return await _processCSVContentForFilePicker(content, filePath);
+  } // Helper methods for Downloads export
+
+  Future<String?> _exportExpensesToDownloads(
+      Directory exportDir, int timestamp) async {
+    try {
+      final expenses = DatabaseService.instance.expenses.values.toList();
+      if (expenses.isEmpty) return null;
+
+      final categories = DatabaseService.instance.categories.values.toList();
+      final csvData = StringBuffer();
+
+      // Header
+      csvData.writeln(
+          'ID,Amount,Category,Description,Date,Payment Method,Location,Notes,Receipt Photo,Is Recurring,Recurring Pattern,Created At,Updated At');
+
+      // Data
+      for (final expense in expenses) {
+        final category = categories.firstWhere(
+          (cat) => cat.id == expense.categoryId,
+          orElse: () => CategoryModel(
+            id: 'unknown',
+            name: 'Unknown',
+            type: 'expense',
+            iconCodePoint: '57429',
+            colorValue: '#666666',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        csvData.writeln([
+          expense.id,
+          expense.amount,
+          category.name,
+          expense.description,
+          expense.date.toIso8601String(),
+          expense.paymentMethod,
+          expense.location ?? '',
+          expense.notes ?? '',
+          expense.receiptPhotoPath ?? '',
+          expense.isRecurring,
+          expense.recurringPattern ?? '',
+          expense.createdAt.toIso8601String(),
+          expense.updatedAt.toIso8601String(),
+        ].map((field) => '"$field"').join(','));
+      }
+
+      final file = File('${exportDir.path}/expenses_$timestamp.csv');
+      await file.writeAsString(csvData.toString());
+      return file.path;
+    } catch (e) {
+      print('Error exporting expenses to downloads: $e');
+      return null;
+    }
+  }
+
+  Future<String?> _exportIncomesToDownloads(
+      Directory exportDir, int timestamp) async {
+    try {
+      final incomes = DatabaseService.instance.incomes.values.toList();
+      if (incomes.isEmpty) return null;
+
+      final categories = DatabaseService.instance.categories.values.toList();
+      final csvData = StringBuffer();
+
+      csvData.writeln(
+          'ID,Amount,Category,Description,Date,Source,Is Recurring,Recurring Pattern,Created At,Updated At');
+
+      for (final income in incomes) {
+        final category = categories.firstWhere(
+          (cat) => cat.id == income.categoryId,
+          orElse: () => CategoryModel(
+            id: 'unknown',
+            name: 'Unknown',
+            type: 'income',
+            iconCodePoint: '57429',
+            colorValue: '#666666',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        csvData.writeln([
+          income.id,
+          income.amount,
+          category.name,
+          income.description,
+          income.date.toIso8601String(),
+          income.source,
+          income.isRecurring,
+          income.recurringPattern ?? '',
+          income.createdAt.toIso8601String(),
+          income.updatedAt.toIso8601String(),
+        ].map((field) => '"$field"').join(','));
+      }
+
+      final file = File('${exportDir.path}/incomes_$timestamp.csv');
+      await file.writeAsString(csvData.toString());
+      return file.path;
+    } catch (e) {
+      print('Error exporting incomes to downloads: $e');
+      return null;
+    }
+  }
+
+  Future<String?> _exportCategoriesToDownloads(
+      Directory exportDir, int timestamp) async {
+    try {
+      final categories = DatabaseService.instance.categories.values.toList();
+      if (categories.isEmpty) return null;
+
+      final csvData = StringBuffer();
+      csvData.writeln('ID,Name,Icon,Color,Type,Created At,Updated At');
+
+      for (final category in categories) {
+        csvData.writeln([
+          category.id,
+          category.name,
+          category.iconCodePoint,
+          category.colorValue,
+          category.type,
+          category.createdAt.toIso8601String(),
+          category.updatedAt.toIso8601String(),
+        ].map((field) => '"$field"').join(','));
+      }
+
+      final file = File('${exportDir.path}/categories_$timestamp.csv');
+      await file.writeAsString(csvData.toString());
+      return file.path;
+    } catch (e) {
+      print('Error exporting categories to downloads: $e');
+      return null;
+    }
+  }
+
+  Future<String?> _exportBudgetsToDownloads(
+      Directory exportDir, int timestamp) async {
+    try {
+      final budgets = DatabaseService.instance.budgets.values.toList();
+      if (budgets.isEmpty) return null;
+
+      final categories = DatabaseService.instance.categories.values.toList();
+      final csvData = StringBuffer();
+      csvData.writeln(
+          'ID,Category,Budget Amount,Spent Amount,Start Date,End Date,Alert Percentage,Is Active,Created At,Updated At');
+
+      for (final budget in budgets) {
+        final category = categories.firstWhere(
+          (cat) => cat.id == budget.categoryId,
+          orElse: () => CategoryModel(
+            id: 'unknown',
+            name: 'Unknown',
+            type: 'expense',
+            iconCodePoint: '57429',
+            colorValue: '#666666',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        csvData.writeln([
+          budget.id,
+          category.name,
+          budget.amount,
+          budget.spent,
+          budget.startDate.toIso8601String(),
+          budget.endDate.toIso8601String(),
+          budget.alertPercentage,
+          budget.isActive,
+          budget.createdAt.toIso8601String(),
+          budget.updatedAt.toIso8601String(),
+        ].map((field) => '"$field"').join(','));
+      }
+
+      final file = File('${exportDir.path}/budgets_$timestamp.csv');
+      await file.writeAsString(csvData.toString());
+      return file.path;
+    } catch (e) {
+      print('Error exporting budgets to downloads: $e');
+      return null;
+    }
+  }
+
+  // Helper method to process CSV content with duplicate detection
+  Future<Map<String, int>> _processCSVContentForFilePicker(
+      String content, String? filePath) async {
+    Map<String, int> result = {
+      'total': 0,
+      'success': 0,
+      'failed': 0,
+      'skipped': 0
+    };
+
+    final lines = content.split('\n');
+    if (lines.isEmpty) {
+      throw Exception('Empty CSV file');
+    }
+
+    // Determine file type from filename or content
+    String fileName = filePath?.split('/').last.toLowerCase() ?? '';
+    String fileType = '';
+
+    if (fileName.contains('expense')) {
+      fileType = 'expenses';
+    } else if (fileName.contains('income')) {
+      fileType = 'incomes';
+    } else if (fileName.contains('categor')) {
+      fileType = 'categories';
+    } else if (fileName.contains('budget')) {
+      fileType = 'budgets';
+    } else {
+      // Try to detect from header
+      final header = lines.first.toLowerCase();
+      if (header.contains('payment method') || header.contains('receipt')) {
+        fileType = 'expenses';
+      } else if (header.contains('source')) {
+        fileType = 'incomes';
+      } else if (header.contains('icon') && header.contains('color')) {
+        fileType = 'categories';
+      } else if (header.contains('budget amount') || header.contains('spent')) {
+        fileType = 'budgets';
+      }
+    }
+
+    if (fileType.isEmpty) {
+      throw Exception(
+          'Could not determine file type. Please ensure the CSV file is properly formatted.');
+    }
+
+    // Process data based on type
+    for (int i = 1; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (line.isEmpty) continue;
+
+      result['total'] = result['total']! + 1;
+
+      try {
+        bool imported = false;
+        switch (fileType) {
+          case 'expenses':
+            imported = await _importExpenseFromCSVLineForFilePicker(line);
+            break;
+          case 'incomes':
+            imported = await _importIncomeFromCSVLineForFilePicker(line);
+            break;
+          case 'categories':
+            imported = await _importCategoryFromCSVLineForFilePicker(line);
+            break;
+          case 'budgets':
+            imported = await _importBudgetFromCSVLineForFilePicker(line);
+            break;
+        }
+
+        if (imported) {
+          result['success'] = result['success']! + 1;
+        } else {
+          result['skipped'] = result['skipped']! + 1;
+        }
+      } catch (e) {
+        print('Error importing line ${i + 1}: $e');
+        result['failed'] = result['failed']! + 1;
+      }
+    }
+
+    return result;
+  }
+
+  // Helper methods to import each type with duplicate detection
+  Future<bool> _importExpenseFromCSVLineForFilePicker(String line) async {
+    final fields = _parseCSVLineForFilePicker(line);
+    if (fields.length < 10) throw Exception('Invalid expense CSV format');
+
+    final id = fields[0].isEmpty
+        ? DateTime.now().millisecondsSinceEpoch.toString()
+        : fields[0];
+
+    // Check if ID already exists
+    if (DatabaseService.instance.expenses.containsKey(id)) {
+      print('Skipping expense with duplicate ID: $id');
+      return false; // Skip duplicate
+    }
+
+    final expense = ExpenseModel(
+      id: id,
+      amount: double.parse(fields[1]),
+      categoryId:
+          await _findOrCreateCategoryIdForFilePicker(fields[2], 'expense'),
+      description: fields[3],
+      date: DateTime.parse(fields[4]),
+      paymentMethod: fields[5].isEmpty ? 'cash' : fields[5],
+      location: fields[6].isEmpty ? null : fields[6],
+      notes: fields[7].isEmpty ? null : fields[7],
+      receiptPhotoPath: fields[8].isEmpty ? null : fields[8],
+      isRecurring: fields[9].toLowerCase() == 'true',
+      recurringPattern: fields[10].isEmpty ? null : fields[10],
+      createdAt:
+          fields.length > 11 ? DateTime.parse(fields[11]) : DateTime.now(),
+      updatedAt:
+          fields.length > 12 ? DateTime.parse(fields[12]) : DateTime.now(),
+    );
+
+    await DatabaseService.instance.expenses.put(expense.id, expense);
+    return true; // Successfully imported
+  }
+
+  Future<bool> _importIncomeFromCSVLineForFilePicker(String line) async {
+    final fields = _parseCSVLineForFilePicker(line);
+    if (fields.length < 8) throw Exception('Invalid income CSV format');
+
+    final id = fields[0].isEmpty
+        ? DateTime.now().millisecondsSinceEpoch.toString()
+        : fields[0];
+
+    // Check if ID already exists
+    if (DatabaseService.instance.incomes.containsKey(id)) {
+      print('Skipping income with duplicate ID: $id');
+      return false; // Skip duplicate
+    }
+
+    final income = IncomeModel(
+      id: id,
+      amount: double.parse(fields[1]),
+      categoryId:
+          await _findOrCreateCategoryIdForFilePicker(fields[2], 'income'),
+      description: fields[3],
+      date: DateTime.parse(fields[4]),
+      source: fields[5],
+      isRecurring: fields[6].toLowerCase() == 'true',
+      recurringPattern: fields[7].isEmpty ? null : fields[7],
+      createdAt: fields.length > 8 ? DateTime.parse(fields[8]) : DateTime.now(),
+      updatedAt: fields.length > 9 ? DateTime.parse(fields[9]) : DateTime.now(),
+    );
+
+    await DatabaseService.instance.incomes.put(income.id, income);
+    return true; // Successfully imported
+  }
+
+  Future<bool> _importCategoryFromCSVLineForFilePicker(String line) async {
+    final fields = _parseCSVLineForFilePicker(line);
+    if (fields.length < 7) throw Exception('Invalid category CSV format');
+
+    final id = fields[0].isEmpty
+        ? DateTime.now().millisecondsSinceEpoch.toString()
+        : fields[0];
+
+    // Check if ID already exists
+    if (DatabaseService.instance.categories.containsKey(id)) {
+      print('Skipping category with duplicate ID: $id');
+      return false; // Skip duplicate
+    }
+
+    final category = CategoryModel(
+      id: id,
+      name: fields[1],
+      type: fields[4], // type field from CSV
+      iconCodePoint: fields[2], // icon field
+      colorValue: fields[3], // color field
+      createdAt: fields.length > 5 ? DateTime.parse(fields[5]) : DateTime.now(),
+      updatedAt: fields.length > 6 ? DateTime.parse(fields[6]) : DateTime.now(),
+    );
+
+    await DatabaseService.instance.categories.put(category.id, category);
+    return true; // Successfully imported
+  }
+
+  Future<bool> _importBudgetFromCSVLineForFilePicker(String line) async {
+    final fields = _parseCSVLineForFilePicker(line);
+    if (fields.length < 10) throw Exception('Invalid budget CSV format');
+
+    final id = fields[0].isEmpty
+        ? DateTime.now().millisecondsSinceEpoch.toString()
+        : fields[0];
+
+    // Check if ID already exists
+    if (DatabaseService.instance.budgets.containsKey(id)) {
+      print('Skipping budget with duplicate ID: $id');
+      return false; // Skip duplicate
+    }
+
+    final budget = BudgetModel(
+      id: id,
+      categoryId:
+          await _findOrCreateCategoryIdForFilePicker(fields[1], 'expense'),
+      amount: double.parse(fields[2]), // budget amount
+      spent: double.parse(fields[3]), // spent amount
+      period: 'monthly', // default period
+      startDate: DateTime.parse(fields[4]),
+      endDate: DateTime.parse(fields[5]),
+      alertPercentage: int.parse(fields[6]), // alert percentage
+      isActive: fields[7].toLowerCase() == 'true',
+      createdAt: fields.length > 8 ? DateTime.parse(fields[8]) : DateTime.now(),
+      updatedAt: fields.length > 9 ? DateTime.parse(fields[9]) : DateTime.now(),
+      alertEnabled: true,
+      isRecurring: false,
+    );
+
+    await DatabaseService.instance.budgets.put(budget.id, budget);
+    return true; // Successfully imported
+  }
+
+  // Helper to parse CSV line properly handling quotes
+  List<String> _parseCSVLineForFilePicker(String line) {
+    List<String> fields = [];
+    StringBuffer currentField = StringBuffer();
+    bool inQuotes = false;
+
+    for (int i = 0; i < line.length; i++) {
+      String char = line[i];
+
+      if (char == '"') {
+        inQuotes = !inQuotes;
+      } else if (char == ',' && !inQuotes) {
+        fields.add(currentField.toString());
+        currentField.clear();
+      } else {
+        currentField.write(char);
+      }
+    }
+
+    fields.add(currentField.toString());
+    return fields;
+  }
+
+  // Helper to find or create category ID
+  Future<String> _findOrCreateCategoryIdForFilePicker(
+      String categoryName, String type) async {
+    final categories = DatabaseService.instance.categories.values;
+
+    // Find existing category
+    for (final category in categories) {
+      if (category.name.toLowerCase() == categoryName.toLowerCase() &&
+          category.type == type) {
+        return category.id;
+      }
+    }
+
+    // Create new category if not found
+    final newCategory = CategoryModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: categoryName,
+      type: type,
+      iconCodePoint: '57429', // Default icon
+      colorValue: '#2196F3', // Default color
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await DatabaseService.instance.categories.put(newCategory.id, newCategory);
+    return newCategory.id;
   }
 }
