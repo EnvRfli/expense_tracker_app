@@ -54,6 +54,7 @@ dependencies:
   local_auth: ^2.1.8
   shared_preferences: ^2.2.2
   device_info_plus: ^10.1.0
+  crypto: ^3.0.3
   
   # Notifications
   flutter_local_notifications: ^17.0.0

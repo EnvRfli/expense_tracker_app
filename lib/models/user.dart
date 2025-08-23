@@ -55,6 +55,12 @@ class UserModel extends HiveObject {
   @HiveField(16)
   int budgetAlertPercentage; // Persentase untuk alert (80%, 90%, 100%)
 
+  @HiveField(17)
+  String? pinCode; // PIN for security fallback
+
+  @HiveField(18)
+  bool pinEnabled; // Whether PIN authentication is enabled
+
   UserModel({
     required this.id,
     this.currency = 'IDR',
@@ -73,6 +79,8 @@ class UserModel extends HiveObject {
     this.monthlyBudgetLimit,
     this.budgetAlertEnabled = true,
     this.budgetAlertPercentage = 80,
+    this.pinCode,
+    this.pinEnabled = false,
   });
 
   // Convert to JSON untuk Google Drive backup
@@ -95,6 +103,8 @@ class UserModel extends HiveObject {
       'monthlyBudgetLimit': monthlyBudgetLimit,
       'budgetAlertEnabled': budgetAlertEnabled,
       'budgetAlertPercentage': budgetAlertPercentage,
+      'pinCode': pinCode,
+      'pinEnabled': pinEnabled,
     };
   }
 
@@ -122,6 +132,8 @@ class UserModel extends HiveObject {
       monthlyBudgetLimit: json['monthlyBudgetLimit']?.toDouble(),
       budgetAlertEnabled: json['budgetAlertEnabled'] ?? true,
       budgetAlertPercentage: json['budgetAlertPercentage'] ?? 80,
+      pinCode: json['pinCode'],
+      pinEnabled: json['pinEnabled'] ?? false,
     );
   }
 
@@ -142,6 +154,8 @@ class UserModel extends HiveObject {
     double? monthlyBudgetLimit,
     bool? budgetAlertEnabled,
     int? budgetAlertPercentage,
+    String? pinCode,
+    bool? pinEnabled,
   }) {
     return UserModel(
       id: id,
@@ -162,6 +176,8 @@ class UserModel extends HiveObject {
       budgetAlertEnabled: budgetAlertEnabled ?? this.budgetAlertEnabled,
       budgetAlertPercentage:
           budgetAlertPercentage ?? this.budgetAlertPercentage,
+      pinCode: pinCode ?? this.pinCode,
+      pinEnabled: pinEnabled ?? this.pinEnabled,
     );
   }
 

@@ -4,6 +4,7 @@ import '../providers/providers.dart';
 import '../services/services.dart';
 import '../utils/theme.dart';
 import '../l10n/localization_extension.dart';
+import 'pin_setup_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -42,6 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Security Section
               _buildSectionHeader('Keamanan'),
               _buildBiometricTile(userSettings),
+              _buildPinTile(userSettings),
 
               const SizedBox(height: AppSizes.paddingLarge),
 
@@ -153,10 +155,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: SwitchListTile(
         secondary: const Icon(Icons.fingerprint, color: AppTheme.primaryColor),
         title: const Text('Autentikasi Biometrik'),
-        subtitle: const Text('Gunakan sidik jari atau wajah untuk masuk'),
+        subtitle: Text(userSettings.pinEnabled
+            ? 'Gunakan sidik jari atau wajah untuk masuk'
+            : 'Setup PIN terlebih dahulu untuk mengaktifkan biometrik'),
         value: userSettings.biometricEnabled,
         activeColor: AppTheme.primaryColor,
         onChanged: (value) => _updateBiometric(userSettings, value),
+      ),
+    );
+  }
+
+  Widget _buildPinTile(UserSettingsProvider userSettings) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.pin, color: AppTheme.primaryColor),
+        title: const Text('PIN Keamanan'),
+        subtitle: Text(userSettings.pinEnabled
+            ? 'PIN aktif - Ketuk untuk mengubah'
+            : 'Setup PIN untuk keamanan aplikasi'),
+        trailing: userSettings.pinEnabled
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    onPressed: () => _setupPin(userSettings, isEdit: true),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                    onPressed: () => _removePinDialog(userSettings),
+                  ),
+                ],
+              )
+            : const Icon(Icons.chevron_right),
+        onTap: () => _setupPin(userSettings, isEdit: userSettings.pinEnabled),
       ),
     );
   }
@@ -498,8 +530,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _updateBiometric(UserSettingsProvider userSettings, bool enabled) {
-    userSettings.updateBiometricEnabled(enabled);
+  void _updateBiometric(UserSettingsProvider userSettings, bool enabled) async {
+    if (enabled) {
+      // Check if PIN is already set up
+      if (!userSettings.pinEnabled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Anda harus setup PIN terlebih dahulu sebelum mengaktifkan autentikasi biometrik'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+
+        // Automatically navigate to PIN setup
+        final pinResult = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (context) => const PinSetupScreen(isEdit: false),
+          ),
+        );
+
+        if (pinResult != true) {
+          // If PIN setup was cancelled, don't enable biometric
+          return;
+        }
+
+        // Refresh userSettings after PIN setup
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      // Check if biometric is available
+      final isAvailable = await AuthService.instance.isBiometricAvailable();
+      if (!isAvailable) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Autentikasi biometrik tidak tersedia di perangkat ini'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      // Test biometric authentication
+      final authenticated =
+          await AuthService.instance.authenticateWithBiometric(
+        reason: 'Verifikasi untuk mengaktifkan autentikasi biometrik',
+      );
+
+      if (!authenticated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Autentikasi biometrik gagal'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+    }
+
+    final success = await userSettings.updateBiometricEnabled(enabled);
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(enabled
+              ? 'Autentikasi biometrik diaktifkan'
+              : 'Autentikasi biometrik dinonaktifkan'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
+  void _setupPin(UserSettingsProvider userSettings,
+      {bool isEdit = false}) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => PinSetupScreen(isEdit: isEdit),
+      ),
+    );
+
+    if (result == true) {
+      // PIN successfully set/updated
+    }
+  }
+
+  void _removePinDialog(UserSettingsProvider userSettings) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus PIN'),
+        content: Text(userSettings.biometricEnabled
+            ? 'Menghapus PIN akan menonaktifkan autentikasi biometrik juga. Apakah Anda yakin?'
+            : 'Apakah Anda yakin ingin menghapus PIN keamanan?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              // If biometric is enabled, disable it first
+              if (userSettings.biometricEnabled) {
+                await userSettings.updateBiometricEnabled(false);
+              }
+
+              final success = await userSettings.updatePinSettings(
+                pinCode: null,
+                pinEnabled: false,
+              );
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(userSettings.biometricEnabled
+                        ? 'PIN dan autentikasi biometrik berhasil dihapus'
+                        : 'PIN berhasil dihapus'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _setMonthlyBudget(UserSettingsProvider userSettings) {
@@ -520,236 +678,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _performBackup() async {
-    try {
-      final syncProvider = context.read<SyncProvider>();
-
-      if (!syncProvider.isGoogleLinked) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Silakan login ke Google Drive terlebih dahulu'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
-      }
-
-      // Show loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 12),
-              Text('Melakukan backup...'),
-            ],
-          ),
-        ),
-      );
-
-      final success = await syncProvider.forceBackup();
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success ? 'Backup berhasil!' : 'Backup gagal!'),
-          backgroundColor: success ? AppColors.success : AppColors.error,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  // Show sync options dialog
-  void _showSyncOptionsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pilihan Sinkronisasi'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Pilih jenis sinkronisasi yang ingin dilakukan:'),
-            SizedBox(height: 12),
-            Text('• Sync ke Cloud: Upload perubahan terbaru ke Google Drive'),
-            SizedBox(height: 8),
-            Text(
-                '• Restore dari Cloud: Download data terbaru dari Google Drive'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _performSync();
-            },
-            child: const Text('Sync ke Cloud'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _performRestore();
-            },
-            child: const Text('Restore dari Cloud'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _performSync() async {
-    try {
-      final syncProvider = context.read<SyncProvider>();
-
-      if (!syncProvider.isGoogleLinked) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Silakan login ke Google Drive terlebih dahulu'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
-      }
-
-      // Show loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 12),
-              Text('Melakukan sinkronisasi...'),
-            ],
-          ),
-        ),
-      );
-
-      final success = await syncProvider.manualSync();
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text(success ? 'Sinkronisasi berhasil!' : 'Sinkronisasi gagal!'),
-          backgroundColor: success ? AppColors.success : AppColors.error,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  void _performRestore() async {
-    // Show confirmation dialog first
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Restore'),
-        content: const Text(
-            'Apakah Anda yakin ingin mengembalikan data dari Google Drive? '
-            'SEMUA DATA LOKAL AKAN DIHAPUS dan diganti dengan data dari backup terakhir. '
-            'Tindakan ini tidak dapat dibatalkan!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Restore'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        final syncProvider = context.read<SyncProvider>();
-
-        // Show loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: 12),
-                Text('Mengembalikan data dari Google Drive...'),
-              ],
-            ),
-          ),
-        );
-
-        final success = await syncProvider.restoreFromBackup();
-
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success
-                ? 'Data berhasil dikembalikan dari Google Drive!'
-                : 'Gagal mengembalikan data!'),
-            backgroundColor: success ? AppColors.success : AppColors.error,
-          ),
-        );
-
-        // Refresh all providers if restore successful
-        if (success) {
-          final categoryProvider = context.read<CategoryProvider>();
-          final expenseProvider = context.read<ExpenseProvider>();
-          final incomeProvider = context.read<IncomeProvider>();
-          final budgetProvider = context.read<BudgetProvider>();
-
-          await Future.wait([
-            categoryProvider.loadCategories(),
-            expenseProvider.loadExpenses(),
-            incomeProvider.loadIncomes(),
-            budgetProvider.loadBudgets(),
-          ]);
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
-  }
-
   void _exportData() async {
     try {
+      // Show export confirmation dialog first
+      final shouldExport = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Konfirmasi Export Data'),
+          content: const Text('Apakah Anda yakin ingin mengekspor data? '
+              'Data akan disimpan dalam format CSV ke folder Downloads/ExpenseTracker.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Export'),
+            ),
+          ],
+        ),
+      );
+
+      // If user cancelled, return early
+      if (shouldExport != true) return;
+
       // Show loading dialog
       showDialog(
         context: context,
@@ -868,7 +821,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _importData() async {
     try {
-      // Show loading dialog
+      // Show loading dialog immediately without confirmation
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -894,8 +847,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
 
-      // Show confirmation dialog with preview
-      _showImportConfirmationDialog(previewData);
+      // Directly perform the import without confirmation
+      await _performConfirmedImport(previewData);
     } catch (e) {
       Navigator.pop(context); // Close loading dialog if still open
 
@@ -912,184 +865,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
     }
-  }
-
-  // Show import confirmation dialog with preview
-  void _showImportConfirmationDialog(Map<String, dynamic> previewData) {
-    final fileType = previewData['fileType'] as String;
-    final totalRecords = previewData['totalRecords'] as int;
-    final duplicateCount = previewData['duplicateCount'] as int;
-    final newRecords = previewData['newRecords'] as int;
-    final existingIds = previewData['existingIds'] as List<String>;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.preview, color: Colors.blue, size: 24),
-            const SizedBox(width: 8),
-            const Text('Konfirmasi Import', style: TextStyle(fontSize: 18)),
-          ],
-        ),
-        content: Container(
-          width: double.maxFinite,
-          constraints: const BoxConstraints(maxHeight: 400),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // File Info
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.file_present, color: Colors.blue, size: 16),
-                        const SizedBox(width: 6),
-                        Text(
-                          'File yang akan diimport:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Tipe: ${_getFileTypeDisplayName(fileType)}',
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    Text(
-                      'Total data: $totalRecords record',
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Statistics
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '📊 Analisis Data:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPreviewStatRow(
-                        '✅ Data baru', '$newRecords record', Colors.green),
-                    if (duplicateCount > 0)
-                      _buildPreviewStatRow('⚠️ Duplikat (akan di-skip)',
-                          '$duplicateCount record', Colors.orange),
-                    _buildPreviewStatRow(
-                        '� Total', '$totalRecords record', Colors.blue),
-                  ],
-                ),
-              ),
-
-              // Duplicate IDs preview
-              if (duplicateCount > 0) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.warning, color: Colors.orange, size: 16),
-                          const SizedBox(width: 6),
-                          Text(
-                            'ID yang sudah ada:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange[700],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        existingIds.take(5).join(', ') +
-                            (existingIds.length > 5 ? '...' : ''),
-                        style:
-                            TextStyle(fontSize: 11, color: Colors.orange[600]),
-                      ),
-                      if (duplicateCount > 5)
-                        Text(
-                          'dan ${duplicateCount - 5} lainnya',
-                          style: TextStyle(
-                              fontSize: 10, color: Colors.orange[500]),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '💡 Data dengan ID yang sama akan dilewati untuk mencegah duplikasi.',
-                  style: TextStyle(fontSize: 11, color: Colors.green[700]),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _performConfirmedImport(previewData);
-            },
-            icon: const Icon(Icons.download, size: 16),
-            label: Text(
-                'Import ${newRecords > 0 ? '$newRecords Data' : 'Sekarang'}'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: newRecords > 0 ? Colors.green : Colors.grey,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   // Perform the actual import after confirmation
@@ -1126,511 +901,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error during import: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  // Helper methods
-  String _getFileTypeDisplayName(String fileType) {
-    switch (fileType) {
-      case 'expenses':
-        return 'Pengeluaran';
-      case 'incomes':
-        return 'Pemasukan';
-      case 'categories':
-        return 'Kategori';
-      case 'budgets':
-        return 'Budget';
-      default:
-        return fileType;
-    }
-  }
-
-  Widget _buildPreviewStatRow(String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: color,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Show import dialog with improved UI - Copy Paste Method
-  void _showImportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.file_upload, color: Colors.blue, size: 24),
-            const SizedBox(width: 8),
-            const Text('Import Data', style: TextStyle(fontSize: 18)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.blue, size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Pilih Metode Import',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '� Copy-Paste: Salin isi file CSV dan tempel di sini\n'
-                    '📂 File Manager: Pilih file dari penyimpanan',
-                    style: TextStyle(fontSize: 12, height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.recommend, color: Colors.green, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Rekomendasi: Gunakan Copy-Paste untuk kemudahan!',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.green[800],
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showCopyPasteImport();
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.content_paste, size: 16),
-                const SizedBox(width: 4),
-                const Text('Copy-Paste'),
-              ],
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              _showFileManagerImport();
-            },
-            icon: const Icon(Icons.folder_open, size: 16),
-            label: const Text('File Manager'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Copy-Paste Import Method (SUPER USER FRIENDLY!)
-  void _showCopyPasteImport() {
-    final TextEditingController csvController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.content_paste, color: Colors.green, size: 20),
-            const SizedBox(width: 8),
-            const Text('Copy-Paste CSV', style: TextStyle(fontSize: 18)),
-          ],
-        ),
-        content: Container(
-          width: double.maxFinite,
-          constraints: const BoxConstraints(maxHeight: 500),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Instructions
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withOpacity(0.3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.help_outline, color: Colors.green, size: 16),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Cara Mudah Import:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '1. 📁 Buka file CSV dengan aplikasi apapun (Notes, Excel, WPS Office, etc)\n'
-                      '2. 📋 Pilih semua (Ctrl+A) dan copy (Ctrl+C)\n'
-                      '3. 📝 Paste (Ctrl+V) di kotak di bawah ini\n'
-                      '4. ✅ Klik Import!\n\n'
-                      '💡 Format akan dideteksi otomatis dari header CSV',
-                      style: TextStyle(fontSize: 12, height: 1.4),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '📝 Tempel isi file CSV di sini:',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: TextField(
-                  controller: csvController,
-                  maxLines: null,
-                  expands: true,
-                  decoration: InputDecoration(
-                    hintText:
-                        'Paste isi file CSV di sini...\n\n📝 Contoh format Pengeluaran:\nid,amount,description,date,categoryId\n1,50000,Makan siang,2024-01-01,cat1\n2,25000,Transport,2024-01-02,cat2\n\n💰 Contoh format Pemasukan:\nid,amount,source,date\n1,3000000,Gaji,2024-01-01\n2,500000,Bonus,2024-01-15\n\n🏷️ Contoh format Kategori:\nid,name,type,color,icon\ncat1,Makanan,expense,#FF5722,restaurant\ncat2,Transport,expense,#2196F3,directions_car',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.all(12),
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                  ),
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info, color: Colors.blue, size: 14),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Format akan dideteksi otomatis berdasarkan header CSV',
-                        style: TextStyle(fontSize: 11, color: Colors.blue[800]),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final csvContent = csvController.text.trim();
-              if (csvContent.isNotEmpty) {
-                Navigator.pop(context);
-                await _performCsvImport(csvContent);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Harap paste isi file CSV terlebih dahulu!'),
-                    backgroundColor: AppColors.error,
-                  ),
-                );
-              }
-            },
-            icon: const Icon(Icons.upload, size: 16),
-            label: const Text('Import Data'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // File Manager Import (Fallback method)
-  void _showFileManagerImport() {
-    _showFilePathInputDialog();
-  }
-
-  // Process CSV content directly (MUCH BETTER!)
-  Future<void> _performCsvImport(String csvContent) async {
-    try {
-      final userSettingsProvider = context.read<UserSettingsProvider>();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 12),
-              Text('Memproses data CSV...'),
-            ],
-          ),
-          backgroundColor: Colors.blue,
-        ),
-      );
-
-      // Parse CSV content directly instead of file path
-      final result =
-          await userSettingsProvider.importDataFromCSVContent(csvContent);
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      _showImportResultDialog(result);
-    } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  // Pick and import file
-  void _pickAndImportFile() async {
-    try {
-      _showFilePathInputDialog();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  // Show file path input dialog (improved UI)
-  void _showFilePathInputDialog() {
-    final TextEditingController pathController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.file_present, color: Colors.blue, size: 20),
-            const SizedBox(width: 8),
-            const Text('Pilih File CSV', style: TextStyle(fontSize: 18)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '📁 Masukkan path lengkap file CSV:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: pathController,
-                    decoration: const InputDecoration(
-                      labelText: 'Path File',
-                      hintText: '/storage/emulated/0/Download/expenses_123.csv',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.file_copy, size: 20),
-                      contentPadding: EdgeInsets.all(12),
-                    ),
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.amber.withOpacity(0.4)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.lightbulb_outline,
-                      color: Colors.amber[700], size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Tip: Gunakan file manager untuk menemukan lokasi file yang tepat.',
-                      style: TextStyle(fontSize: 11, color: Colors.amber[800]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final path = pathController.text.trim();
-              if (path.isNotEmpty) {
-                Navigator.pop(context);
-                await _performImport(path);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Harap masukkan path file!'),
-                    backgroundColor: AppColors.error,
-                  ),
-                );
-              }
-            },
-            icon: const Icon(Icons.upload, size: 16),
-            label: const Text('Import'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Perform import with better feedback
-  Future<void> _performImport(String filePath) async {
-    try {
-      final userSettingsProvider = context.read<UserSettingsProvider>();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 12),
-              Text('Mengimpor data...'),
-            ],
-          ),
-          backgroundColor: Colors.blue,
-        ),
-      );
-
-      final result = await userSettingsProvider.importDataFromCSV(filePath);
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      _showImportResultDialog(result);
-    } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -1807,394 +1077,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-  }
-
-  // Show export confirmation dialog
-  void _showExportConfirmationDialog() async {
-    final userSettingsProvider = context.read<UserSettingsProvider>();
-
-    // Get current data counts
-    final expenseCount = DatabaseService.instance.expenses.length;
-    final incomeCount = DatabaseService.instance.incomes.length;
-    final categoryCount = DatabaseService.instance.categories.length;
-    final budgetCount = DatabaseService.instance.budgets.length;
-
-    // Check for existing export files today
-    final existingFiles = await userSettingsProvider.getExportFilesInfo();
-    final today = DateTime.now();
-    final todayFiles = existingFiles.where((file) {
-      final fileDate = file['modified'] as DateTime;
-      return fileDate.year == today.year &&
-          fileDate.month == today.month &&
-          fileDate.day == today.day;
-    }).toList();
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'Konfirmasi Export Data',
-          style: TextStyle(fontSize: 18),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Data yang akan diekspor:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 10),
-            _buildDataCountRow('Pengeluaran', expenseCount),
-            _buildDataCountRow('Pemasukan', incomeCount),
-            _buildDataCountRow('Kategori', categoryCount),
-            _buildDataCountRow('Budget', budgetCount),
-            if (todayFiles.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.warning, width: 1),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.warning, color: AppColors.warning, size: 14),
-                        SizedBox(width: 6),
-                        Text(
-                          'File Export Hari Ini',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Sudah ada ${todayFiles.length} file export hari ini. '
-                      'Export baru akan membuat file terpisah dengan timestamp berbeda.',
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            const Text(
-              'File akan disimpan dalam format CSV di folder exports aplikasi.',
-              style: TextStyle(fontSize: 11, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Batal',
-              style: TextStyle(fontSize: 13),
-            ),
-          ),
-          if (todayFiles.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _showExportedFilesDialog();
-              },
-              child: const Text(
-                'Lihat File Existing',
-                style: TextStyle(fontSize: 13),
-              ),
-            ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _performExport();
-            },
-            child: const Text(
-              'Export Sekarang',
-              style: TextStyle(fontSize: 13),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Build data count row
-  Widget _buildDataCountRow(String label, int count) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1.5),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            '• $label',
-            style: const TextStyle(fontSize: 13),
-          ),
-          Text(
-            '$count data',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: count > 0 ? AppColors.success : Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Perform actual export
-  void _performExport() async {
-    try {
-      final userSettingsProvider = context.read<UserSettingsProvider>();
-
-      // Show loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 12),
-              Text('Mengekspor data...'),
-            ],
-          ),
-        ),
-      );
-
-      final exportedFiles = await userSettingsProvider.exportDataToCSV();
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-      if (exportedFiles.isNotEmpty) {
-        _showExportResultDialog(exportedFiles);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tidak ada data untuk diekspor'),
-            backgroundColor: AppColors.warning,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  // Show export result dialog
-  void _showExportResultDialog(Map<String, String> exportedFiles) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'Export Berhasil',
-          style: TextStyle(fontSize: 18),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'File berhasil diekspor:',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 10),
-            ...exportedFiles.entries.map((entry) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check_circle,
-                          color: AppColors.success, size: 14),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '${entry.key}.csv',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                )),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.success, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.check_circle,
-                          color: AppColors.success, size: 14),
-                      SizedBox(width: 6),
-                      Text(
-                        'Export Berhasil',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'File tersimpan di folder exports aplikasi.\n'
-                    'File lama akan otomatis dibersihkan (maksimal 10 file).',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showExportedFilesDialog();
-            },
-            child: const Text('Lihat File'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Show exported files dialog
-  void _showExportedFilesDialog() async {
-    final userSettingsProvider = context.read<UserSettingsProvider>();
-    final files = await userSettingsProvider.getExportFilesInfo();
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'File Export',
-          style: TextStyle(fontSize: 18),
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: MediaQuery.of(context).size.height * 0.5, // Batasi tinggi
-          child: files.isEmpty
-              ? const Center(
-                  child: Text(
-                    'Tidak ada file export',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: files.length,
-                  itemBuilder: (context, index) {
-                    final file = files[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 2),
-                      child: ListTile(
-                        dense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        leading: const Icon(
-                          Icons.insert_drive_file,
-                          size: 20,
-                        ),
-                        title: Text(
-                          file['name'],
-                          style: const TextStyle(fontSize: 13),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          '${file['type']} - ${_formatFileSize(file['size'])}\n'
-                          '${_formatDate(file['modified'])}',
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                        trailing: PopupMenuButton(
-                          iconSize: 20,
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.delete,
-                                    color: AppColors.error,
-                                    size: 16,
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Hapus',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          onSelected: (value) async {
-                            if (value == 'delete') {
-                              final success = await userSettingsProvider
-                                  .deleteExportFile(file['path']);
-                              if (success && mounted) {
-                                Navigator.pop(context);
-                                _showExportedFilesDialog();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('File berhasil dihapus'),
-                                    backgroundColor: AppColors.success,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper methods
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
 

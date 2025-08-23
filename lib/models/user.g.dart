@@ -34,13 +34,15 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       monthlyBudgetLimit: fields[14] as double?,
       budgetAlertEnabled: fields[15] as bool,
       budgetAlertPercentage: fields[16] as int,
+      pinCode: fields[17] as String?,
+      pinEnabled: fields[18] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserModel obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -74,7 +76,11 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       ..writeByte(15)
       ..write(obj.budgetAlertEnabled)
       ..writeByte(16)
-      ..write(obj.budgetAlertPercentage);
+      ..write(obj.budgetAlertPercentage)
+      ..writeByte(17)
+      ..write(obj.pinCode)
+      ..writeByte(18)
+      ..write(obj.pinEnabled);
   }
 
   @override

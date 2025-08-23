@@ -18,6 +18,8 @@ class UserSettingsProvider extends BaseProvider {
   double? get monthlyBudgetLimit => _user?.monthlyBudgetLimit;
   bool get budgetAlertEnabled => _user?.budgetAlertEnabled ?? true;
   int get budgetAlertPercentage => _user?.budgetAlertPercentage ?? 80;
+  String? get pinCode => _user?.pinCode;
+  bool get pinEnabled => _user?.pinEnabled ?? false;
 
   // Initialize provider
   @override
@@ -37,7 +39,7 @@ class UserSettingsProvider extends BaseProvider {
 
   // Update currency
   Future<bool> updateCurrency(String currency) async {
-    final result = await handleAsync(() async {
+    final result = await handleAsyncSilent(() async {
       if (_user == null) return false;
 
       final updatedUser = _user!.copyWith(
@@ -63,7 +65,7 @@ class UserSettingsProvider extends BaseProvider {
 
   // Update theme
   Future<bool> updateTheme(String theme) async {
-    final result = await handleAsync(() async {
+    final result = await handleAsyncSilent(() async {
       if (_user == null) return false;
 
       final updatedUser = _user!.copyWith(
@@ -89,7 +91,7 @@ class UserSettingsProvider extends BaseProvider {
 
   // Update language
   Future<bool> updateLanguage(String language) async {
-    final result = await handleAsync(() async {
+    final result = await handleAsyncSilent(() async {
       if (_user == null) return false;
 
       final updatedUser = _user!.copyWith(
@@ -118,7 +120,7 @@ class UserSettingsProvider extends BaseProvider {
     bool? enabled,
     String? time,
   }) async {
-    final result = await handleAsync(() async {
+    final result = await handleAsyncSilent(() async {
       if (_user == null) {
         return false;
       }
@@ -151,7 +153,7 @@ class UserSettingsProvider extends BaseProvider {
 
   // Update biometric settings
   Future<bool> updateBiometricEnabled(bool enabled) async {
-    final result = await handleAsync(() async {
+    final result = await handleAsyncSilent(() async {
       if (_user == null) return false;
 
       final updatedUser = _user!.copyWith(
@@ -166,6 +168,46 @@ class UserSettingsProvider extends BaseProvider {
         action: SyncAction.update,
         dataSnapshot: updatedUser.toJson(),
       );
+
+      // Clear authentication session if both PIN and biometric are disabled
+      if (!enabled && !updatedUser.pinEnabled) {
+        await AuthService.instance.clearAuthenticationSession();
+      }
+
+      _user = updatedUser;
+      notifyListeners();
+      return true;
+    });
+
+    return result ?? false;
+  }
+
+  // Update PIN settings
+  Future<bool> updatePinSettings({
+    String? pinCode,
+    bool? pinEnabled,
+  }) async {
+    final result = await handleAsync(() async {
+      if (_user == null) return false;
+
+      final updatedUser = _user!.copyWith(
+        pinCode: pinCode,
+        pinEnabled: pinEnabled,
+        updatedAt: DateTime.now(),
+      );
+
+      await DatabaseService.instance.updateUser(updatedUser);
+      await SyncService.instance.trackChange(
+        dataType: 'user',
+        dataId: updatedUser.id,
+        action: SyncAction.update,
+        dataSnapshot: updatedUser.toJson(),
+      );
+
+      // Clear authentication session if both PIN and biometric are disabled
+      if (pinEnabled == false && !updatedUser.biometricEnabled) {
+        await AuthService.instance.clearAuthenticationSession();
+      }
 
       _user = updatedUser;
       notifyListeners();
@@ -222,6 +264,8 @@ class UserSettingsProvider extends BaseProvider {
         monthlyBudgetLimit: null,
         budgetAlertEnabled: true,
         budgetAlertPercentage: ModelConstants.defaultBudgetAlertPercentage,
+        pinCode: null,
+        pinEnabled: false,
         updatedAt: DateTime.now(),
       );
 
@@ -258,6 +302,8 @@ class UserSettingsProvider extends BaseProvider {
       'monthlyBudgetLimit': _user!.monthlyBudgetLimit,
       'budgetAlertEnabled': _user!.budgetAlertEnabled,
       'budgetAlertPercentage': _user!.budgetAlertPercentage,
+      'pinCode': _user!.pinCode, // Note: PIN will be exported as hash
+      'pinEnabled': _user!.pinEnabled,
     };
   }
 
@@ -276,6 +322,8 @@ class UserSettingsProvider extends BaseProvider {
         monthlyBudgetLimit: settings['monthlyBudgetLimit']?.toDouble(),
         budgetAlertEnabled: settings['budgetAlertEnabled'],
         budgetAlertPercentage: settings['budgetAlertPercentage'],
+        pinCode: settings['pinCode'], // Import PIN hash
+        pinEnabled: settings['pinEnabled'] ?? false,
         updatedAt: DateTime.now(),
       );
 

@@ -5,6 +5,7 @@ import 'services/budget_notification_service.dart';
 import 'providers/providers.dart';
 import 'screens/splash_screen.dart';
 import 'utils/theme.dart';
+import 'widgets/app_lock_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,8 +22,16 @@ void main() async {
   runApp(const ExpenseTrackerApp());
 }
 
-class ExpenseTrackerApp extends StatelessWidget {
+class ExpenseTrackerApp extends StatefulWidget {
   const ExpenseTrackerApp({super.key});
+
+  @override
+  State<ExpenseTrackerApp> createState() => _ExpenseTrackerAppState();
+}
+
+class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
+  bool _isInitialized = false;
+  Future<void>? _initFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -37,17 +46,59 @@ class ExpenseTrackerApp extends StatelessWidget {
       ],
       child: Consumer<UserSettingsProvider>(
         builder: (context, userSettings, child) {
-          return MaterialApp(
-            title: 'Expense Tracker',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: _getThemeMode(userSettings.theme),
-            home: const SplashScreen(),
+          // Only initialize once
+          _initFuture ??= _initializeProviders(context);
+          
+          return FutureBuilder(
+            future: _initFuture,
+            builder: (context, snapshot) {
+              // Always use the current theme from userSettings, even during loading
+              final currentThemeMode = _getThemeMode(userSettings.theme);
+              
+              if (snapshot.connectionState == ConnectionState.waiting && !_isInitialized) {
+                return MaterialApp(
+                  title: 'Expense Tracker',
+                  debugShowCheckedModeBanner: false,
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: currentThemeMode,
+                  home: const Scaffold(
+                    body: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                );
+              }
+
+              return MaterialApp(
+                title: 'Expense Tracker',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: currentThemeMode,
+                home: AppLockWrapper(
+                  child: const SplashScreen(),
+                ),
+              );
+            },
           );
         },
       ),
     );
+  }
+
+  Future<void> _initializeProviders(BuildContext context) async {
+    if (_isInitialized) return;
+    
+    // Initialize all providers
+    await context.read<UserSettingsProvider>().initialize();
+    await context.read<CategoryProvider>().initialize();
+    await context.read<ExpenseProvider>().initialize();
+    await context.read<IncomeProvider>().initialize();
+    await context.read<BudgetProvider>().initialize();
+    await context.read<SyncProvider>().initialize();
+    
+    _isInitialized = true;
   }
 
   ThemeMode _getThemeMode(String theme) {
