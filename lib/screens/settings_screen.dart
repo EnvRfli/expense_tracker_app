@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
+import '../services/services.dart';
 import '../utils/theme.dart';
-import '../l10n/localization_extension.dart'; // Add localization import
+import '../l10n/localization_extension.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -55,10 +56,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Data Management Section
               _buildSectionHeader('Manajemen Data'),
+              _buildGoogleDriveLoginTile(),
               _buildBackupTile(),
               _buildSyncTile(),
               _buildExportTile(),
-              _buildImportTile(),
 
               const SizedBox(height: AppSizes.paddingLarge),
 
@@ -203,6 +204,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildGoogleDriveLoginTile() {
+    return Consumer<SyncProvider>(
+      builder: (context, syncProvider, child) {
+        final isLinked = syncProvider.isGoogleLinked;
+        final accountEmail = syncProvider.googleAccountEmail;
+
+        return Card(
+          child: ListTile(
+            leading: Icon(
+              isLinked ? Icons.cloud_done : Icons.cloud_off,
+              color: isLinked ? AppColors.success : AppColors.error,
+            ),
+            title: Text(
+                isLinked ? 'Google Drive Terhubung' : 'Login ke Google Drive'),
+            subtitle: Text(isLinked
+                ? 'Account: ${accountEmail ?? 'Tidak diketahui'}'
+                : 'Diperlukan untuk backup dan sinkronisasi data'),
+            trailing: Icon(
+              isLinked ? Icons.logout : Icons.login,
+              color: AppTheme.primaryColor,
+            ),
+            onTap: () => isLinked ? _signOutFromGoogle() : _signInToGoogle(),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildBackupTile() {
     return Card(
       child: ListTile(
@@ -216,14 +245,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSyncTile() {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.sync, color: AppTheme.primaryColor),
-        title: const Text('Sinkronisasi'),
-        subtitle: const Text('Sync data dengan cloud'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => _performSync(),
-      ),
+    return Consumer<SyncProvider>(
+      builder: (context, syncProvider, child) {
+        final isLinked = syncProvider.isGoogleLinked;
+
+        return Card(
+          child: ListTile(
+            leading: Icon(
+              Icons.sync,
+              color: isLinked ? AppTheme.primaryColor : Colors.grey,
+            ),
+            title: const Text('Sinkronisasi'),
+            subtitle: Text(isLinked
+                ? 'Sync data dengan Google Drive'
+                : 'Memerlukan koneksi Google Drive'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: isLinked ? () => _showSyncOptionsDialog() : null,
+          ),
+        );
+      },
     );
   }
 
@@ -232,21 +272,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ListTile(
         leading: const Icon(Icons.file_download, color: AppTheme.primaryColor),
         title: const Text('Export Data'),
-        subtitle: const Text('Export ke file CSV'),
+        subtitle: const Text('Export ke file CSV untuk analisis data'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _exportData(),
-      ),
-    );
-  }
-
-  Widget _buildImportTile() {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.file_upload, color: AppTheme.primaryColor),
-        title: const Text('Import Data'),
-        subtitle: const Text('Import dari file CSV'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => _importData(),
       ),
     );
   }
@@ -438,32 +466,334 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _performBackup() {
-    // TODO: Implement backup functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Fitur backup akan segera tersedia')),
+  void _performBackup() async {
+    try {
+      final syncProvider = context.read<SyncProvider>();
+
+      if (!syncProvider.isGoogleLinked) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Silakan login ke Google Drive terlebih dahulu'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      // Show loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Text('Melakukan backup...'),
+            ],
+          ),
+        ),
+      );
+
+      final success = await syncProvider.forceBackup();
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? 'Backup berhasil!' : 'Backup gagal!'),
+          backgroundColor: success ? AppColors.success : AppColors.error,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  // Show sync options dialog
+  void _showSyncOptionsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pilihan Sinkronisasi'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pilih jenis sinkronisasi yang ingin dilakukan:'),
+            SizedBox(height: 12),
+            Text('• Sync ke Cloud: Upload perubahan terbaru ke Google Drive'),
+            SizedBox(height: 8),
+            Text(
+                '• Restore dari Cloud: Download data terbaru dari Google Drive'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _performSync();
+            },
+            child: const Text('Sync ke Cloud'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _performRestore();
+            },
+            child: const Text('Restore dari Cloud'),
+          ),
+        ],
+      ),
     );
   }
 
-  void _performSync() {
-    // TODO: Implement sync functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Fitur sinkronisasi akan segera tersedia')),
-    );
+  void _performSync() async {
+    try {
+      final syncProvider = context.read<SyncProvider>();
+
+      if (!syncProvider.isGoogleLinked) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Silakan login ke Google Drive terlebih dahulu'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      // Show loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Text('Melakukan sinkronisasi...'),
+            ],
+          ),
+        ),
+      );
+
+      final success = await syncProvider.manualSync();
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(success ? 'Sinkronisasi berhasil!' : 'Sinkronisasi gagal!'),
+          backgroundColor: success ? AppColors.success : AppColors.error,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
-  void _exportData() {
-    // TODO: Implement export functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Fitur export akan segera tersedia')),
+  void _performRestore() async {
+    // Show confirmation dialog first
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Restore'),
+        content: const Text(
+            'Apakah Anda yakin ingin mengembalikan data dari Google Drive? '
+            'SEMUA DATA LOKAL AKAN DIHAPUS dan diganti dengan data dari backup terakhir. '
+            'Tindakan ini tidak dapat dibatalkan!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
     );
+
+    if (confirmed == true) {
+      try {
+        final syncProvider = context.read<SyncProvider>();
+
+        // Show loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Text('Mengembalikan data dari Google Drive...'),
+              ],
+            ),
+          ),
+        );
+
+        final success = await syncProvider.restoreFromBackup();
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? 'Data berhasil dikembalikan dari Google Drive!'
+                : 'Gagal mengembalikan data!'),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ),
+        );
+
+        // Refresh all providers if restore successful
+        if (success) {
+          final categoryProvider = context.read<CategoryProvider>();
+          final expenseProvider = context.read<ExpenseProvider>();
+          final incomeProvider = context.read<IncomeProvider>();
+          final budgetProvider = context.read<BudgetProvider>();
+
+          await Future.wait([
+            categoryProvider.loadCategories(),
+            expenseProvider.loadExpenses(),
+            incomeProvider.loadIncomes(),
+            budgetProvider.loadBudgets(),
+          ]);
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
-  void _importData() {
-    // TODO: Implement import functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Fitur import akan segera tersedia')),
+  void _exportData() async {
+    try {
+      // Show export confirmation dialog first
+      _showExportConfirmationDialog();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  // Google Drive Authentication Methods
+  void _signInToGoogle() async {
+    try {
+      final syncProvider = context.read<SyncProvider>();
+
+      // Show loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Text('Menghubungkan ke Google Drive...'),
+            ],
+          ),
+        ),
+      );
+
+      final success = await syncProvider.signInToGoogle();
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success
+              ? 'Berhasil terhubung ke Google Drive!'
+              : 'Gagal terhubung ke Google Drive!'),
+          backgroundColor: success ? AppColors.success : AppColors.error,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _signOutFromGoogle() async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Logout'),
+        content: const Text('Apakah Anda yakin ingin logout dari Google Drive? '
+            'Fitur backup dan sinkronisasi akan dinonaktifkan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
     );
+
+    if (confirmed == true) {
+      try {
+        final syncProvider = context.read<SyncProvider>();
+        await syncProvider.signOutFromGoogle();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Berhasil logout dari Google Drive'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _showAboutDialog() {
@@ -515,6 +845,394 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  // Show export confirmation dialog
+  void _showExportConfirmationDialog() async {
+    final userSettingsProvider = context.read<UserSettingsProvider>();
+
+    // Get current data counts
+    final expenseCount = DatabaseService.instance.expenses.length;
+    final incomeCount = DatabaseService.instance.incomes.length;
+    final categoryCount = DatabaseService.instance.categories.length;
+    final budgetCount = DatabaseService.instance.budgets.length;
+
+    // Check for existing export files today
+    final existingFiles = await userSettingsProvider.getExportFilesInfo();
+    final today = DateTime.now();
+    final todayFiles = existingFiles.where((file) {
+      final fileDate = file['modified'] as DateTime;
+      return fileDate.year == today.year &&
+          fileDate.month == today.month &&
+          fileDate.day == today.day;
+    }).toList();
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Konfirmasi Export Data',
+          style: TextStyle(fontSize: 18),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Data yang akan diekspor:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+            _buildDataCountRow('Pengeluaran', expenseCount),
+            _buildDataCountRow('Pemasukan', incomeCount),
+            _buildDataCountRow('Kategori', categoryCount),
+            _buildDataCountRow('Budget', budgetCount),
+            if (todayFiles.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.warning, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.warning, color: AppColors.warning, size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          'File Export Hari Ini',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Sudah ada ${todayFiles.length} file export hari ini. '
+                      'Export baru akan membuat file terpisah dengan timestamp berbeda.',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            const Text(
+              'File akan disimpan dalam format CSV di folder exports aplikasi.',
+              style: TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Batal',
+              style: TextStyle(fontSize: 13),
+            ),
+          ),
+          if (todayFiles.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showExportedFilesDialog();
+              },
+              child: const Text(
+                'Lihat File Existing',
+                style: TextStyle(fontSize: 13),
+              ),
+            ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _performExport();
+            },
+            child: const Text(
+              'Export Sekarang',
+              style: TextStyle(fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build data count row
+  Widget _buildDataCountRow(String label, int count) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1.5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '• $label',
+            style: const TextStyle(fontSize: 13),
+          ),
+          Text(
+            '$count data',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: count > 0 ? AppColors.success : Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Perform actual export
+  void _performExport() async {
+    try {
+      final userSettingsProvider = context.read<UserSettingsProvider>();
+
+      // Show loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Text('Mengekspor data...'),
+            ],
+          ),
+        ),
+      );
+
+      final exportedFiles = await userSettingsProvider.exportDataToCSV();
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (exportedFiles.isNotEmpty) {
+        _showExportResultDialog(exportedFiles);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak ada data untuk diekspor'),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  // Show export result dialog
+  void _showExportResultDialog(Map<String, String> exportedFiles) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Export Berhasil',
+          style: TextStyle(fontSize: 18),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'File berhasil diekspor:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+            ...exportedFiles.entries.map((entry) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle,
+                          color: AppColors.success, size: 14),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${entry.key}.csv',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.success.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.success, width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.check_circle,
+                          color: AppColors.success, size: 14),
+                      SizedBox(width: 6),
+                      Text(
+                        'Export Berhasil',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'File tersimpan di folder exports aplikasi.\n'
+                    'File lama akan otomatis dibersihkan (maksimal 10 file).',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tutup'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showExportedFilesDialog();
+            },
+            child: const Text('Lihat File'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show exported files dialog
+  void _showExportedFilesDialog() async {
+    final userSettingsProvider = context.read<UserSettingsProvider>();
+    final files = await userSettingsProvider.getExportFilesInfo();
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'File Export',
+          style: TextStyle(fontSize: 18),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: MediaQuery.of(context).size.height * 0.5, // Batasi tinggi
+          child: files.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Tidak ada file export',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: files.length,
+                  itemBuilder: (context, index) {
+                    final file = files[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      child: ListTile(
+                        dense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        leading: const Icon(
+                          Icons.insert_drive_file,
+                          size: 20,
+                        ),
+                        title: Text(
+                          file['name'],
+                          style: const TextStyle(fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          '${file['type']} - ${_formatFileSize(file['size'])}\n'
+                          '${_formatDate(file['modified'])}',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        trailing: PopupMenuButton(
+                          iconSize: 20,
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.delete,
+                                    color: AppColors.error,
+                                    size: 16,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Hapus',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onSelected: (value) async {
+                            if (value == 'delete') {
+                              final success = await userSettingsProvider
+                                  .deleteExportFile(file['path']);
+                              if (success && mounted) {
+                                Navigator.pop(context);
+                                _showExportedFilesDialog();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('File berhasil dihapus'),
+                                    backgroundColor: AppColors.success,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper methods
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
 

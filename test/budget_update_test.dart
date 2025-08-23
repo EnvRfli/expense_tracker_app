@@ -59,12 +59,11 @@ void main() {
       final now = DateTime.now();
       final yesterday = now.subtract(Duration(days: 1));
 
-      // Create a budget that was "normal" when it ended
       final budget = BudgetModel(
         id: 'test-budget-2',
         categoryId: 'test-category-2',
         amount: 1000.0,
-        spent: 700.0, // Was at 70% when ended
+        spent: 700.0,
         period: 'daily',
         startDate: yesterday,
         endDate: yesterday,
@@ -74,8 +73,7 @@ void main() {
         alertPercentage: 80,
       );
 
-      // Add expense that should put it in warning state
-      final newSpent = 850.0; // 85% - should trigger warning
+      final newSpent = 850.0;
       final updatedBudget = budget.updateSpent(newSpent);
 
       // Assert

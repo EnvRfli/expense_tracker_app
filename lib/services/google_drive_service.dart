@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
@@ -39,7 +40,10 @@ class GoogleDriveService {
       }
 
       final account = await _googleSignIn!.signIn();
-      if (account == null) return false;
+      if (account == null) {
+        print('Google Sign-In cancelled by user');
+        return false;
+      }
 
       _currentUser = account;
 
@@ -54,7 +58,17 @@ class GoogleDriveService {
       // Update user model with Google account info
       await _updateUserWithGoogleInfo(account);
 
+      print('Google Sign-In successful: ${account.email}');
       return true;
+    } on PlatformException catch (e) {
+      print('Google Sign-In PlatformException: ${e.code} - ${e.message}');
+      if (e.code == 'sign_in_failed') {
+        print('Google Sign-In configuration error. Please check:');
+        print('1. google-services.json is properly configured');
+        print('2. SHA-1 fingerprint is added to Google Cloud Console');
+        print('3. Google Sign-In API is enabled');
+      }
+      return false;
     } catch (e) {
       print('Error signing in to Google: $e');
       return false;

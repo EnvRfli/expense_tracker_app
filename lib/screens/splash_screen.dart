@@ -106,6 +106,18 @@ class _SplashScreenState extends State<SplashScreen>
     } catch (e) {
       print('Error initializing recurring budget service: $e');
     }
+
+    // Perform auto sync if Google Drive is connected
+    try {
+      if (syncProvider.isGoogleLinked && syncProvider.autoSyncEnabled) {
+        print('Performing auto sync during startup...');
+        await syncProvider.performAutoSync();
+        print('Auto sync completed during startup');
+      }
+    } catch (e) {
+      // Handle error silently for background sync
+      print('Error during auto sync at startup: $e');
+    }
   }
 
   Future<void> _initializeProviderSilently(BaseProvider provider) async {
