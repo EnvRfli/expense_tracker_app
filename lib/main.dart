@@ -52,7 +52,6 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
           return FutureBuilder(
             future: _initFuture,
             builder: (context, snapshot) {
-              // Always use the current theme from userSettings, even during loading
               final currentThemeMode = _getThemeMode(userSettings.theme);
 
               if (snapshot.connectionState == ConnectionState.waiting &&
