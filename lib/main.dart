@@ -48,14 +48,15 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
         builder: (context, userSettings, child) {
           // Only initialize once
           _initFuture ??= _initializeProviders(context);
-          
+
           return FutureBuilder(
             future: _initFuture,
             builder: (context, snapshot) {
               // Always use the current theme from userSettings, even during loading
               final currentThemeMode = _getThemeMode(userSettings.theme);
-              
-              if (snapshot.connectionState == ConnectionState.waiting && !_isInitialized) {
+
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  !_isInitialized) {
                 return MaterialApp(
                   title: 'Expense Tracker',
                   debugShowCheckedModeBanner: false,
@@ -89,7 +90,7 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
 
   Future<void> _initializeProviders(BuildContext context) async {
     if (_isInitialized) return;
-    
+
     // Initialize all providers
     await context.read<UserSettingsProvider>().initialize();
     await context.read<CategoryProvider>().initialize();
@@ -97,7 +98,7 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
     await context.read<IncomeProvider>().initialize();
     await context.read<BudgetProvider>().initialize();
     await context.read<SyncProvider>().initialize();
-    
+
     _isInitialized = true;
   }
 
