@@ -27,6 +27,8 @@ abstract class AppLocalizations {
 
     // Dashboard
     'welcome': 'Selamat Datang',
+    'this_month': 'Bulan Ini',
+    'Overall': 'Keseluruhan',
     'balance_this_month': 'Saldo Bulan Ini',
     'total_balance': 'Saldo Keseluruhan',
     'switch_to_total': 'Total',
@@ -210,6 +212,8 @@ abstract class AppLocalizations {
 
     // Dashboard
     'welcome': 'Welcome',
+    'this_month': 'This Month',
+    'Overall': 'Overall',
     'balance_this_month': 'This Month Balance',
     'total_balance': 'Total Balance',
     'switch_to_total': 'Total',

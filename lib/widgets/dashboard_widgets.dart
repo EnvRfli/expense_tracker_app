@@ -305,7 +305,7 @@ class _FilteredTransactionsSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${isIncome ? 'Pemasukan' : 'Pengeluaran'} ${_getDisplayTitle()}',
+                      '${isIncome ? context.tr('income') : context.tr('expense')} ${_getDisplayTitle(context)}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -372,7 +372,7 @@ class _FilteredTransactionsSheet extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSizes.paddingSmall),
                         Text(
-                          _getDisplayTitle().toLowerCase(),
+                          _getDisplayTitle(context).toLowerCase(),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Colors.grey[500],
@@ -484,20 +484,18 @@ class _FilteredTransactionsSheet extends StatelessWidget {
     );
   }
 
-  // Helper method to get display title based on filter type
-  String _getDisplayTitle() {
+  String _getDisplayTitle(BuildContext context) {
     if (dateRange != null) {
       final start = dateRange!.start;
       final end = dateRange!.end;
       return '${start.day}/${start.month}/${start.year} - ${end.day}/${end.month}/${end.year}';
     } else if (showCurrentMonth) {
-      return 'Bulan Ini';
+      return context.tr('this_month');
     } else {
-      return 'Keseluruhan';
+      return context.tr('overall');
     }
   }
 
-  // Helper method to calculate total based on filter
   double _calculateTotal(
       ExpenseProvider expenseProvider, IncomeProvider incomeProvider) {
     if (isIncome) {
@@ -748,12 +746,12 @@ class BudgetOverviewCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSizes.paddingMedium),
                   Text(
-                    'Belum ada budget aktif',
+                    context.tr('no_active_budgets'),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppSizes.paddingSmall),
                   Text(
-                    'Buat budget untuk memantau pengeluaran Anda',
+                    context.tr('create_budget_desc'),
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -773,7 +771,7 @@ class BudgetOverviewCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Budget Overview',
+                      context.tr('budget_overview'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -786,7 +784,7 @@ class BudgetOverviewCard extends StatelessWidget {
                           ),
                         );
                       },
-                      child: const Text('Lihat Semua'),
+                      child: Text(context.tr('see_all')),
                     ),
                   ],
                 ),
@@ -816,7 +814,7 @@ class BudgetOverviewCard extends StatelessWidget {
           Expanded(
             child: _buildSummaryItem(
               context,
-              'Total Budget',
+              context.tr('total_budget'),
               userSettings.formatCurrency(stats['totalBudgetAmount'] ?? 0),
               AppColors.budget,
             ),
@@ -824,7 +822,7 @@ class BudgetOverviewCard extends StatelessWidget {
           Expanded(
             child: _buildSummaryItem(
               context,
-              'Terpakai',
+              context.tr('average_usage'),
               '${stats['averageUsagePercentage']?.toStringAsFixed(0) ?? '0'}%',
               AppColors.warning,
             ),
@@ -832,7 +830,7 @@ class BudgetOverviewCard extends StatelessWidget {
           Expanded(
             child: _buildSummaryItem(
               context,
-              'Melampaui',
+              context.tr('exceeded_budgets'),
               '${stats['budgetsExceeded'] ?? 0}',
               AppColors.error,
             ),
@@ -948,7 +946,7 @@ class RecentTransactionsCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Transaksi Terbaru',
+                  context.tr('recent_transactions'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -961,7 +959,7 @@ class RecentTransactionsCard extends StatelessWidget {
                       ),
                     );
                   },
-                  child: const Text('Lihat Semua'),
+                  child: Text(context.tr('see_all')),
                 ),
               ],
             ),
@@ -992,7 +990,7 @@ class RecentTransactionsCard extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSizes.paddingMedium),
                         Text(
-                          'Belum ada transaksi',
+                          context.tr('no_transactions'),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
@@ -1101,7 +1099,7 @@ class SpendingByCategoryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Pengeluaran per Kategori',
+              context.tr('spending_by_category'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -1126,7 +1124,7 @@ class SpendingByCategoryCard extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSizes.paddingMedium),
                         Text(
-                          'Belum ada pengeluaran bulan ini',
+                          context.tr('no_expenses_this_month'),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
