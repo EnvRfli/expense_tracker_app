@@ -11,7 +11,6 @@ class SyncProvider extends BaseProvider {
   int _failedItemsCount = 0;
   bool _autoSyncEnabled = true;
 
-  // Getters
   bool get isGoogleLinked => _isGoogleLinked;
   String? get googleAccountEmail => _googleAccountEmail;
   String? get googleAccountName => _googleAccountName;
@@ -21,7 +20,6 @@ class SyncProvider extends BaseProvider {
   int get failedItemsCount => _failedItemsCount;
   bool get autoSyncEnabled => _autoSyncEnabled;
 
-  // Initialize provider
   Future<void> initialize() async {
     await handleAsync(() async {
       GoogleDriveService.instance.initialize();
@@ -29,7 +27,6 @@ class SyncProvider extends BaseProvider {
     });
   }
 
-  // Sign in to Google
   Future<bool> signInToGoogle() async {
     final result = await handleAsync(() async {
       final success = await GoogleDriveService.instance.signIn();
@@ -42,7 +39,6 @@ class SyncProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Sign out from Google
   Future<void> signOutFromGoogle() async {
     await handleAsync(() async {
       await GoogleDriveService.instance.signOut();
@@ -50,7 +46,6 @@ class SyncProvider extends BaseProvider {
     });
   }
 
-  // Update sync status
   Future<void> updateSyncStatus() async {
     await handleAsync(() async {
       final status = SyncService.instance.getSyncStatus();
@@ -71,12 +66,9 @@ class SyncProvider extends BaseProvider {
         _googleAccountName = user.googleAccountName;
         _autoSyncEnabled = user.isBackupEnabled;
       }
-
-      // Don't call notifyListeners() here - handleAsync will handle it
     });
   }
 
-  // Enable/disable auto sync
   Future<bool> setAutoSyncEnabled(bool enabled) async {
     final result = await handleAsync(() async {
       final user = DatabaseService.instance.getCurrentUser();
@@ -101,7 +93,6 @@ class SyncProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Perform manual sync
   Future<bool> manualSync() async {
     if (!_isGoogleLinked) {
       setError('Google account not linked');
@@ -127,7 +118,6 @@ class SyncProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Force backup
   Future<bool> forceBackup() async {
     if (!_isGoogleLinked) {
       setError('Google account not linked');
@@ -153,7 +143,6 @@ class SyncProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Restore from backup
   Future<bool> restoreFromBackup() async {
     if (!_isGoogleLinked) {
       setError('Google account not linked');
@@ -184,7 +173,6 @@ class SyncProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Get backup files
   Future<List<Map<String, dynamic>>> getBackupFiles() async {
     if (!_isGoogleLinked) {
       return [];
@@ -197,7 +185,6 @@ class SyncProvider extends BaseProvider {
     return result ?? [];
   }
 
-  // Clean up old backups
   Future<bool> cleanupOldBackups({int keepCount = 5}) async {
     if (!_isGoogleLinked) {
       setError('Google account not linked');
@@ -212,7 +199,6 @@ class SyncProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Retry failed sync items
   Future<bool> retryFailedItems() async {
     if (!_isGoogleLinked) {
       setError('Google account not linked');
@@ -228,7 +214,6 @@ class SyncProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Clear failed sync items
   Future<void> clearFailedItems() async {
     await handleAsync(() async {
       await SyncService.instance.clearFailedItems();
@@ -236,7 +221,6 @@ class SyncProvider extends BaseProvider {
     });
   }
 
-  // Auto sync (called periodically)
   Future<void> performAutoSync() async {
     if (!_autoSyncEnabled || !_isGoogleLinked || _pendingItemsCount == 0) {
       return;
@@ -248,7 +232,6 @@ class SyncProvider extends BaseProvider {
     });
   }
 
-  // Get sync status summary
   String getSyncStatusSummary() {
     if (!_isGoogleLinked) {
       return 'Google account not linked';
@@ -282,20 +265,17 @@ class SyncProvider extends BaseProvider {
     return 'Ready to sync';
   }
 
-  // Check if sync is needed
   bool isSyncNeeded() {
     return _isGoogleLinked &&
         _autoSyncEnabled &&
         (_pendingItemsCount > 0 || _failedItemsCount > 0);
   }
 
-  // Get time since last backup
   Duration? getTimeSinceLastBackup() {
     if (_lastBackupDate == null) return null;
     return DateTime.now().difference(_lastBackupDate!);
   }
 
-  // Check if backup is overdue (more than 24 hours)
   bool isBackupOverdue() {
     final timeSince = getTimeSinceLastBackup();
     return timeSince != null && timeSince.inHours > 24;

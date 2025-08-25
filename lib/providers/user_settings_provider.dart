@@ -20,8 +20,6 @@ class UserSettingsProvider extends BaseProvider {
   int get budgetAlertPercentage => _user?.budgetAlertPercentage ?? 80;
   String? get pinCode => _user?.pinCode;
   bool get pinEnabled => _user?.pinEnabled ?? false;
-
-  // Initialize provider
   @override
   Future<void> initialize() async {
     await handleAsyncSilent(() async {
@@ -29,15 +27,12 @@ class UserSettingsProvider extends BaseProvider {
     });
   }
 
-  // Load user settings
   Future<void> loadUserSettings() async {
     await handleAsync(() async {
       _user = DatabaseService.instance.getCurrentUser();
-      // Don't call notifyListeners() here - handleAsync will handle it
     });
   }
 
-  // Update currency
   Future<bool> updateCurrency(String currency) async {
     final result = await handleAsyncSilent(() async {
       if (_user == null) return false;
@@ -63,7 +58,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Update theme
   Future<bool> updateTheme(String theme) async {
     final result = await handleAsyncSilent(() async {
       if (_user == null) return false;
@@ -89,7 +83,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Update language
   Future<bool> updateLanguage(String language) async {
     final result = await handleAsyncSilent(() async {
       if (_user == null) return false;
@@ -115,7 +108,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Update notification settings
   Future<bool> updateNotificationSettings({
     bool? enabled,
     String? time,
@@ -139,8 +131,6 @@ class UserSettingsProvider extends BaseProvider {
         action: SyncAction.update,
         dataSnapshot: updatedUser.toJson(),
       );
-
-      // Update notification service
       await NotificationService.instance.setupUserNotifications();
 
       _user = updatedUser;
@@ -151,7 +141,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Update biometric settings
   Future<bool> updateBiometricEnabled(bool enabled) async {
     final result = await handleAsyncSilent(() async {
       if (_user == null) return false;
@@ -168,8 +157,6 @@ class UserSettingsProvider extends BaseProvider {
         action: SyncAction.update,
         dataSnapshot: updatedUser.toJson(),
       );
-
-      // Clear authentication session if both PIN and biometric are disabled
       if (!enabled && !updatedUser.pinEnabled) {
         await AuthService.instance.clearAuthenticationSession();
       }
@@ -182,7 +169,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Update PIN settings
   Future<bool> updatePinSettings({
     String? pinCode,
     bool? pinEnabled,
@@ -203,8 +189,6 @@ class UserSettingsProvider extends BaseProvider {
         action: SyncAction.update,
         dataSnapshot: updatedUser.toJson(),
       );
-
-      // Clear authentication session if both PIN and biometric are disabled
       if (pinEnabled == false && !updatedUser.biometricEnabled) {
         await AuthService.instance.clearAuthenticationSession();
       }
@@ -217,7 +201,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Update budget settings
   Future<bool> updateBudgetSettings({
     double? monthlyBudgetLimit,
     bool? budgetAlertEnabled,
@@ -249,7 +232,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Reset all settings to default
   Future<bool> resetToDefault() async {
     final result = await handleAsync(() async {
       if (_user == null) return false;
@@ -276,8 +258,6 @@ class UserSettingsProvider extends BaseProvider {
         action: SyncAction.update,
         dataSnapshot: resetUser.toJson(),
       );
-
-      // Reset notification service
       await NotificationService.instance.setupUserNotifications();
 
       _user = resetUser;
@@ -288,7 +268,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Export user settings
   Map<String, dynamic> exportSettings() {
     if (_user == null) return {};
 
@@ -307,7 +286,6 @@ class UserSettingsProvider extends BaseProvider {
     };
   }
 
-  // Import user settings
   Future<bool> importSettings(Map<String, dynamic> settings) async {
     final result = await handleAsync(() async {
       if (_user == null) return false;
@@ -334,8 +312,6 @@ class UserSettingsProvider extends BaseProvider {
         action: SyncAction.update,
         dataSnapshot: updatedUser.toJson(),
       );
-
-      // Update notification service
       await NotificationService.instance.setupUserNotifications();
 
       _user = updatedUser;
@@ -346,27 +322,22 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Get supported currencies
   List<String> getSupportedCurrencies() {
     return ModelConstants.supportedCurrencies;
   }
 
-  // Get supported themes
   List<String> getSupportedThemes() {
     return ModelConstants.themes;
   }
 
-  // Get supported languages
   List<String> getSupportedLanguages() {
     return ModelConstants.languages;
   }
 
-  // Check if first time setup is needed
   bool isFirstTimeSetup() {
     return _user == null || _user!.createdAt.isAtSameMomentAs(_user!.updatedAt);
   }
 
-  // Complete first time setup
   Future<bool> completeFirstTimeSetup({
     required String currency,
     required String language,
@@ -393,8 +364,6 @@ class UserSettingsProvider extends BaseProvider {
         action: SyncAction.update,
         dataSnapshot: updatedUser.toJson(),
       );
-
-      // Setup notifications
       if (enableNotifications) {
         await NotificationService.instance.setupUserNotifications();
       }
@@ -407,7 +376,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Get currency symbol
   String getCurrencySymbol() {
     switch (_user?.currency ?? 'IDR') {
       case 'USD':
@@ -424,7 +392,6 @@ class UserSettingsProvider extends BaseProvider {
     }
   }
 
-  // Format currency amount
   String formatCurrency(double amount) {
     final symbol = getCurrencySymbol();
     if (_user?.currency == 'IDR') {
@@ -437,7 +404,6 @@ class UserSettingsProvider extends BaseProvider {
     }
   }
 
-  // Export all data to CSV format
   Future<Map<String, String>> exportDataToCSV() async {
     final result = await handleAsync(() async {
       final directory = await getApplicationDocumentsDirectory();
@@ -445,32 +411,22 @@ class UserSettingsProvider extends BaseProvider {
       if (!await exportDir.exists()) {
         await exportDir.create(recursive: true);
       }
-
-      // Clean up old export files (keep only last 10 files)
       await _cleanupOldExportFiles(exportDir);
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final Map<String, String> exportedFiles = {};
-
-      // Export expenses
       final expensesPath = await _exportExpensesToCSV(exportDir, timestamp);
       if (expensesPath != null) {
         exportedFiles['expenses'] = expensesPath;
       }
-
-      // Export incomes
       final incomesPath = await _exportIncomesToCSV(exportDir, timestamp);
       if (incomesPath != null) {
         exportedFiles['incomes'] = incomesPath;
       }
-
-      // Export categories
       final categoriesPath = await _exportCategoriesToCSV(exportDir, timestamp);
       if (categoriesPath != null) {
         exportedFiles['categories'] = categoriesPath;
       }
-
-      // Export budgets
       final budgetsPath = await _exportBudgetsToCSV(exportDir, timestamp);
       if (budgetsPath != null) {
         exportedFiles['budgets'] = budgetsPath;
@@ -482,7 +438,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? {};
   }
 
-  // Export expenses to CSV
   Future<String?> _exportExpensesToCSV(
       Directory exportDir, int timestamp) async {
     try {
@@ -492,7 +447,6 @@ class UserSettingsProvider extends BaseProvider {
       final categories = DatabaseService.instance.categories.values.toList();
 
       final csvData = StringBuffer();
-      // Header
       csvData.writeln(
           'ID,Amount,Category,Description,Date,Payment Method,Location,Notes,Receipt Photo,Is Recurring,Recurring Pattern,Created At,Updated At');
 
@@ -523,7 +477,6 @@ class UserSettingsProvider extends BaseProvider {
     }
   }
 
-  // Export incomes to CSV
   Future<String?> _exportIncomesToCSV(
       Directory exportDir, int timestamp) async {
     try {
@@ -533,7 +486,6 @@ class UserSettingsProvider extends BaseProvider {
       final categories = DatabaseService.instance.categories.values.toList();
 
       final csvData = StringBuffer();
-      // Header
       csvData.writeln(
           'ID,Amount,Category,Description,Date,Source,Attachment,Is Recurring,Recurring Pattern,Created At,Updated At');
 
@@ -564,7 +516,6 @@ class UserSettingsProvider extends BaseProvider {
     }
   }
 
-  // Export categories to CSV
   Future<String?> _exportCategoriesToCSV(
       Directory exportDir, int timestamp) async {
     try {
@@ -572,7 +523,6 @@ class UserSettingsProvider extends BaseProvider {
       if (categories.isEmpty) return null;
 
       final csvData = StringBuffer();
-      // Header
       csvData.writeln(
           'ID,Name,Type,Icon Code Point,Color Value,Is Active,Created At,Updated At');
 
@@ -590,7 +540,6 @@ class UserSettingsProvider extends BaseProvider {
     }
   }
 
-  // Export budgets to CSV
   Future<String?> _exportBudgetsToCSV(
       Directory exportDir, int timestamp) async {
     try {
@@ -600,7 +549,6 @@ class UserSettingsProvider extends BaseProvider {
       final categories = DatabaseService.instance.categories.values.toList();
 
       final csvData = StringBuffer();
-      // Header
       csvData.writeln(
           'ID,Category,Amount,Period,Start Date,End Date,Spent Amount,Is Active,Created At,Updated At');
 
@@ -631,7 +579,6 @@ class UserSettingsProvider extends BaseProvider {
     }
   }
 
-  // Get export files info
   Future<List<Map<String, dynamic>>> getExportFilesInfo() async {
     final result = await handleAsync(() async {
       final directory = await getApplicationDocumentsDirectory();
@@ -661,8 +608,6 @@ class UserSettingsProvider extends BaseProvider {
           'type': _getFileTypeFromName(fileName),
         });
       }
-
-      // Sort by modified date (newest first)
       filesInfo.sort((a, b) =>
           (b['modified'] as DateTime).compareTo(a['modified'] as DateTime));
 
@@ -672,7 +617,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? [];
   }
 
-  // Import data from CSV file
   Future<Map<String, int>> importDataFromCSV(String filePath) async {
     final result = await handleAsync(() async {
       final file = File(filePath);
@@ -687,7 +631,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? {'total': 0, 'success': 0, 'failed': 0};
   }
 
-  // Import data from CSV content directly (USER FRIENDLY!)
   Future<Map<String, int>> importDataFromCSVContent(String csvContent) async {
     final result = await handleAsync(() async {
       if (csvContent.trim().isEmpty) {
@@ -700,7 +643,6 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? {'total': 0, 'success': 0, 'failed': 0};
   }
 
-  // Process CSV content (shared logic)
   Future<Map<String, int>> _processCSVContent(
       String content, String? filePath) async {
     final lines =
@@ -709,8 +651,6 @@ class UserSettingsProvider extends BaseProvider {
     if (lines.isEmpty) {
       throw Exception('Content is empty');
     }
-
-    // Detect file type from header or filename
     String fileType = 'unknown';
     if (filePath != null) {
       final fileName = filePath.split('/').last.split('\\').last.toLowerCase();
@@ -722,8 +662,6 @@ class UserSettingsProvider extends BaseProvider {
         fileType = 'categories';
       else if (fileName.contains('budgets')) fileType = 'budgets';
     }
-
-    // Auto-detect from CSV header if filename detection failed
     if (fileType == 'unknown' && lines.isNotEmpty) {
       final header = lines[0].toLowerCase();
       if (header.contains('amount') &&
@@ -769,7 +707,6 @@ class UserSettingsProvider extends BaseProvider {
     return importResults;
   }
 
-  // Import expenses from CSV
   Future<Map<String, int>> _importExpensesFromCSV(List<String> lines) async {
     int total = lines.length - 1; // Exclude header
     int success = 0;
@@ -779,7 +716,6 @@ class UserSettingsProvider extends BaseProvider {
       try {
         final fields = _parseCSVLine(lines[i]);
         if (fields.length >= 13) {
-          // Skip if expense already exists
           if (DatabaseService.instance.expenses.containsKey(fields[0])) {
             continue;
           }
@@ -801,8 +737,6 @@ class UserSettingsProvider extends BaseProvider {
           );
 
           await DatabaseService.instance.expenses.put(expense.id, expense);
-
-          // Track for sync
           await SyncService.instance.trackChange(
             dataType: 'expense',
             dataId: expense.id,
@@ -821,7 +755,6 @@ class UserSettingsProvider extends BaseProvider {
     return {'total': total, 'success': success, 'failed': failed};
   }
 
-  // Import incomes from CSV
   Future<Map<String, int>> _importIncomesFromCSV(List<String> lines) async {
     int total = lines.length - 1; // Exclude header
     int success = 0;
@@ -831,7 +764,6 @@ class UserSettingsProvider extends BaseProvider {
       try {
         final fields = _parseCSVLine(lines[i]);
         if (fields.length >= 11) {
-          // Skip if income already exists
           if (DatabaseService.instance.incomes.containsKey(fields[0])) {
             continue;
           }
@@ -851,8 +783,6 @@ class UserSettingsProvider extends BaseProvider {
           );
 
           await DatabaseService.instance.incomes.put(income.id, income);
-
-          // Track for sync
           await SyncService.instance.trackChange(
             dataType: 'income',
             dataId: income.id,
@@ -871,7 +801,6 @@ class UserSettingsProvider extends BaseProvider {
     return {'total': total, 'success': success, 'failed': failed};
   }
 
-  // Import categories from CSV
   Future<Map<String, int>> _importCategoriesFromCSV(List<String> lines) async {
     int total = lines.length - 1; // Exclude header
     int success = 0;
@@ -881,7 +810,6 @@ class UserSettingsProvider extends BaseProvider {
       try {
         final fields = _parseCSVLine(lines[i]);
         if (fields.length >= 8) {
-          // Skip if category already exists
           if (DatabaseService.instance.categories.containsKey(fields[0])) {
             continue;
           }
@@ -898,8 +826,6 @@ class UserSettingsProvider extends BaseProvider {
           );
 
           await DatabaseService.instance.categories.put(category.id, category);
-
-          // Track for sync
           await SyncService.instance.trackChange(
             dataType: 'category',
             dataId: category.id,
@@ -918,7 +844,6 @@ class UserSettingsProvider extends BaseProvider {
     return {'total': total, 'success': success, 'failed': failed};
   }
 
-  // Import budgets from CSV
   Future<Map<String, int>> _importBudgetsFromCSV(List<String> lines) async {
     int total = lines.length - 1; // Exclude header
     int success = 0;
@@ -928,7 +853,6 @@ class UserSettingsProvider extends BaseProvider {
       try {
         final fields = _parseCSVLine(lines[i]);
         if (fields.length >= 10) {
-          // Skip if budget already exists
           if (DatabaseService.instance.budgets.containsKey(fields[0])) {
             continue;
           }
@@ -950,8 +874,6 @@ class UserSettingsProvider extends BaseProvider {
           );
 
           await DatabaseService.instance.budgets.put(budget.id, budget);
-
-          // Track for sync
           await SyncService.instance.trackChange(
             dataType: 'budget',
             dataId: budget.id,
@@ -970,7 +892,6 @@ class UserSettingsProvider extends BaseProvider {
     return {'total': total, 'success': success, 'failed': failed};
   }
 
-  // Helper method to parse CSV line
   List<String> _parseCSVLine(String line) {
     final List<String> fields = [];
     bool inQuotes = false;
@@ -988,17 +909,13 @@ class UserSettingsProvider extends BaseProvider {
         currentField += char;
       }
     }
-
-    // Add the last field
     fields.add(currentField.trim());
 
     return fields;
   }
 
-  // Helper method to find or create category ID
   Future<String> _findOrCreateCategoryId(
       String categoryName, String type) async {
-    // Find existing category
     final existingCategory = DatabaseService.instance.categories.values
         .where((cat) =>
             cat.name.toLowerCase() == categoryName.toLowerCase() &&
@@ -1008,8 +925,6 @@ class UserSettingsProvider extends BaseProvider {
     if (existingCategory != null) {
       return existingCategory.id;
     }
-
-    // Create new category if not found
     final newCategory = CategoryModel(
       id: 'imported_${DateTime.now().millisecondsSinceEpoch}',
       name: categoryName,
@@ -1021,8 +936,6 @@ class UserSettingsProvider extends BaseProvider {
     );
 
     await DatabaseService.instance.categories.put(newCategory.id, newCategory);
-
-    // Track for sync
     await SyncService.instance.trackChange(
       dataType: 'category',
       dataId: newCategory.id,
@@ -1033,7 +946,6 @@ class UserSettingsProvider extends BaseProvider {
     return newCategory.id;
   }
 
-  // Helper method to get file type from name
   String _getFileTypeFromName(String fileName) {
     if (fileName.contains('expenses')) return 'Expenses';
     if (fileName.contains('incomes')) return 'Incomes';
@@ -1042,7 +954,6 @@ class UserSettingsProvider extends BaseProvider {
     return 'Unknown';
   }
 
-  // Clean up old export files (keep only last 10)
   Future<void> _cleanupOldExportFiles(Directory exportDir) async {
     try {
       final files = await exportDir.list().toList();
@@ -1052,15 +963,11 @@ class UserSettingsProvider extends BaseProvider {
           .toList();
 
       if (csvFiles.length <= 10) return; // Keep if 10 or fewer files
-
-      // Sort by modification date (oldest first)
       csvFiles.sort((a, b) {
         final statA = a.statSync();
         final statB = b.statSync();
         return statA.modified.compareTo(statB.modified);
       });
-
-      // Delete oldest files, keep newest 10
       final filesToDelete = csvFiles.take(csvFiles.length - 10);
       for (final file in filesToDelete) {
         try {
@@ -1074,7 +981,6 @@ class UserSettingsProvider extends BaseProvider {
     }
   }
 
-  // Delete export file
   Future<bool> deleteExportFile(String filePath) async {
     final result = await handleAsync(() async {
       final file = File(filePath);
@@ -1088,30 +994,18 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // ===== USER FRIENDLY METHODS =====
-
-  // Export to Downloads folder (USER FRIENDLY!)
   Future<Map<String, String>> exportDataToDownloads() async {
     final result = await handleAsync(() async {
-      // For Android, try to export to accessible location
       if (Platform.isAndroid) {
         try {
           Directory? exportDir;
-
-          // Try to get a public accessible directory
-          // On Android 10+ (API 29+), we need to use app-specific external directory
-          // but create a subfolder that's more accessible
           final externalDir = await getExternalStorageDirectory();
           if (externalDir != null) {
-            // Navigate up to get to the public storage area
             final pathParts = externalDir.path.split('/');
             print('External path parts: $pathParts');
-
-            // Try to find the storage root
             final storageIndex =
                 pathParts.indexWhere((part) => part == 'storage');
             if (storageIndex >= 0 && pathParts.length > storageIndex + 2) {
-              // Build path to Download folder
               final storagePath =
                   pathParts.sublist(0, storageIndex + 3).join('/');
               final downloadPath = '$storagePath/Download';
@@ -1126,15 +1020,11 @@ class UserSettingsProvider extends BaseProvider {
               }
             }
           }
-
-          // Fallback to Documents directory if Download not accessible
           if (exportDir == null) {
             final documentsDir = await getApplicationDocumentsDirectory();
             exportDir = Directory('${documentsDir.path}/ExpenseTracker_Export');
             print('Fallback to Documents: ${exportDir.path}');
           }
-
-          // Create export directory
           if (!await exportDir.exists()) {
             await exportDir.create(recursive: true);
             print('Created export directory: ${exportDir.path}');
@@ -1142,32 +1032,24 @@ class UserSettingsProvider extends BaseProvider {
 
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final Map<String, String> exportedFiles = {};
-
-          // Export expenses
           final expensesPath =
               await _exportExpensesToDownloads(exportDir, timestamp);
           if (expensesPath != null) {
             exportedFiles['expenses'] = expensesPath;
             print('Exported expenses to: $expensesPath');
           }
-
-          // Export incomes
           final incomesPath =
               await _exportIncomesToDownloads(exportDir, timestamp);
           if (incomesPath != null) {
             exportedFiles['incomes'] = incomesPath;
             print('Exported incomes to: $incomesPath');
           }
-
-          // Export categories
           final categoriesPath =
               await _exportCategoriesToDownloads(exportDir, timestamp);
           if (categoriesPath != null) {
             exportedFiles['categories'] = categoriesPath;
             print('Exported categories to: $categoriesPath');
           }
-
-          // Export budgets
           final budgetsPath =
               await _exportBudgetsToDownloads(exportDir, timestamp);
           if (budgetsPath != null) {
@@ -1182,7 +1064,6 @@ class UserSettingsProvider extends BaseProvider {
           throw Exception('Export failed: ${e.toString()}');
         }
       } else {
-        // For other platforms, use Documents
         final documentsDir = await getApplicationDocumentsDirectory();
         final appExportDir = Directory('${documentsDir.path}/ExpenseTracker');
         if (!await appExportDir.exists()) {
@@ -1191,8 +1072,6 @@ class UserSettingsProvider extends BaseProvider {
 
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final Map<String, String> exportedFiles = {};
-
-        // Export all data types
         final expensesPath =
             await _exportExpensesToDownloads(appExportDir, timestamp);
         if (expensesPath != null) {
@@ -1224,11 +1103,9 @@ class UserSettingsProvider extends BaseProvider {
     return result ?? {};
   }
 
-  // Import using file picker (USER FRIENDLY!) with confirmation
   Future<Map<String, dynamic>?> importDataWithFilePicker() async {
     final result = await handleAsync(() async {
       try {
-        // Open file picker for CSV files
         FilePickerResult? result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
           allowedExtensions: ['csv'],
@@ -1243,12 +1120,8 @@ class UserSettingsProvider extends BaseProvider {
         if (file.path == null) {
           throw Exception('Invalid file path');
         }
-
-        // Read and preview the file first
         final csvFile = File(file.path!);
         final content = await csvFile.readAsString();
-
-        // Analyze content and show preview
         final previewData = await _analyzeCSVContent(content, file.path);
 
         return previewData;
@@ -1261,15 +1134,12 @@ class UserSettingsProvider extends BaseProvider {
     return result;
   }
 
-  // Analyze CSV content and return preview info
   Future<Map<String, dynamic>> _analyzeCSVContent(
       String content, String? filePath) async {
     final lines = content.split('\n');
     if (lines.isEmpty) {
       throw Exception('Empty CSV file');
     }
-
-    // Determine file type
     String fileName = filePath?.split('/').last.toLowerCase() ?? '';
     String fileType = '';
 
@@ -1282,7 +1152,6 @@ class UserSettingsProvider extends BaseProvider {
     } else if (fileName.contains('budget')) {
       fileType = 'budgets';
     } else {
-      // Try to detect from header
       final header = lines.first.toLowerCase();
       if (header.contains('payment method') || header.contains('receipt')) {
         fileType = 'expenses';
@@ -1299,8 +1168,6 @@ class UserSettingsProvider extends BaseProvider {
       throw Exception(
           'Could not determine file type. Please ensure the CSV file is properly formatted.');
     }
-
-    // Count total records and check for duplicates
     int totalRecords = lines.length - 1; // Excluding header
     int duplicateCount = 0;
     List<String> existingIds = [];
@@ -1313,8 +1180,6 @@ class UserSettingsProvider extends BaseProvider {
         final fields = _parseCSVLineForFilePicker(line);
         if (fields.isNotEmpty) {
           final id = fields[0];
-
-          // Check for duplicates based on file type
           bool isDuplicate = false;
           switch (fileType) {
             case 'expenses':
@@ -1336,9 +1201,7 @@ class UserSettingsProvider extends BaseProvider {
             existingIds.add(id);
           }
         }
-      } catch (e) {
-        // Continue processing other lines
-      }
+      } catch (e) {}
     }
 
     return {
@@ -1353,7 +1216,6 @@ class UserSettingsProvider extends BaseProvider {
     };
   }
 
-  // Process confirmed import
   Future<Map<String, int>> processConfirmedImport(
       String content, String? filePath) async {
     return await _processCSVContentForFilePicker(content, filePath);
@@ -1367,12 +1229,8 @@ class UserSettingsProvider extends BaseProvider {
 
       final categories = DatabaseService.instance.categories.values.toList();
       final csvData = StringBuffer();
-
-      // Header
       csvData.writeln(
           'ID,Amount,Category,Description,Date,Payment Method,Location,Notes,Receipt Photo,Is Recurring,Recurring Pattern,Created At,Updated At');
-
-      // Data
       for (final expense in expenses) {
         final category = categories.firstWhere(
           (cat) => cat.id == expense.categoryId,
@@ -1540,7 +1398,6 @@ class UserSettingsProvider extends BaseProvider {
     }
   }
 
-  // Helper method to process CSV content with duplicate detection
   Future<Map<String, int>> _processCSVContentForFilePicker(
       String content, String? filePath) async {
     Map<String, int> result = {
@@ -1554,8 +1411,6 @@ class UserSettingsProvider extends BaseProvider {
     if (lines.isEmpty) {
       throw Exception('Empty CSV file');
     }
-
-    // Determine file type from filename or content
     String fileName = filePath?.split('/').last.toLowerCase() ?? '';
     String fileType = '';
 
@@ -1568,7 +1423,6 @@ class UserSettingsProvider extends BaseProvider {
     } else if (fileName.contains('budget')) {
       fileType = 'budgets';
     } else {
-      // Try to detect from header
       final header = lines.first.toLowerCase();
       if (header.contains('payment method') || header.contains('receipt')) {
         fileType = 'expenses';
@@ -1585,8 +1439,6 @@ class UserSettingsProvider extends BaseProvider {
       throw Exception(
           'Could not determine file type. Please ensure the CSV file is properly formatted.');
     }
-
-    // Process data based on type
     for (int i = 1; i < lines.length; i++) {
       final line = lines[i].trim();
       if (line.isEmpty) continue;
@@ -1624,7 +1476,6 @@ class UserSettingsProvider extends BaseProvider {
     return result;
   }
 
-  // Helper methods to import each type with duplicate detection
   Future<bool> _importExpenseFromCSVLineForFilePicker(String line) async {
     final fields = _parseCSVLineForFilePicker(line);
     if (fields.length < 10) throw Exception('Invalid expense CSV format');
@@ -1632,8 +1483,6 @@ class UserSettingsProvider extends BaseProvider {
     final id = fields[0].isEmpty
         ? DateTime.now().millisecondsSinceEpoch.toString()
         : fields[0];
-
-    // Check if ID already exists
     if (DatabaseService.instance.expenses.containsKey(id)) {
       print('Skipping expense with duplicate ID: $id');
       return false; // Skip duplicate
@@ -1669,8 +1518,6 @@ class UserSettingsProvider extends BaseProvider {
     final id = fields[0].isEmpty
         ? DateTime.now().millisecondsSinceEpoch.toString()
         : fields[0];
-
-    // Check if ID already exists
     if (DatabaseService.instance.incomes.containsKey(id)) {
       print('Skipping income with duplicate ID: $id');
       return false; // Skip duplicate
@@ -1701,8 +1548,6 @@ class UserSettingsProvider extends BaseProvider {
     final id = fields[0].isEmpty
         ? DateTime.now().millisecondsSinceEpoch.toString()
         : fields[0];
-
-    // Check if ID already exists
     if (DatabaseService.instance.categories.containsKey(id)) {
       print('Skipping category with duplicate ID: $id');
       return false; // Skip duplicate
@@ -1729,8 +1574,6 @@ class UserSettingsProvider extends BaseProvider {
     final id = fields[0].isEmpty
         ? DateTime.now().millisecondsSinceEpoch.toString()
         : fields[0];
-
-    // Check if ID already exists
     if (DatabaseService.instance.budgets.containsKey(id)) {
       print('Skipping budget with duplicate ID: $id');
       return false; // Skip duplicate
@@ -1757,7 +1600,6 @@ class UserSettingsProvider extends BaseProvider {
     return true; // Successfully imported
   }
 
-  // Helper to parse CSV line properly handling quotes
   List<String> _parseCSVLineForFilePicker(String line) {
     List<String> fields = [];
     StringBuffer currentField = StringBuffer();
@@ -1780,20 +1622,15 @@ class UserSettingsProvider extends BaseProvider {
     return fields;
   }
 
-  // Helper to find or create category ID
   Future<String> _findOrCreateCategoryIdForFilePicker(
       String categoryName, String type) async {
     final categories = DatabaseService.instance.categories.values;
-
-    // Find existing category
     for (final category in categories) {
       if (category.name.toLowerCase() == categoryName.toLowerCase() &&
           category.type == type) {
         return category.id;
       }
     }
-
-    // Create new category if not found
     final newCategory = CategoryModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: categoryName,
