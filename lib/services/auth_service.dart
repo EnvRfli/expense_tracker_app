@@ -13,11 +13,7 @@ class AuthService {
 
   final LocalAuthentication _localAuth = LocalAuthentication();
   bool _isBiometricInProgress = false;
-
-  // Check if biometric authentication is in progress
   bool get isBiometricInProgress => _isBiometricInProgress;
-
-  // Check if device supports biometric authentication
   Future<bool> isBiometricAvailable() async {
     try {
       final bool isAvailable = await _localAuth.canCheckBiometrics;
@@ -29,7 +25,6 @@ class AuthService {
     }
   }
 
-  // Get available biometric types
   Future<List<BiometricType>> getAvailableBiometrics() async {
     try {
       return await _localAuth.getAvailableBiometrics();
@@ -39,7 +34,6 @@ class AuthService {
     }
   }
 
-  // Authenticate with biometric
   Future<bool> authenticateWithBiometric(
       {String reason = 'Silakan verifikasi identitas Anda'}) async {
     _isBiometricInProgress = true;
@@ -61,8 +55,6 @@ class AuthService {
       return didAuthenticate;
     } on PlatformException catch (e) {
       print('Biometric authentication error: $e');
-
-      // Handle specific errors
       if (e.code == 'no_fragment_activity') {
         print(
             'FragmentActivity required - this should be fixed by updating MainActivity');
@@ -84,27 +76,22 @@ class AuthService {
     }
   }
 
-  // Hash PIN for secure storage
   String _hashPin(String pin) {
     final bytes = utf8.encode(pin);
     final digest = sha256.convert(bytes);
     return digest.toString();
   }
 
-  // Verify PIN
   bool verifyPin(String enteredPin, String storedHashedPin) {
     final hashedEnteredPin = _hashPin(enteredPin);
     return hashedEnteredPin == storedHashedPin;
   }
 
-  // Get hashed PIN for storage
   String getHashedPin(String pin) {
     return _hashPin(pin);
   }
 
-  // Check app lock status
   Future<bool> isAppLocked() async {
-    // If biometric authentication is in progress, don't lock the app yet
     if (_isBiometricInProgress) {
       return false;
     }
@@ -116,8 +103,6 @@ class AuthService {
     final hasBeenAuthenticated =
         prefs.getBool('has_been_authenticated') ?? false;
     final lastAuthTime = prefs.getInt('last_auth_time') ?? 0;
-
-    // Check if this is first time opening app with security enabled
     if (!hasBeenAuthenticated) {
       return true; // Always require authentication for first time
     }
@@ -130,29 +115,21 @@ class AuthService {
     final timeDifference = currentTime - lastBackground;
     final timeSinceAuth =
         lastAuthTime > 0 ? currentTime - lastAuthTime : 999999999;
-
-    // If user just authenticated (within last 30 seconds), don't lock
     if (timeSinceAuth < 30000) {
-      // 30 seconds grace period
       return false;
     }
-
-    // If more than lockTimeout seconds have passed, app should be locked
     final shouldLock = timeDifference > (lockTimeout * 1000);
 
     return shouldLock;
   }
 
-  // Mark as authenticated for this session
   Future<void> markAsAuthenticated() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('has_been_authenticated', true);
-    // Mark timestamp when authentication was successful
     final authTime = DateTime.now().millisecondsSinceEpoch;
     await prefs.setInt('last_auth_time', authTime);
   }
 
-  // Check if recently authenticated (within last 5 seconds)
   Future<bool> isRecentlyAuthenticated() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -162,54 +139,45 @@ class AuthService {
 
       final currentTime = DateTime.now().millisecondsSinceEpoch;
       final timeDifference = currentTime - lastAuthTime;
-
-      // Consider recently authenticated if within last 5 seconds
       return timeDifference < 5000;
     } catch (e) {
       return false;
     }
   }
 
-  // Clear authentication session (e.g., when security is disabled)
   Future<void> clearAuthenticationSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('has_been_authenticated');
   }
 
-  // Reset authentication status (for debugging/testing)
   Future<void> resetAuthenticationStatus() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('has_been_authenticated', false);
     await prefs.remove('last_background_time');
   }
 
-  // Set app as backgrounded
   Future<void> setAppBackgrounded() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(
         'last_background_time', DateTime.now().millisecondsSinceEpoch);
   }
 
-  // Clear app lock
   Future<void> clearAppLock() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('last_background_time');
     await markAsAuthenticated(); // Mark as authenticated when unlocking
   }
 
-  // Set lock timeout (in seconds)
   Future<void> setLockTimeout(int seconds) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('lock_timeout', seconds);
   }
 
-  // Get lock timeout
   Future<int> getLockTimeout() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('lock_timeout') ?? 0; // Default: immediate lock
   }
 
-  // Check if biometric prompt should be shown (instead of PIN)
   Future<bool> shouldUseBiometric() async {
     final prefs = await SharedPreferences.getInstance();
     final biometricPreferred = prefs.getBool('biometric_preferred') ?? true;
@@ -217,7 +185,6 @@ class AuthService {
     return biometricPreferred && isAvailable;
   }
 
-  // Set biometric preference
   Future<void> setBiometricPreference(bool prefer) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('biometric_preferred', prefer);
