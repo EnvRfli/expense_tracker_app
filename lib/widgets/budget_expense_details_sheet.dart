@@ -26,7 +26,6 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle bar
               Center(
                 child: Container(
                   width: 40,
@@ -41,8 +40,6 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Header
               Row(
                 children: [
                   Container(
@@ -85,10 +82,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Summary
               Container(
                 padding: const EdgeInsets.all(AppSizes.paddingMedium),
                 decoration: BoxDecoration(
@@ -146,9 +140,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -169,10 +161,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSizes.paddingMedium),
-
-              // Expenses List
               Expanded(
                 child: expenses.isEmpty
                     ? _buildEmptyExpenseState(context)
