@@ -40,23 +40,20 @@ class BalanceSummaryCard extends StatefulWidget {
 }
 
 class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
-  bool _showCurrentMonth = true; // true = bulan ini, false = keseluruhan
+  bool _showCurrentMonth = true;
 
   @override
   Widget build(BuildContext context) {
     return Consumer3<ExpenseProvider, IncomeProvider, UserSettingsProvider>(
       builder: (context, expenseProvider, incomeProvider, userSettings, child) {
-        // Data untuk bulan ini
         final currentMonthExpenses = expenseProvider.getCurrentMonthTotal();
         final currentMonthIncomes = incomeProvider.getCurrentMonthTotal();
 
-        // Data untuk keseluruhan
         final totalExpenses =
             expenseProvider.getTotalAmount(expenseProvider.expenses);
         final totalIncomes =
             incomeProvider.getTotalAmount(incomeProvider.incomes);
 
-        // Pilih data yang akan ditampilkan
         final displayExpenses =
             _showCurrentMonth ? currentMonthExpenses : totalExpenses;
         final displayIncomes =
@@ -152,8 +149,8 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                   children: [
                     Expanded(
                       child: InkWell(
-                        onTap: () => _navigateToFilteredTransactions(
-                            context, true), // true = income
+                        onTap: () =>
+                            _navigateToFilteredTransactions(context, true),
                         borderRadius:
                             BorderRadius.circular(AppSizes.radiusSmall),
                         child: _buildBalanceItem(
@@ -166,8 +163,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                         ),
                       ),
                     ),
-                    const SizedBox(
-                        width: AppSizes.paddingSmall), // Reduced spacing
+                    const SizedBox(width: AppSizes.paddingSmall),
                     Expanded(
                       child: InkWell(
                         onTap: () => _navigateToFilteredTransactions(
