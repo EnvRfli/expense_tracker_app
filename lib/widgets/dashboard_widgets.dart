@@ -305,7 +305,7 @@ class _FilteredTransactionsSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${isIncome ? context.tr('income') : context.tr('expense')} ${_getDisplayTitle(context)}',
+                      _getTransactionTitle(context),
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -341,7 +341,6 @@ class _FilteredTransactionsSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.paddingLarge),
 
-          // Transaction List
           Expanded(
             child: Consumer3<ExpenseProvider, IncomeProvider, CategoryProvider>(
               builder: (context, expenseProvider, incomeProvider,
@@ -493,6 +492,24 @@ class _FilteredTransactionsSheet extends StatelessWidget {
       return context.tr('this_month');
     } else {
       return context.tr('overall');
+    }
+  }
+
+  String _getTransactionTitle(BuildContext context) {
+    if (dateRange != null) {
+      final start = dateRange!.start;
+      final end = dateRange!.end;
+      final dateRangeText =
+          '${start.day}/${start.month}/${start.year} - ${end.day}/${end.month}/${end.year}';
+      return '${isIncome ? context.tr('income') : context.tr('expense')} $dateRangeText';
+    } else if (showCurrentMonth) {
+      return isIncome
+          ? context.tr('income_this_month')
+          : context.tr('expense_this_month');
+    } else {
+      return isIncome
+          ? context.tr('income_overall')
+          : context.tr('expense_overall');
     }
   }
 

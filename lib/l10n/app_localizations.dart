@@ -51,6 +51,12 @@ abstract class AppLocalizations {
     'no_income_expense': 'Belum ada {type}',
     'no_income_expense_period': '{period}',
 
+    // Combined titles for filtered transactions
+    'income_this_month': 'Pemasukan Bulan Ini',
+    'expense_this_month': 'Pengeluaran Bulan Ini',
+    'income_overall': 'Pemasukan Keseluruhan',
+    'expense_overall': 'Pengeluaran Keseluruhan',
+
     // Transactions
     'add_transaction': 'Tambah Transaksi',
     'edit_transaction': 'Edit Transaksi',
@@ -235,6 +241,12 @@ abstract class AppLocalizations {
     'no_expenses_this_month': 'No expenses this month',
     'no_income_expense': 'No {type} yet',
     'no_income_expense_period': '{period}',
+
+    // Combined titles for filtered transactions
+    'income_this_month': 'This Month Income',
+    'expense_this_month': 'This Month Expense',
+    'income_overall': 'Overall Income',
+    'expense_overall': 'Overall Expense',
 
     // Transactions
     'add_transaction': 'Add Transaction',
