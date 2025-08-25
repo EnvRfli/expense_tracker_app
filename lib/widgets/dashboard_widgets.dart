@@ -8,7 +8,7 @@ import './budget_details_sheet.dart';
 import '../utils/theme.dart';
 import '../screens/transaction_list_screen.dart';
 import '../screens/budget_list_screen.dart';
-import '../l10n/localization_extension.dart'; // Add this import
+import '../l10n/localization_extension.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -363,7 +363,11 @@ class _FilteredTransactionsSheet extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSizes.paddingMedium),
                         Text(
-                          'Belum ada ${isIncome ? 'pemasukan' : 'pengeluaran'}',
+                          context.tr('no_income_expense', params: {
+                            'type': isIncome
+                                ? context.tr('income').toLowerCase()
+                                : context.tr('expense').toLowerCase()
+                          }),
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: Colors.grey[600],

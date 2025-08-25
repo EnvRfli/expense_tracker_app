@@ -6,6 +6,7 @@ import '../widgets/dashboard_widgets.dart';
 import '../widgets/add_transaction_sheet.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
+import '../l10n/localization_extension.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -132,7 +133,7 @@ class DashboardHomeTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Halo!',
+                    context.tr('halo'),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white70,
                         ),
