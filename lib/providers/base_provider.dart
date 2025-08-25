@@ -41,9 +41,7 @@ abstract class BaseProvider extends ChangeNotifier {
     _notifyListenersSafely();
   }
 
-  // Safe notification that defers if called during build
   void _notifyListenersSafely() {
-    // Check if we're in a build phase that could cause issues
     final phase = SchedulerBinding.instance.schedulerPhase;
     if (phase == SchedulerPhase.persistentCallbacks ||
         phase == SchedulerPhase.transientCallbacks ||
@@ -75,13 +73,9 @@ abstract class BaseProvider extends ChangeNotifier {
     }
   }
 
-  // Silent async handler for initialization - no state changes that trigger notifications
   Future<T?> handleAsyncSilent<T>(Future<T> Function() operation) async {
     return handleAsync(operation, silent: true);
   }
 
-  // Base initialize method - override in subclasses
-  Future<void> initialize() async {
-    // Override in subclasses
-  }
+  Future<void> initialize() async {}
 }

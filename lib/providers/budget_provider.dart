@@ -14,7 +14,6 @@ class BudgetProvider extends BaseProvider {
       _budgets.where((budget) => budget.isActive).toList();
   BudgetModel? get selectedBudget => _selectedBudget;
 
-  // Initialize provider
   Future<void> initialize() async {
     await loadBudgets();
   }
@@ -24,7 +23,6 @@ class BudgetProvider extends BaseProvider {
       _budgets = DatabaseService.instance.budgets.values.toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-      // Auto-deactivate budgets whose period has ended
       final now = DateTime.now();
       for (int i = 0; i < _budgets.length; i++) {
         final budget = _budgets[i];
@@ -37,7 +35,6 @@ class BudgetProvider extends BaseProvider {
     });
   }
 
-  // Add new budget
   Future<bool> addBudget({
     required String categoryId,
     required double amount,
@@ -89,14 +86,11 @@ class BudgetProvider extends BaseProvider {
         isRecurring: isRecurring,
       );
 
-      // Calculate initial spent amount
       final spent = _calculateSpentAmount(categoryId, startDate, endDate);
       final budgetWithSpent = budget.updateSpent(spent);
 
-      // Save to database
       await DatabaseService.instance.budgets.put(budget.id, budgetWithSpent);
 
-      // Track change for sync
       await SyncService.instance.trackChange(
         dataType: 'budget',
         dataId: budget.id,
@@ -104,10 +98,8 @@ class BudgetProvider extends BaseProvider {
         dataSnapshot: budgetWithSpent.toJson(),
       );
 
-      // Reload budgets
       await loadBudgets();
 
-      // Send notification for budget creation
       try {
         final categories = DatabaseService.instance.categories.values.toList();
         final category = categories.firstWhere(
@@ -128,11 +120,9 @@ class BudgetProvider extends BaseProvider {
           category,
         );
 
-        // Reset notification tracking for this budget since it's new
         BudgetNotificationService.instance
             .resetBudgetNotificationTracking(budgetWithSpent.id);
       } catch (e) {
-        // Handle notification error silently
         print('Error sending budget creation notification: $e');
       }
 
@@ -142,7 +132,6 @@ class BudgetProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Update budget
   Future<bool> updateBudget({
     required String id,
     String? categoryId,
@@ -176,7 +165,6 @@ class BudgetProvider extends BaseProvider {
         updatedAt: DateTime.now(),
       );
 
-      // Recalculate spent amount if period or category changed
       if (categoryId != null || startDate != null || endDate != null) {
         final spent = _calculateSpentAmount(
           updatedBudget.categoryId,
@@ -189,7 +177,6 @@ class BudgetProvider extends BaseProvider {
         await DatabaseService.instance.budgets.put(id, updatedBudget);
       }
 
-      // Track change for sync
       await SyncService.instance.trackChange(
         dataType: 'budget',
         dataId: id,
@@ -197,7 +184,6 @@ class BudgetProvider extends BaseProvider {
         dataSnapshot: updatedBudget.toJson(),
       );
 
-      // Reload budgets
       await loadBudgets();
 
       return true;
@@ -206,7 +192,6 @@ class BudgetProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Delete budget
   Future<bool> deleteBudget(String id) async {
     final result = await handleAsync(() async {
       final budget = DatabaseService.instance.budgets.get(id);
@@ -214,10 +199,8 @@ class BudgetProvider extends BaseProvider {
         throw Exception('Budget not found');
       }
 
-      // Remove from database
       await DatabaseService.instance.budgets.delete(id);
 
-      // Track change for sync
       await SyncService.instance.trackChange(
         dataType: 'budget',
         dataId: id,
@@ -225,7 +208,6 @@ class BudgetProvider extends BaseProvider {
         dataSnapshot: budget.toJson(),
       );
 
-      // Reload budgets
       await loadBudgets();
 
       return true;
@@ -234,7 +216,6 @@ class BudgetProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Get budget by category
   BudgetModel? getBudgetByCategory(String categoryId) {
     final now = DateTime.now();
     return _budgets.firstWhere(
@@ -258,7 +239,6 @@ class BudgetProvider extends BaseProvider {
     );
   }
 
-  // Get current active budgets
   List<BudgetModel> getCurrentActiveBudgets() {
     final now = DateTime.now();
     return _budgets
@@ -271,13 +251,11 @@ class BudgetProvider extends BaseProvider {
         .toList();
   }
 
-  // Set selected budget
   void setSelectedBudget(BudgetModel? budget) {
     _selectedBudget = budget;
     notifyListeners();
   }
 
-  // Update budget spent amounts
   Future<void> updateBudgetSpentAmounts() async {
     await handleAsync(() async {
       for (final budget in _budgets) {
@@ -297,14 +275,11 @@ class BudgetProvider extends BaseProvider {
     });
   }
 
-  // Calculate spent amount for a category in a period
   double _calculateSpentAmount(
       String categoryId, DateTime startDate, DateTime endDate) {
     final expenses = DatabaseService.instance.expenses.values.where((expense) {
-      // Check category match
       if (expense.categoryId != categoryId) return false;
 
-      // Check if expense date is within budget period (inclusive)
       final expenseDate = expense.date;
       final isAfterStart = expenseDate.isAfter(startDate) ||
           expenseDate.isAtSameMomentAs(startDate);
@@ -317,15 +292,12 @@ class BudgetProvider extends BaseProvider {
     return expenses.fold(0.0, (sum, expense) => sum + expense.amount);
   }
 
-  // Check if two periods overlap
   bool _isOverlappingPeriod(
       DateTime start1, DateTime end1, DateTime start2, DateTime end2) {
-    // Two periods overlap if one starts before the other ends
     return (start1.isBefore(end2) || start1.isAtSameMomentAs(end2)) &&
         (end1.isAfter(start2) || end1.isAtSameMomentAs(start2));
   }
 
-  // Get budget statistics
   Map<String, dynamic> getBudgetStatistics() {
     final activeBudgets = getCurrentActiveBudgets();
 
@@ -381,7 +353,6 @@ class BudgetProvider extends BaseProvider {
     };
   }
 
-  // Get budgets that need alerts
   List<BudgetModel> getBudgetsNeedingAlerts() {
     return getCurrentActiveBudgets()
         .where((budget) =>
@@ -390,7 +361,6 @@ class BudgetProvider extends BaseProvider {
         .toList();
   }
 
-  // Create monthly budgets for all categories
   Future<bool> createMonthlyBudgetsForAllCategories({
     required double defaultAmount,
     required DateTime month,
@@ -405,7 +375,6 @@ class BudgetProvider extends BaseProvider {
 
       bool allSuccess = true;
       for (final category in categories) {
-        // Check if budget already exists for this category and month
         final existingBudget = _budgets.firstWhere(
           (budget) =>
               budget.categoryId == category.id &&
@@ -444,7 +413,6 @@ class BudgetProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Get budget performance over time
   List<Map<String, dynamic>> getBudgetPerformanceHistory(
       String categoryId, int months) {
     final now = DateTime.now();
@@ -487,13 +455,10 @@ class BudgetProvider extends BaseProvider {
     return performance;
   }
 
-  // Method untuk refresh semua budget dengan spent amounts yang terbaru
   Future<void> refreshAllBudgetSpentAmounts() async {
     await handleAsync(() async {
       for (int i = 0; i < _budgets.length; i++) {
         final budget = _budgets[i];
-        // Remove the isActive check - update all budgets including inactive ones
-        // if (!budget.isActive) continue;
 
         final spent = _calculateSpentAmount(
           budget.categoryId,
@@ -505,10 +470,8 @@ class BudgetProvider extends BaseProvider {
           final updatedBudget = budget.updateSpent(spent);
           _budgets[i] = updatedBudget;
 
-          // Update in database
           await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
 
-          // Track change for sync
           await SyncService.instance.trackChange(
             dataType: 'budget',
             dataId: budget.id,
@@ -520,33 +483,26 @@ class BudgetProvider extends BaseProvider {
     });
   }
 
-  // Method untuk check budget alerts dan kirim notifikasi jika perlu
   Future<void> checkBudgetAlerts() async {
     try {
       await refreshAllBudgetSpentAmounts();
 
-      // Get categories for notification
       final categories = DatabaseService.instance.categories.values.toList();
 
-      // Reset tracking for budgets that have started a new period
       _resetTrackingForNewPeriods();
 
-      // Check alerts
       await BudgetNotificationService.instance
           .checkBudgetAlerts(_budgets, categories);
     } catch (e) {
-      // Handle error silently for background task
       print('Error checking budget alerts: $e');
     }
   }
 
-  // Helper method to reset notification tracking for budgets that started a new period
   void _resetTrackingForNewPeriods() {
     final now = DateTime.now();
     for (final budget in _budgets) {
       if (!budget.isActive) continue;
 
-      // Check if this budget just started (within last 24 hours)
       final timeSinceStart = now.difference(budget.startDate).inHours;
       if (timeSinceStart >= 0 && timeSinceStart <= 24) {
         BudgetNotificationService.instance
@@ -555,7 +511,6 @@ class BudgetProvider extends BaseProvider {
     }
   }
 
-  // Method untuk mendapatkan budget yang mendekati atau melampaui batas
   List<BudgetModel> getBudgetsNeedingAttention() {
     return _budgets
         .where((budget) =>
@@ -566,7 +521,6 @@ class BudgetProvider extends BaseProvider {
         .toList();
   }
 
-  // Method untuk mendapatkan total sisa budget hari ini
   double getTodayRemainingBudget() {
     final today = DateTime.now();
     final dailyBudgets = _budgets.where((budget) =>
@@ -579,7 +533,6 @@ class BudgetProvider extends BaseProvider {
     return dailyBudgets.fold(0.0, (sum, budget) => sum + budget.remaining);
   }
 
-  // Method untuk mendapatkan progress budget minggu ini
   Map<String, dynamic> getWeeklyBudgetProgress() {
     final now = DateTime.now();
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
@@ -620,7 +573,6 @@ class BudgetProvider extends BaseProvider {
     };
   }
 
-  // Auto-create recurring budgets
   Future<void> createRecurringBudgets() async {
     await handleAsync(() async {
       final now = DateTime.now();
@@ -629,13 +581,10 @@ class BudgetProvider extends BaseProvider {
           .toList();
 
       for (final budget in recurringBudgets) {
-        // Check if budget period has ended
         if (now.isAfter(budget.endDate)) {
-          // Calculate next period dates
           final nextPeriodDates =
               _calculateNextPeriodDates(budget.period, budget.endDate);
 
-          // Check if next period budget already exists
           final existingNextBudget = _budgets.firstWhere(
             (b) =>
                 b.categoryId == budget.categoryId &&
@@ -655,7 +604,6 @@ class BudgetProvider extends BaseProvider {
             ),
           );
 
-          // Create next period budget if doesn't exist
           if (existingNextBudget.id.isEmpty) {
             final success = await addBudget(
               categoryId: budget.categoryId,
@@ -679,7 +627,6 @@ class BudgetProvider extends BaseProvider {
     });
   }
 
-  // Calculate next period dates based on period type
   Map<String, DateTime> _calculateNextPeriodDates(
       String period, DateTime lastEndDate) {
     switch (period) {
@@ -703,7 +650,6 @@ class BudgetProvider extends BaseProvider {
         return {'start': nextStart, 'end': nextEnd};
 
       default:
-        // For custom periods, default to monthly
         final nextStart = DateTime(lastEndDate.year, lastEndDate.month + 1, 1);
         final nextEnd =
             DateTime(nextStart.year, nextStart.month + 1, 0, 23, 59, 59);
@@ -711,14 +657,12 @@ class BudgetProvider extends BaseProvider {
     }
   }
 
-  // Get recurring budgets
   List<BudgetModel> getRecurringBudgets() {
     return _budgets
         .where((budget) => budget.isRecurring && budget.isActive)
         .toList();
   }
 
-  // Check and create overdue recurring budgets (untuk budget yang terlewat)
   Future<void> checkAndCreateOverdueBudgets() async {
     await handleAsync(() async {
       final now = DateTime.now();
@@ -727,14 +671,12 @@ class BudgetProvider extends BaseProvider {
           .toList();
 
       for (final budget in recurringBudgets) {
-        // Check for multiple missing periods
         var currentEndDate = budget.endDate;
 
         while (now.isAfter(currentEndDate)) {
           final nextPeriodDates =
               _calculateNextPeriodDates(budget.period, currentEndDate);
 
-          // Check if budget for this period exists
           final existingBudget = _budgets.firstWhere(
             (b) =>
                 b.categoryId == budget.categoryId &&

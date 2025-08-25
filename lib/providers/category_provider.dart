@@ -16,21 +16,17 @@ class CategoryProvider extends BaseProvider {
       _categories.where((cat) => cat.type == 'income' && cat.isActive).toList();
   CategoryModel? get selectedCategory => _selectedCategory;
 
-  // Initialize provider
   Future<void> initialize() async {
     await loadCategories();
   }
 
-  // Load all categories
   Future<void> loadCategories() async {
     await handleAsync(() async {
       _categories = DatabaseService.instance.categories.values.toList()
         ..sort((a, b) => a.name.compareTo(b.name));
-      // Don't call notifyListeners() here - handleAsync will handle it
     });
   }
 
-  // Add new category
   Future<bool> addCategory({
     required String name,
     required String type,
@@ -49,10 +45,8 @@ class CategoryProvider extends BaseProvider {
         updatedAt: now,
       );
 
-      // Save to database
       await DatabaseService.instance.categories.put(category.id, category);
 
-      // Track change for sync
       await SyncService.instance.trackChange(
         dataType: 'category',
         dataId: category.id,
@@ -60,7 +54,6 @@ class CategoryProvider extends BaseProvider {
         dataSnapshot: category.toJson(),
       );
 
-      // Reload categories
       await loadCategories();
 
       return true;
@@ -69,7 +62,6 @@ class CategoryProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Update category
   Future<bool> updateCategory({
     required String id,
     String? name,
@@ -84,7 +76,6 @@ class CategoryProvider extends BaseProvider {
         throw Exception('Category not found');
       }
 
-      // Don't allow deactivating default categories
       if (existingCategory.isDefault && isActive == false) {
         throw Exception('Cannot deactivate default category');
       }
@@ -98,10 +89,8 @@ class CategoryProvider extends BaseProvider {
         updatedAt: DateTime.now(),
       );
 
-      // Save to database
       await DatabaseService.instance.categories.put(id, updatedCategory);
 
-      // Track change for sync
       await SyncService.instance.trackChange(
         dataType: 'category',
         dataId: id,
@@ -109,7 +98,6 @@ class CategoryProvider extends BaseProvider {
         dataSnapshot: updatedCategory.toJson(),
       );
 
-      // Reload categories
       await loadCategories();
 
       return true;
@@ -118,7 +106,6 @@ class CategoryProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Delete category (soft delete for default categories)
   Future<bool> deleteCategory(String id) async {
     final result = await handleAsync(() async {
       final category = DatabaseService.instance.categories.get(id);
@@ -126,7 +113,6 @@ class CategoryProvider extends BaseProvider {
         throw Exception('Category not found');
       }
 
-      // Check if category is being used
       final expenseCount = DatabaseService.instance.expenses.values
           .where((expense) => expense.categoryId == id)
           .length;
@@ -144,18 +130,15 @@ class CategoryProvider extends BaseProvider {
       }
 
       if (category.isDefault) {
-        // Soft delete for default categories
         final updatedCategory = category.copyWith(
           isActive: false,
           updatedAt: DateTime.now(),
         );
         await DatabaseService.instance.categories.put(id, updatedCategory);
       } else {
-        // Hard delete for custom categories
         await DatabaseService.instance.categories.delete(id);
       }
 
-      // Track change for sync
       await SyncService.instance.trackChange(
         dataType: 'category',
         dataId: id,
@@ -163,7 +146,6 @@ class CategoryProvider extends BaseProvider {
         dataSnapshot: category.toJson(),
       );
 
-      // Reload categories
       await loadCategories();
 
       return true;
@@ -172,7 +154,6 @@ class CategoryProvider extends BaseProvider {
     return result ?? false;
   }
 
-  // Get category by ID
   CategoryModel? getCategoryById(String id) {
     return _categories.firstWhere(
       (category) => category.id == id,
@@ -188,20 +169,17 @@ class CategoryProvider extends BaseProvider {
     );
   }
 
-  // Get categories by type
   List<CategoryModel> getCategoriesByType(String type) {
     return _categories
         .where((category) => category.type == type && category.isActive)
         .toList();
   }
 
-  // Set selected category
   void setSelectedCategory(CategoryModel? category) {
     _selectedCategory = category;
     notifyListeners();
   }
 
-  // Search categories
   List<CategoryModel> searchCategories(String query) {
     if (query.isEmpty) return _categories;
 
@@ -211,7 +189,6 @@ class CategoryProvider extends BaseProvider {
     }).toList();
   }
 
-  // Get category usage statistics
   Map<String, dynamic> getCategoryUsageStats(String categoryId) {
     final category = getCategoryById(categoryId);
     if (category == null) return {};
@@ -229,7 +206,6 @@ class CategoryProvider extends BaseProvider {
     final totalIncomes =
         incomes.fold(0.0, (sum, income) => sum + income.amount);
 
-    // Get current month stats
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
     final endOfMonth = DateTime(now.year, now.month + 1, 0);
@@ -273,21 +249,18 @@ class CategoryProvider extends BaseProvider {
     };
   }
 
-  // Get all categories usage stats
   List<Map<String, dynamic>> getAllCategoriesUsageStats() {
     return _categories
         .map((category) => getCategoryUsageStats(category.id))
         .toList();
   }
 
-  // Check if category name already exists
   bool isCategoryNameExists(String name, {String? excludeId}) {
     return _categories.any((category) =>
         category.name.toLowerCase() == name.toLowerCase() &&
         category.id != excludeId);
   }
 
-  // Get most used categories
   List<CategoryModel> getMostUsedCategories({int limit = 5}) {
     final stats = getAllCategoriesUsageStats();
     stats.sort((a, b) => (b['totalTransactions'] as int)
@@ -300,11 +273,8 @@ class CategoryProvider extends BaseProvider {
         .toList();
   }
 
-  // Restore default categories
   Future<bool> restoreDefaultCategories() async {
     final result = await handleAsync(() async {
-      // This would recreate the default categories
-      // You can implement the logic to restore deleted default categories
       await loadCategories();
       return true;
     });
