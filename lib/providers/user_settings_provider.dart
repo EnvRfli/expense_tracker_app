@@ -1019,7 +1019,6 @@ class UserSettingsProvider extends BaseProvider {
           final externalDir = await getExternalStorageDirectory();
           if (externalDir != null) {
             final pathParts = externalDir.path.split('/');
-            print('External path parts: $pathParts');
             final storageIndex =
                 pathParts.indexWhere((part) => part == 'storage');
             if (storageIndex >= 0 && pathParts.length > storageIndex + 2) {
@@ -1028,23 +1027,17 @@ class UserSettingsProvider extends BaseProvider {
               final downloadPath = '$storagePath/Download';
               final downloadDir = Directory(downloadPath);
 
-              print('Trying Download path: $downloadPath');
-              print('Download dir exists: ${await downloadDir.exists()}');
-
               if (await downloadDir.exists()) {
                 exportDir = Directory('$downloadPath/ExpenseTracker');
-                print('Using Download folder: ${exportDir.path}');
               }
             }
           }
           if (exportDir == null) {
             final documentsDir = await getApplicationDocumentsDirectory();
             exportDir = Directory('${documentsDir.path}/ExpenseTracker_Export');
-            print('Fallback to Documents: ${exportDir.path}');
           }
           if (!await exportDir.exists()) {
             await exportDir.create(recursive: true);
-            print('Created export directory: ${exportDir.path}');
           }
 
           final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -1053,28 +1046,23 @@ class UserSettingsProvider extends BaseProvider {
               await _exportExpensesToDownloads(exportDir, timestamp);
           if (expensesPath != null) {
             exportedFiles['expenses'] = expensesPath;
-            print('Exported expenses to: $expensesPath');
           }
           final incomesPath =
               await _exportIncomesToDownloads(exportDir, timestamp);
           if (incomesPath != null) {
             exportedFiles['incomes'] = incomesPath;
-            print('Exported incomes to: $incomesPath');
           }
           final categoriesPath =
               await _exportCategoriesToDownloads(exportDir, timestamp);
           if (categoriesPath != null) {
             exportedFiles['categories'] = categoriesPath;
-            print('Exported categories to: $categoriesPath');
           }
           final budgetsPath =
               await _exportBudgetsToDownloads(exportDir, timestamp);
           if (budgetsPath != null) {
             exportedFiles['budgets'] = budgetsPath;
-            print('Exported budgets to: $budgetsPath');
           }
 
-          print('Total exported files: ${exportedFiles.length}');
           return exportedFiles;
         } catch (e) {
           print('Error in Android export: $e');
@@ -1185,6 +1173,7 @@ class UserSettingsProvider extends BaseProvider {
       throw Exception(
           'Could not determine file type. Please ensure the CSV file is properly formatted.');
     }
+
     int totalRecords = lines.length - 1; // Excluding header
     int duplicateCount = 0;
     List<String> existingIds = [];
@@ -1376,7 +1365,7 @@ class UserSettingsProvider extends BaseProvider {
       final categories = DatabaseService.instance.categories.values.toList();
       final csvData = StringBuffer();
       csvData.writeln(
-          'ID,Category,Budget Amount,Spent Amount,Start Date,End Date,Alert Percentage,Is Active,Created At,Updated At');
+          'ID,Category,Budget Amount,Spent Amount,Period,Start Date,End Date,Alert Percentage,Is Active,Created At,Updated At');
 
       for (final budget in budgets) {
         final category = categories.firstWhere(
@@ -1397,6 +1386,7 @@ class UserSettingsProvider extends BaseProvider {
           category.name,
           budget.amount,
           budget.spent,
+          budget.period,
           budget.startDate.toIso8601String(),
           budget.endDate.toIso8601String(),
           budget.alertPercentage,
@@ -1456,6 +1446,7 @@ class UserSettingsProvider extends BaseProvider {
       throw Exception(
           'Could not determine file type. Please ensure the CSV file is properly formatted.');
     }
+
     for (int i = 1; i < lines.length; i++) {
       final line = lines[i].trim();
       if (line.isEmpty) continue;
@@ -1501,7 +1492,6 @@ class UserSettingsProvider extends BaseProvider {
         ? DateTime.now().millisecondsSinceEpoch.toString()
         : fields[0];
     if (DatabaseService.instance.expenses.containsKey(id)) {
-      print('Skipping expense with duplicate ID: $id');
       return false; // Skip duplicate
     }
 
@@ -1536,7 +1526,6 @@ class UserSettingsProvider extends BaseProvider {
         ? DateTime.now().millisecondsSinceEpoch.toString()
         : fields[0];
     if (DatabaseService.instance.incomes.containsKey(id)) {
-      print('Skipping income with duplicate ID: $id');
       return false; // Skip duplicate
     }
 
@@ -1566,7 +1555,6 @@ class UserSettingsProvider extends BaseProvider {
         ? DateTime.now().millisecondsSinceEpoch.toString()
         : fields[0];
     if (DatabaseService.instance.categories.containsKey(id)) {
-      print('Skipping category with duplicate ID: $id');
       return false; // Skip duplicate
     }
 
@@ -1585,36 +1573,44 @@ class UserSettingsProvider extends BaseProvider {
   }
 
   Future<bool> _importBudgetFromCSVLineForFilePicker(String line) async {
-    final fields = _parseCSVLineForFilePicker(line);
-    if (fields.length < 10) throw Exception('Invalid budget CSV format');
+    try {
+      final fields = _parseCSVLineForFilePicker(line);
 
-    final id = fields[0].isEmpty
-        ? DateTime.now().millisecondsSinceEpoch.toString()
-        : fields[0];
-    if (DatabaseService.instance.budgets.containsKey(id)) {
-      print('Skipping budget with duplicate ID: $id');
-      return false; // Skip duplicate
+      if (fields.length < 11) {
+        throw Exception(
+            'Invalid budget CSV format. Expected 11 fields, got ${fields.length}');
+      }
+
+      final id = fields[0].isEmpty
+          ? DateTime.now().millisecondsSinceEpoch.toString()
+          : fields[0];
+      if (DatabaseService.instance.budgets.containsKey(id)) {
+        return false; // Skip duplicate
+      }
+
+      final budget = BudgetModel(
+        id: id,
+        categoryId:
+            await _findOrCreateCategoryIdForFilePicker(fields[1], 'expense'),
+        amount: double.parse(fields[2]), // budget amount
+        spent: double.parse(fields[3]), // spent amount
+        period: fields[4], // period from CSV
+        startDate: DateTime.parse(fields[5]),
+        endDate: DateTime.parse(fields[6]),
+        alertPercentage: int.parse(fields[7]), // alert percentage
+        isActive: fields[8].toLowerCase() == 'true',
+        createdAt: DateTime.parse(fields[9]),
+        updatedAt: DateTime.parse(fields[10]),
+        alertEnabled: true,
+        isRecurring: false,
+      );
+
+      await DatabaseService.instance.budgets.put(budget.id, budget);
+      return true; // Successfully imported
+    } catch (e) {
+      print('Error importing budget line: $e');
+      rethrow;
     }
-
-    final budget = BudgetModel(
-      id: id,
-      categoryId:
-          await _findOrCreateCategoryIdForFilePicker(fields[1], 'expense'),
-      amount: double.parse(fields[2]), // budget amount
-      spent: double.parse(fields[3]), // spent amount
-      period: 'monthly', // default period
-      startDate: DateTime.parse(fields[4]),
-      endDate: DateTime.parse(fields[5]),
-      alertPercentage: int.parse(fields[6]), // alert percentage
-      isActive: fields[7].toLowerCase() == 'true',
-      createdAt: fields.length > 8 ? DateTime.parse(fields[8]) : DateTime.now(),
-      updatedAt: fields.length > 9 ? DateTime.parse(fields[9]) : DateTime.now(),
-      alertEnabled: true,
-      isRecurring: false,
-    );
-
-    await DatabaseService.instance.budgets.put(budget.id, budget);
-    return true; // Successfully imported
   }
 
   List<String> _parseCSVLineForFilePicker(String line) {
