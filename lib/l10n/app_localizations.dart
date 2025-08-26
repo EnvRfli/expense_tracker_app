@@ -96,6 +96,9 @@ abstract class AppLocalizations {
     'example_description': 'Contoh: Makan Siang di Restoran',
     'description_is_required': 'Deskripsi tidak boleh kosong',
     'select_category': 'Pilih Kategori',
+    'select_payment_method': 'Pilih Metode Pembayaran',
+    'location_optional': 'Lokasi (Opsional)',
+    'location_example': 'Contoh: Mall, Restoran, Supermarket',
 
     // Budget
     'budget_management': 'Budget Management',
@@ -298,6 +301,9 @@ abstract class AppLocalizations {
     'example_description': 'E.g.: Lunch at Restaurant',
     'description_is_required': 'Description is required',
     'select_category': 'Select Category',
+    'select_payment_method': 'Select Payment Method',
+    'location_optional': 'Location (Optional)',
+    'location_example': 'E.g.: Mall, Restaurant, Supermarket',
 
     // Budget
     'budget_management': 'Budget Management',

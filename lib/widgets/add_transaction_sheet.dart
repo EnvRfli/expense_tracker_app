@@ -613,7 +613,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Tanggal',
+                  context.tr('date'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -673,7 +673,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Metode Pembayaran',
+                context.tr('payment_method'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -699,11 +699,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               Icons.keyboard_arrow_down,
               color: AppColors.warning,
             ),
-            items: const [
-              DropdownMenuItem(value: 'cash', child: Text('Tunai')),
+            items: [
+              DropdownMenuItem(value: 'cash', child: Text(context.tr('cash'))),
               DropdownMenuItem(
                   value: 'card', child: Text('Kartu Debit/Kredit')),
-              DropdownMenuItem(value: 'transfer', child: Text('Transfer Bank')),
+              DropdownMenuItem(
+                  value: 'transfer', child: Text(context.tr('bank_transfer'))),
               DropdownMenuItem(value: 'ewallet', child: Text('E-Wallet')),
             ],
             onChanged: (value) {
@@ -714,7 +715,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             },
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Pilih metode pembayaran';
+                return context.tr('select_payment_method');
               }
               return null;
             },
@@ -756,7 +757,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Lokasi (Opsional)',
+                context.tr('location_optional'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -774,7 +775,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               color: Theme.of(context).colorScheme.onSurface,
             ),
             decoration: InputDecoration(
-              hintText: 'Contoh: Mall, Restoran, Supermarket',
+              hintText: context.tr('location_example'),
               hintStyle: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 14,
