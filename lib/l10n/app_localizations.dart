@@ -33,6 +33,7 @@ abstract class AppLocalizations {
     'balance_this_month': 'Saldo Bulan Ini',
     'total_balance': 'Saldo Keseluruhan',
     'switch_to_total': 'Total',
+    'total': 'jumlah',
     'switch_to_monthly': 'Bulan',
     'income': 'Pemasukan',
     'expense': 'Pengeluaran',
@@ -60,6 +61,7 @@ abstract class AppLocalizations {
 
     // Transactions
     'add_transaction': 'Tambah Transaksi',
+    'add_transaction_desc': 'Catat pemasukan atau pengeluaran Anda',
     'edit_transaction': 'Edit Transaksi',
     'transaction_type': 'Jenis Transaksi',
     'amount': 'Jumlah',
@@ -225,6 +227,7 @@ abstract class AppLocalizations {
     'balance_this_month': 'This Month Balance',
     'total_balance': 'Total Balance',
     'switch_to_total': 'Total',
+    'total': 'Amount',
     'switch_to_monthly': 'Month',
     'income': 'Income',
     'expense': 'Expense',
@@ -252,6 +255,7 @@ abstract class AppLocalizations {
 
     // Transactions
     'add_transaction': 'Add Transaction',
+    'add_transaction_desc': 'Record your income or expense',
     'edit_transaction': 'Edit Transaction',
     'transaction_type': 'Transaction Type',
     'amount': 'Amount',

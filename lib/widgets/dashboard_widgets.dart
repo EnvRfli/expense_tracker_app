@@ -763,7 +763,7 @@ class BudgetOverviewCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSizes.paddingMedium),
                   Text(
-                    context.tr('no_active_budgets'),
+                    context.tr('no_active_budget'),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppSizes.paddingSmall),

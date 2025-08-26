@@ -6,6 +6,7 @@ import '../providers/providers.dart';
 import '../models/models.dart';
 import '../utils/theme.dart';
 import '../services/image_picker_service.dart';
+import '../l10n/localization_extension.dart';
 
 // Custom formatter untuk format ribuan dengan koma
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
@@ -171,7 +172,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             child: Column(
               children: [
                 Text(
-                  'Tambah Transaksi',
+                  context.tr('add_transaction'),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primaryColor,
@@ -179,7 +180,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Catat keuangan Anda dengan mudah',
+                  context.tr('add_transaction_desc'),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context)
                             .colorScheme
@@ -237,7 +238,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                     children: [
                       Icon(Icons.remove_circle, size: 18),
                       const SizedBox(width: 6),
-                      Text('Pengeluaran'),
+                      Text(context.tr('expense')),
                     ],
                   ),
                 ),
@@ -248,7 +249,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                     children: [
                       Icon(Icons.add_circle, size: 18),
                       const SizedBox(width: 6),
-                      Text('Pemasukan'),
+                      Text(context.tr('income')),
                     ],
                   ),
                 ),
@@ -356,7 +357,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Jumlah ${isIncome ? 'Pemasukan' : 'Pengeluaran'}',
+                context.tr('total') +
+                    ' ${isIncome ? context.tr('income') : context.tr('expense')}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
