@@ -150,14 +150,19 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                   ),
-                  Text(
-                    _getPeriodText(budget),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.6),
-                        ),
+                  SizedBox(
+                    width: 12,
+                  ),
+                  Expanded(
+                    child: Text(
+                      _getPeriodText(budget),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
+                          ),
+                    ),
                   ),
                 ],
               ),

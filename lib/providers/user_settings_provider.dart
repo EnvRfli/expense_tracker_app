@@ -4,9 +4,11 @@ import 'base_provider.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserSettingsProvider extends BaseProvider {
   UserModel? _user;
+  bool _isAmountVisible = true;
 
   UserModel? get user => _user;
   String get currency => _user?.currency ?? 'IDR';
@@ -20,11 +22,26 @@ class UserSettingsProvider extends BaseProvider {
   int get budgetAlertPercentage => _user?.budgetAlertPercentage ?? 80;
   String? get pinCode => _user?.pinCode;
   bool get pinEnabled => _user?.pinEnabled ?? false;
+  bool get isAmountVisible => _isAmountVisible;
   @override
   Future<void> initialize() async {
     await handleAsyncSilent(() async {
       _user = DatabaseService.instance.getCurrentUser();
+      await _loadAmountVisibility();
     });
+  }
+
+  Future<void> _loadAmountVisibility() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isAmountVisible = prefs.getBool('isAmountVisible') ?? true;
+    notifyListeners();
+  }
+
+  Future<void> updateAmountVisibility(bool isVisible) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isAmountVisible', isVisible);
+    _isAmountVisible = isVisible;
+    notifyListeners();
   }
 
   Future<void> loadUserSettings() async {

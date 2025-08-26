@@ -41,7 +41,6 @@ class BalanceSummaryCard extends StatefulWidget {
 
 class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
   bool _showCurrentMonth = true;
-  bool _isAmountVisible = true;
 
   @override
   Widget build(BuildContext context) {
@@ -95,9 +94,8 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                         // Hide/Show Amount Button
                         InkWell(
                           onTap: () {
-                            setState(() {
-                              _isAmountVisible = !_isAmountVisible;
-                            });
+                            userSettings.updateAmountVisibility(
+                                !userSettings.isAmountVisible);
                           },
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
@@ -111,7 +109,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                               ),
                             ),
                             child: Icon(
-                              _isAmountVisible
+                              userSettings.isAmountVisible
                                   ? Icons.visibility
                                   : Icons.visibility_off,
                               color: Colors.white,
@@ -172,7 +170,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                 ),
                 const SizedBox(height: AppSizes.paddingSmall),
                 Text(
-                  _isAmountVisible
+                  userSettings.isAmountVisible
                       ? userSettings.formatCurrency(balance)
                       : 'Rp *********',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -196,7 +194,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                           AppColors.income,
                           Icons.arrow_upward,
                           userSettings,
-                          _isAmountVisible,
+                          userSettings.isAmountVisible,
                         ),
                       ),
                     ),
@@ -214,7 +212,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                           AppColors.expense,
                           Icons.arrow_downward,
                           userSettings,
-                          _isAmountVisible,
+                          userSettings.isAmountVisible,
                         ),
                       ),
                     ),

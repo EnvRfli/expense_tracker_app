@@ -148,46 +148,7 @@ class DashboardHomeTab extends StatelessWidget {
               ),
               titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
             ),
-            actions: [
-              Consumer<SyncProvider>(
-                builder: (context, syncProvider, child) {
-                  return IconButton(
-                    icon: Stack(
-                      children: [
-                        const Icon(Icons.cloud_sync),
-                        if (syncProvider.pendingItemsCount > 0)
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 12,
-                                minHeight: 12,
-                              ),
-                              child: Text(
-                                '${syncProvider.pendingItemsCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    onPressed: () {
-                      // Show sync options
-                    },
-                  );
-                },
-              ),
-            ],
+            actions: [],
           ),
           SliverPadding(
             padding: const EdgeInsets.all(AppSizes.paddingMedium),
