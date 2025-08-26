@@ -54,10 +54,16 @@ abstract class AppLocalizations {
     'no_income_expense_period': '{period}',
 
     // Combined titles for filtered transactions
-    'income_this_month': 'Pemasukan Bulan Ini',
-    'expense_this_month': 'Pengeluaran Bulan Ini',
-    'income_overall': 'Pemasukan Keseluruhan',
-    'expense_overall': 'Pengeluaran Keseluruhan',
+    'income_this_month': 'This Month Income',
+    'expense_this_month': 'This Month Expense',
+    'income_overall': 'Overall Income',
+    'expense_overall': 'Overall Expense',
+
+    'total_income': 'Total Income',
+    'total_expense': 'Total Expense',
+
+    'income_amount': 'Jumlah Pemasukan',
+    'expense_amount': 'Jumlah Pengeluaran',
 
     // Transactions
     'add_transaction': 'Tambah Transaksi',
@@ -85,6 +91,11 @@ abstract class AppLocalizations {
     'weekly': 'Mingguan',
     'monthly': 'Bulanan',
     'yearly': 'Tahunan',
+    'amount_is_required': 'Jumlah tidak boleh kosong',
+    'valid_amount_required': 'Masukkan jumlah yang valid',
+    'example_description': 'Contoh: Makan Siang di Restoran',
+    'description_is_required': 'Deskripsi tidak boleh kosong',
+    'select_category': 'Pilih Kategori',
 
     // Budget
     'budget_management': 'Budget Management',
@@ -253,6 +264,9 @@ abstract class AppLocalizations {
     'income_overall': 'Overall Income',
     'expense_overall': 'Overall Expense',
 
+    'income_amount': 'Income Amount',
+    'expense_amount': 'Expense Amount',
+
     // Transactions
     'add_transaction': 'Add Transaction',
     'add_transaction_desc': 'Record your income or expense',
@@ -279,6 +293,11 @@ abstract class AppLocalizations {
     'weekly': 'Weekly',
     'monthly': 'Monthly',
     'yearly': 'Yearly',
+    'amount_is_required': 'Amount is required',
+    'valid_amount_required': 'Enter a valid amount',
+    'example_description': 'E.g.: Lunch at Restaurant',
+    'description_is_required': 'Description is required',
+    'select_category': 'Select Category',
 
     // Budget
     'budget_management': 'Budget Management',

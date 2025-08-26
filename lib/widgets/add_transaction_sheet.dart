@@ -357,8 +357,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                context.tr('total') +
-                    ' ${isIncome ? context.tr('income') : context.tr('expense')}',
+                context.tr(isIncome ? 'income_amount' : 'expense_amount'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -398,13 +397,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Jumlah tidak boleh kosong';
+                return context.tr('amount_is_required');
               }
               // Remove commas for validation
               String cleanValue = value.replaceAll(',', '');
               if (double.tryParse(cleanValue) == null ||
                   double.parse(cleanValue) <= 0) {
-                return 'Masukkan jumlah yang valid';
+                return context.tr('valid_amount_required');
               }
               return null;
             },
@@ -446,7 +445,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Deskripsi',
+                context.tr('description'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -464,7 +463,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               color: Theme.of(context).colorScheme.onSurface,
             ),
             decoration: InputDecoration(
-              hintText: 'Contoh: Makan siang di restoran',
+              hintText: context.tr('example_description'),
               hintStyle: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 14,
@@ -476,7 +475,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Deskripsi tidak boleh kosong';
+                return context.tr('description_is_required');
               }
               return null;
             },
@@ -516,7 +515,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Kategori',
+                context.tr('category'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -544,8 +543,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                   fontSize: 14,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
-                decoration: const InputDecoration(
-                  hintText: 'Pilih kategori',
+                decoration: InputDecoration(
+                  hintText: context.tr('select_category'),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -570,7 +569,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 },
                 validator: (value) {
                   if (value == null) {
-                    return 'Pilih kategori';
+                    return context.tr('select_category');
                   }
                   return null;
                 },
