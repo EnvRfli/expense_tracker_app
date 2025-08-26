@@ -41,6 +41,7 @@ class BalanceSummaryCard extends StatefulWidget {
 
 class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
   bool _showCurrentMonth = true;
+  bool _isAmountVisible = true;
 
   @override
   Widget build(BuildContext context) {
@@ -89,56 +90,91 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                             color: Colors.white70,
                           ),
                     ),
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          _showCurrentMonth = !_showCurrentMonth;
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                    Row(
+                      children: [
+                        // Hide/Show Amount Button
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _isAmountVisible = !_isAmountVisible;
+                            });
+                          },
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _showCurrentMonth
-                                  ? Icons.calendar_month
-                                  : Icons.timeline,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(
+                              _isAmountVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                               color: Colors.white,
                               size: 16,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _showCurrentMonth
-                                  ? context.tr('switch_to_total')
-                                  : context.tr('switch_to_monthly'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Switch Month/Total Button
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _showCurrentMonth = !_showCurrentMonth;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
                               ),
                             ),
-                          ],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _showCurrentMonth
+                                      ? Icons.calendar_month
+                                      : Icons.timeline,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _showCurrentMonth
+                                      ? context.tr('switch_to_total')
+                                      : context.tr('switch_to_monthly'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
                 const SizedBox(height: AppSizes.paddingSmall),
                 Text(
-                  userSettings.formatCurrency(balance),
+                  _isAmountVisible
+                      ? userSettings.formatCurrency(balance)
+                      : 'Rp *********',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -160,6 +196,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                           AppColors.income,
                           Icons.arrow_upward,
                           userSettings,
+                          _isAmountVisible,
                         ),
                       ),
                     ),
@@ -177,6 +214,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
                           AppColors.expense,
                           Icons.arrow_downward,
                           userSettings,
+                          _isAmountVisible,
                         ),
                       ),
                     ),
@@ -197,6 +235,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
     Color color,
     IconData icon,
     UserSettingsProvider userSettings,
+    bool isAmountVisible,
   ) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingSmall), // Reduced padding
@@ -225,7 +264,7 @@ class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
           ),
           const SizedBox(height: 4),
           Text(
-            userSettings.formatCurrency(amount),
+            isAmountVisible ? userSettings.formatCurrency(amount) : 'Rp ******',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -763,7 +802,7 @@ class BudgetOverviewCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSizes.paddingMedium),
                   Text(
-                    context.tr('no_active_budget'),
+                    context.tr('no_active_budgets'),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppSizes.paddingSmall),
