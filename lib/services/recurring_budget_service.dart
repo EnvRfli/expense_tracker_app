@@ -20,8 +20,8 @@ class RecurringBudgetService {
 
   // Start periodic check for recurring budgets
   void _startPeriodicCheck() {
-    // Check every hour for recurring budgets
-    _timer = Timer.periodic(const Duration(hours: 1), (timer) {
+    // Check every 15 minutes for recurring budgets (especially important for daily budgets)
+    _timer = Timer.periodic(const Duration(minutes: 15), (timer) {
       _checkAndCreateRecurringBudgets();
     });
 
@@ -64,6 +64,6 @@ class RecurringBudgetService {
   // Get next check time
   DateTime? get nextCheckTime {
     if (_timer == null) return null;
-    return DateTime.now().add(const Duration(hours: 1));
+    return DateTime.now().add(const Duration(minutes: 15));
   }
 }

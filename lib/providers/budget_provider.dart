@@ -580,10 +580,22 @@ class BudgetProvider extends BaseProvider {
           .where((budget) => budget.isRecurring && budget.isActive)
           .toList();
 
+      print('=== Checking Recurring Budgets ===');
+      print('Current time: $now');
+      print('Found ${recurringBudgets.length} recurring budgets');
+
       for (final budget in recurringBudgets) {
+        print(
+            'Checking budget: ${budget.id} (${budget.period}) - End: ${budget.endDate}');
+
         if (now.isAfter(budget.endDate)) {
+          print('Budget ${budget.id} has expired, creating next period');
+
           final nextPeriodDates =
               _calculateNextPeriodDates(budget.period, budget.endDate);
+
+          print(
+              'Next period: ${nextPeriodDates['start']} to ${nextPeriodDates['end']}');
 
           final existingNextBudget = _budgets.firstWhere(
             (b) =>
@@ -605,6 +617,9 @@ class BudgetProvider extends BaseProvider {
           );
 
           if (existingNextBudget.id.isEmpty) {
+            print(
+                'Creating new recurring budget for category ${budget.categoryId}');
+
             final success = await addBudget(
               categoryId: budget.categoryId,
               amount: budget.amount,
@@ -619,11 +634,21 @@ class BudgetProvider extends BaseProvider {
 
             if (success) {
               print(
-                  'Auto-created recurring budget for category ${budget.categoryId}, period ${budget.period}');
+                  '✅ Auto-created recurring budget for category ${budget.categoryId}, period ${budget.period}');
+            } else {
+              print(
+                  '❌ Failed to create recurring budget for category ${budget.categoryId}');
             }
+          } else {
+            print(
+                'Budget for next period already exists: ${existingNextBudget.id}');
           }
+        } else {
+          print('Budget ${budget.id} is still active until ${budget.endDate}');
         }
       }
+
+      print('=== Recurring Budget Check Complete ===');
     });
   }
 
@@ -631,8 +656,9 @@ class BudgetProvider extends BaseProvider {
       String period, DateTime lastEndDate) {
     switch (period) {
       case 'daily':
-        final nextStart =
-            DateTime(lastEndDate.year, lastEndDate.month, lastEndDate.day + 1);
+        // For daily budget, next period starts the next day at 00:00:00
+        final nextStart = DateTime(
+            lastEndDate.year, lastEndDate.month, lastEndDate.day + 1, 0, 0, 0);
         final nextEnd = DateTime(
             nextStart.year, nextStart.month, nextStart.day, 23, 59, 59);
         return {'start': nextStart, 'end': nextEnd};
@@ -670,10 +696,18 @@ class BudgetProvider extends BaseProvider {
           .where((budget) => budget.isRecurring && budget.isActive)
           .toList();
 
+      print('=== Checking Overdue Recurring Budgets ===');
+      print('Current time: $now');
+      print('Found ${recurringBudgets.length} recurring budgets to check');
+
       for (final budget in recurringBudgets) {
         var currentEndDate = budget.endDate;
+        print(
+            'Checking budget: ${budget.id} (${budget.period}) - Original End: ${budget.endDate}');
 
         while (now.isAfter(currentEndDate)) {
+          print('Creating overdue budget for period ending: $currentEndDate');
+
           final nextPeriodDates =
               _calculateNextPeriodDates(budget.period, currentEndDate);
 
@@ -697,6 +731,9 @@ class BudgetProvider extends BaseProvider {
           );
 
           if (existingBudget.id.isEmpty) {
+            print(
+                'Creating overdue recurring budget: ${nextPeriodDates['start']} to ${nextPeriodDates['end']}');
+
             await addBudget(
               categoryId: budget.categoryId,
               amount: budget.amount,
@@ -708,11 +745,25 @@ class BudgetProvider extends BaseProvider {
               notes: budget.notes,
               isRecurring: true,
             );
+
+            print('✅ Created overdue recurring budget');
+          } else {
+            print('Overdue budget already exists: ${existingBudget.id}');
           }
 
           currentEndDate = nextPeriodDates['end']!;
         }
       }
+
+      print('=== Overdue Budget Check Complete ===');
     });
+  }
+
+  // Force check all recurring budgets manually (for testing/debugging)
+  Future<void> forceCheckRecurringBudgets() async {
+    print('🔄 Force checking recurring budgets...');
+    await checkAndCreateOverdueBudgets();
+    await createRecurringBudgets();
+    print('✅ Force check complete');
   }
 }

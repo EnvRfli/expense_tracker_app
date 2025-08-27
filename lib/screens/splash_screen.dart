@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../providers/base_provider.dart';
-import '../services/services.dart';
 import '../services/budget_notification_service.dart';
 import '../utils/theme.dart';
 import 'dashboard_screen.dart';
@@ -99,13 +98,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Enable notifications after startup is complete
     BudgetNotificationService.instance.enableNotifications();
 
-    // Initialize recurring budget service
-    try {
-      RecurringBudgetService.instance.initialize(budgetProvider);
-      print('Recurring budget service initialized');
-    } catch (e) {
-      print('Error initializing recurring budget service: $e');
-    }
+    // Note: RecurringBudgetService is now initialized in main.dart
 
     // Perform auto sync if Google Drive is connected
     try {

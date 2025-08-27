@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/services.dart';
 import 'services/budget_notification_service.dart';
+import 'services/recurring_budget_service.dart';
 import 'providers/providers.dart';
 import 'screens/splash_screen.dart';
 import 'utils/theme.dart';
@@ -29,9 +30,33 @@ class ExpenseTrackerApp extends StatefulWidget {
   State<ExpenseTrackerApp> createState() => _ExpenseTrackerAppState();
 }
 
-class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
+class _ExpenseTrackerAppState extends State<ExpenseTrackerApp>
+    with WidgetsBindingObserver {
   bool _isInitialized = false;
   Future<void>? _initFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Check for recurring budgets when app resumes from background
+    if (state == AppLifecycleState.resumed && _isInitialized) {
+      print('App resumed - checking for recurring budgets');
+      RecurringBudgetService.instance.checkNow();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +122,15 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
     await context.read<IncomeProvider>().initialize();
     await context.read<BudgetProvider>().initialize();
     await context.read<SyncProvider>().initialize();
+
+    // Initialize recurring budget service after budget provider is ready
+    try {
+      final budgetProvider = context.read<BudgetProvider>();
+      RecurringBudgetService.instance.initialize(budgetProvider);
+      print('Recurring budget service initialized in main');
+    } catch (e) {
+      print('Error initializing recurring budget service in main: $e');
+    }
 
     _isInitialized = true;
   }
