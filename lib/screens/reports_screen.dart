@@ -31,7 +31,7 @@ class _TimeseriesChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
-      return Center(child: Text('Tidak ada data'));
+      return Center(child: Text(context.tr('no_data')));
     }
 
     // Map data points to FlSpot using index as x value
@@ -330,7 +330,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Expanded(
                   flex: 1,
                   child: card(
-                      'Pemasukan',
+                      context.tr('income'),
                       userSettings.formatCurrency(totalIncome),
                       AppColors.income,
                       onTap: () => showFilteredTransactionsSheet(
@@ -342,7 +342,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Expanded(
                   flex: 1,
                   child: card(
-                      'Pengeluaran',
+                      context.tr('expense'),
                       userSettings.formatCurrency(totalExpense),
                       AppColors.expense,
                       onTap: () => showFilteredTransactionsSheet(
@@ -364,7 +364,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Trend ${_rangeLabel()}',
+            Text(context.tr('trend') + ' ${_rangeLabel()}',
                 style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: AppSizes.paddingSmall),
             SizedBox(
@@ -419,9 +419,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   String _rangeLabel() {
     final diff = _range.end.difference(_range.start).inDays;
-    if (diff <= 1) return 'Harian';
-    if (diff <= 31) return 'Bulanan';
-    return 'Periode';
+    if (diff <= 1) return context.tr('daily');
+    if (diff <= 31) return context.tr('monthly');
+    return context.tr('period');
   }
 
   Widget _buildCategoryBreakdown() {
@@ -443,8 +443,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             if (entries.isEmpty) {
               return SizedBox(
                 height: 120,
-                child:
-                    Center(child: Text('Tidak ada pengeluaran di periode ini')),
+                child: Center(child: Text(context.tr('no_expenses_in_period'))),
               );
             }
 
@@ -453,16 +452,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
             final pieData = List.generate(topEntries.length, (i) {
               final cat = categoryProvider.getCategoryById(topEntries[i].key);
               return _CatDatum(
-                name: cat?.name ?? 'Lainnya',
+                name: cat?.name ?? context.tr('others'),
                 amount: topEntries[i].value,
                 color: AppColors.getCategoryColor(i),
               );
             });
-
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Breakdown Kategori',
+                Text(context.tr('category_breakdown'),
                     style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: AppSizes.paddingSmall),
                 SizedBox(
@@ -488,7 +486,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 const SizedBox(height: AppSizes.paddingSmall),
                 ...List.generate(entries.length.clamp(0, 6), (i) {
                   final cat = categoryProvider.getCategoryById(entries[i].key);
-                  final name = cat?.name ?? 'Lainnya';
+                  final name = cat?.name ?? context.tr('others');
                   final amount = entries[i].value;
                   final color = AppColors.getCategoryColor(i);
                   return Padding(
@@ -508,7 +506,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 if (entries.length > 6)
                   Padding(
                     padding: const EdgeInsets.only(top: AppSizes.paddingSmall),
-                    child: Text('+ ${entries.length - 6} lainnya'),
+                    child: Text(context.tr('more_categories',
+                        params: {'count': '${entries.length - 6}'})),
                   )
               ],
             );
@@ -555,15 +554,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
             if (top.isEmpty) {
               return SizedBox(
                 height: 120,
-                child:
-                    Center(child: Text('Tidak ada transaksi di periode ini')),
+                child: Center(
+                    child: Text(context.tr('no_transactions_in_period'))),
               );
             }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Top Transaksi',
+                Text(context.tr('top_transactions'),
                     style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: AppSizes.paddingSmall),
                 ...top.map((t) {
@@ -579,7 +578,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     return ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      title: Text(desc.isEmpty ? 'Pengeluaran' : desc),
+                      title:
+                          Text(desc.isEmpty ? context.tr('top_expense') : desc),
                       trailing: Text(
                         '-${userSettings.formatCurrency(amt)}',
                         style: const TextStyle(color: AppColors.expense),
@@ -594,7 +594,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     return ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      title: Text(desc.isEmpty ? 'Pemasukan' : desc),
+                      title:
+                          Text(desc.isEmpty ? context.tr('top_income') : desc),
                       trailing: Text(
                         '+${userSettings.formatCurrency(amt)}',
                         style: const TextStyle(color: AppColors.income),

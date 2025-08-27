@@ -8,6 +8,7 @@ import '../models/income.dart';
 import '../widgets/add_transaction_sheet.dart';
 import '../widgets/edit_transaction_sheet.dart';
 import '../utils/theme.dart';
+import '../l10n/localization_extension.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -73,7 +74,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daftar Transaksi'),
+        title: Text(context.tr('transactions')),
       ),
       body: Column(
         children: [
@@ -81,7 +82,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           Expanded(
             child: transactions.isEmpty
                 ? Center(
-                    child: Text('Tidak ada transaksi',
+                    child: Text(context.tr('no_transactions'),
                         style: Theme.of(context).textTheme.bodyLarge),
                   )
                 : ListView.builder(
@@ -135,7 +136,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.filter_alt_off),
-                tooltip: 'Reset Filter',
+                tooltip: context.tr('reset_filter'),
                 onPressed: () {
                   setState(() {
                     _selectedType = 'all';
@@ -170,19 +171,19 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     return Row(
       children: [
         _buildFilterChip(
-          'Semua',
+          context.tr('filter_all'),
           _selectedType == 'all',
           () => setState(() => _selectedType = 'all'),
         ),
         const SizedBox(width: 8),
         _buildFilterChip(
-          'Keluar',
+          context.tr('filter_expense'),
           _selectedType == 'expense',
           () => setState(() => _selectedType = 'expense'),
         ),
         const SizedBox(width: 8),
         _buildFilterChip(
-          'Masuk',
+          context.tr('filter_income'),
           _selectedType == 'income',
           () => setState(() => _selectedType = 'income'),
         ),
@@ -247,11 +248,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             Expanded(
               child: Text(
                 _selectedCategoryId == null
-                    ? 'Kategori'
+                    ? context.tr('category')
                     : categoryProvider
                             .getCategoryById(_selectedCategoryId!)
                             ?.name ??
-                        'Kategori',
+                        context.tr('category'),
                 style: TextStyle(
                   fontSize: 12,
                   color: _selectedCategoryId == null
@@ -296,7 +297,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             Expanded(
               child: Text(
                 _selectedDateRange == null
-                    ? 'Tanggal'
+                    ? context.tr('date')
                     : '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}',
                 style: TextStyle(
                   fontSize: 12,
@@ -317,14 +318,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Pilih Kategori'),
+        title: Text(context.tr('select_category')),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView(
             shrinkWrap: true,
             children: [
               ListTile(
-                title: const Text('Semua Kategori'),
+                title: Text(context.tr('all_categories')),
                 onTap: () {
                   setState(() => _selectedCategoryId = null);
                   Navigator.pop(context);
@@ -423,7 +424,8 @@ class _TransactionTile extends StatelessWidget {
         children: [
           Text(
             (item.isExpense ? '-' : '+') +
-                'Rp ${item.amount.toStringAsFixed(0)}',
+                context.tr('currency_symbol_idr') +
+                item.amount.toStringAsFixed(0),
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,

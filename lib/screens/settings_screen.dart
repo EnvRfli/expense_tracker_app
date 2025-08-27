@@ -18,7 +18,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pengaturan'),
+        title: Text(context.tr('settings')),
         foregroundColor: Colors.white,
         elevation: 2,
       ),
@@ -27,7 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           return ListView(
             padding: const EdgeInsets.all(AppSizes.paddingMedium),
             children: [
-              _buildSectionHeader('Preferensi Aplikasi'),
+              _buildSectionHeader(context.tr('app_preferences')),
               _buildCurrencyTile(userSettings),
               _buildLanguageTile(userSettings),
               _buildThemeTile(userSettings),
@@ -35,20 +35,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: AppSizes.paddingLarge),
 
               // Notification Section
-              _buildSectionHeader('Notifikasi'),
+              _buildSectionHeader(context.tr('notifications')),
               _buildNotificationTile(userSettings),
 
               const SizedBox(height: AppSizes.paddingLarge),
 
               // Security Section
-              _buildSectionHeader('Keamanan'),
+              _buildSectionHeader(context.tr('security')),
               _buildBiometricTile(userSettings),
               _buildPinTile(userSettings),
 
               const SizedBox(height: AppSizes.paddingLarge),
 
               // Budget Section
-              _buildSectionHeader('Budget'),
+              _buildSectionHeader(context.tr('budget')),
               _buildMonthlyBudgetTile(userSettings),
               _buildBudgetAlertTile(userSettings),
               if (userSettings.budgetAlertEnabled)
@@ -57,13 +57,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: AppSizes.paddingLarge),
 
               // Data Management Section
-              _buildSectionHeader('Manajemen Data'),
+              _buildSectionHeader(context.tr('data_management')),
               _buildDataManagementCard(),
 
               const SizedBox(height: AppSizes.paddingLarge),
 
               // About Section
-              _buildSectionHeader('Tentang'),
+              _buildSectionHeader(context.tr('about')),
               _buildAboutTile(),
               _buildVersionTile(),
 
@@ -139,10 +139,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: SwitchListTile(
         secondary:
             const Icon(Icons.notifications, color: AppTheme.primaryColor),
-        title: const Text('Pengingat Harian'),
+        title: Text(context.tr('daily_reminder')),
         subtitle: Text(userSettings.notificationEnabled
-            ? 'Aktif - Pengingat setiap hari sekitar jam 20:00'
-            : 'Nonaktif - Tidak ada pengingat harian'),
+            ? context.tr('notification_enabled_desc')
+            : context.tr('notification_disabled_desc')),
         value: userSettings.notificationEnabled,
         activeColor: AppTheme.primaryColor,
         onChanged: (value) => _updateNotification(userSettings, value),
@@ -154,10 +154,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: SwitchListTile(
         secondary: const Icon(Icons.fingerprint, color: AppTheme.primaryColor),
-        title: const Text('Autentikasi Biometrik'),
+        title: Text(context.tr('biometric_auth')),
         subtitle: Text(userSettings.pinEnabled
-            ? 'Gunakan sidik jari atau wajah untuk masuk'
-            : 'Setup PIN terlebih dahulu untuk mengaktifkan biometrik'),
+            ? context.tr('biometric_subtitle_enabled')
+            : context.tr('biometric_subtitle_disabled')),
         value: userSettings.biometricEnabled,
         activeColor: AppTheme.primaryColor,
         onChanged: (value) => _updateBiometric(userSettings, value),
@@ -169,10 +169,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.pin, color: AppTheme.primaryColor),
-        title: const Text('PIN Keamanan'),
+        title: Text(context.tr('pin_security')),
         subtitle: Text(userSettings.pinEnabled
-            ? 'PIN aktif - Ketuk untuk mengubah'
-            : 'Setup PIN untuk keamanan aplikasi'),
+            ? context.tr('pin_subtitle_enabled')
+            : context.tr('pin_subtitle_disabled')),
         trailing: userSettings.pinEnabled
             ? Row(
                 mainAxisSize: MainAxisSize.min,
@@ -198,10 +198,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ListTile(
         leading: const Icon(Icons.account_balance_wallet,
             color: AppTheme.primaryColor),
-        title: const Text('Budget Bulanan'),
+        title: Text(context.tr('monthly_budget')),
         subtitle: Text(userSettings.monthlyBudgetLimit != null
             ? userSettings.formatCurrency(userSettings.monthlyBudgetLimit!)
-            : 'Belum diatur'),
+            : context.tr('budget_not_set')),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _setMonthlyBudget(userSettings),
       ),
@@ -212,8 +212,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: SwitchListTile(
         secondary: const Icon(Icons.warning, color: AppTheme.primaryColor),
-        title: const Text('Alert Budget'),
-        subtitle: const Text('Peringatan saat mendekati batas budget'),
+        title: Text(context.tr('budget_alert')),
+        subtitle: Text(context.tr('budget_alert_warning')),
         value: userSettings.budgetAlertEnabled,
         activeColor: AppTheme.primaryColor,
         onChanged: (value) => _updateBudgetAlert(userSettings, value),
@@ -225,8 +225,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.percent, color: AppTheme.primaryColor),
-        title: const Text('Persentase Alert'),
-        subtitle: Text('${userSettings.budgetAlertPercentage}% dari budget'),
+        title: Text(context.tr('percentage_alert')),
+        subtitle: Text(context.tr('budget_percentage_desc',
+            params: {'percentage': '${userSettings.budgetAlertPercentage}'})),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _setBudgetPercentage(userSettings),
       ),
@@ -251,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Kelola Data Keuangan',
+                  context.tr('manage_financial_data'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primaryColor,
@@ -261,7 +262,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Import dan export data untuk backup atau analisis',
+              context.tr('import_export_desc'),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -272,9 +273,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildDataActionSection(
               icon: Icons.file_download,
               iconColor: Colors.green,
-              title: 'Export Data',
-              subtitle: 'Simpan data ke Downloads/ExpenseTracker untuk backup',
-              buttonText: 'Export Sekarang',
+              title: context.tr('export_data'),
+              subtitle: context.tr('export_desc'),
+              buttonText: context.tr('export_now'),
               buttonColor: Colors.green,
               onPressed: () => _exportData(),
             ),
@@ -285,9 +286,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildDataActionSection(
               icon: Icons.file_upload,
               iconColor: Colors.blue,
-              title: 'Import Data',
-              subtitle: 'Pilih file CSV dari penyimpanan untuk import data',
-              buttonText: 'Pilih File',
+              title: context.tr('import_data'),
+              subtitle: context.tr('import_desc'),
+              buttonText: context.tr('choose_file'),
               buttonColor: Colors.blue,
               onPressed: () => _importData(),
             ),
@@ -369,8 +370,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.info, color: AppTheme.primaryColor),
-        title: const Text('Tentang Aplikasi'),
-        subtitle: const Text('Informasi aplikasi dan developer'),
+        title: Text(context.tr('about_app')),
+        subtitle: Text(context.tr('app_info_desc')),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _showAboutDialog(),
       ),
@@ -379,10 +380,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildVersionTile() {
     return Card(
-      child: const ListTile(
-        leading: Icon(Icons.tag, color: AppTheme.primaryColor),
-        title: Text('Versi Aplikasi'),
-        subtitle: Text('v1.0.0'),
+      child: ListTile(
+        leading: const Icon(Icons.tag, color: AppTheme.primaryColor),
+        title: Text(context.tr('app_version')),
+        subtitle: const Text('v1.0.0'),
       ),
     );
   }
@@ -392,8 +393,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: AppColors.error.withOpacity(0.1),
       child: ListTile(
         leading: const Icon(Icons.restore, color: AppColors.error),
-        title: const Text('Reset Pengaturan'),
-        subtitle: const Text('Kembalikan ke pengaturan default'),
+        title: Text(context.tr('reset_settings')),
+        subtitle: Text(context.tr('reset_settings_desc')),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _resetSettings(userSettings),
       ),
@@ -436,7 +437,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Pilih Mata Uang'),
+        title: Text(context.tr('select_currency')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: userSettings.getSupportedCurrencies().map((currency) {
@@ -486,7 +487,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Pilih Tema'),
+        title: Text(context.tr('select_theme')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: userSettings.getSupportedThemes().map((theme) {
@@ -514,16 +515,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (enabled) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Pengingat harian diaktifkan - akan muncul sekitar jam 20:00'),
+        SnackBar(
+          content: Text(context.tr('notification_enabled_success')),
           backgroundColor: AppColors.success,
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pengingat harian dinonaktifkan'),
+        SnackBar(
+          content: Text(context.tr('notification_disabled_success')),
           backgroundColor: AppColors.info,
         ),
       );
@@ -535,9 +535,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // Check if PIN is already set up
       if (!userSettings.pinEnabled) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Anda harus setup PIN terlebih dahulu sebelum mengaktifkan autentikasi biometrik'),
+          SnackBar(
+            content: Text(context.tr('setup_pin_first')),
             backgroundColor: AppColors.error,
           ),
         );
@@ -562,9 +561,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final isAvailable = await AuthService.instance.isBiometricAvailable();
       if (!isAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Autentikasi biometrik tidak tersedia di perangkat ini'),
+          SnackBar(
+            content: Text(context.tr('biometric_not_available')),
             backgroundColor: AppColors.error,
           ),
         );
@@ -574,13 +572,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // Test biometric authentication
       final authenticated =
           await AuthService.instance.authenticateWithBiometric(
-        reason: 'Verifikasi untuk mengaktifkan autentikasi biometrik',
+        reason: context.tr('biometric_verification_reason'),
       );
 
       if (!authenticated) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Autentikasi biometrik gagal'),
+          SnackBar(
+            content: Text(context.tr('biometric_auth_failed')),
             backgroundColor: AppColors.error,
           ),
         );
@@ -593,8 +591,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(enabled
-              ? 'Autentikasi biometrik diaktifkan'
-              : 'Autentikasi biometrik dinonaktifkan'),
+              ? context.tr('biometric_enabled_success')
+              : context.tr('biometric_disabled_success')),
           backgroundColor: AppColors.success,
         ),
       );
