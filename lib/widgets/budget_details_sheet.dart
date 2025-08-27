@@ -6,6 +6,7 @@ import '../utils/theme.dart';
 import './budget_expense_details_sheet.dart';
 import './add_budget_sheet.dart';
 import './delete_budget_dialog.dart';
+import '../l10n/localization_extension.dart';
 
 class BudgetDetailsSheet extends StatelessWidget {
   final BudgetModel budget;
@@ -73,7 +74,7 @@ class BudgetDetailsSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          category?.name ?? 'Unknown Category',
+                          category?.name ?? context.tr('unknown_category'),
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -91,7 +92,7 @@ class BudgetDetailsSheet extends StatelessWidget {
                                 BorderRadius.circular(AppSizes.radiusSmall),
                           ),
                           child: Text(
-                            _getBudgetStatusText(budget.status),
+                            _getBudgetStatusText(context, budget.status),
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: statusColor,
@@ -128,7 +129,7 @@ class BudgetDetailsSheet extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Progress',
+                            context.tr('progress'),
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
@@ -169,11 +170,11 @@ class BudgetDetailsSheet extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Terpakai: ${userSettings.formatCurrency(budget.spent)}',
+                            '${context.tr('used')}: ${userSettings.formatCurrency(budget.spent)}',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           Text(
-                            'Total: ${userSettings.formatCurrency(budget.amount)}',
+                            '${context.tr('total')}: ${userSettings.formatCurrency(budget.amount)}',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -188,7 +189,7 @@ class BudgetDetailsSheet extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Tap untuk lihat detail pembelian',
+                            context.tr('tap_to_view_details'),
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: statusColor,
@@ -210,18 +211,19 @@ class BudgetDetailsSheet extends StatelessWidget {
 
               const SizedBox(height: AppSizes.paddingLarge),
 
-              _buildDetailRow(context, 'Periode', _getPeriodText(budget)),
+              _buildDetailRow(context, context.tr('period'),
+                  _getPeriodText(context, budget)),
 
               _buildDetailRow(
                 context,
-                'Sisa Budget',
+                context.tr('remaining_budget'),
                 userSettings.formatCurrency(budget.amount - budget.spent),
               ),
 
-              _buildDetailRow(
-                  context, 'Alert Threshold', '${budget.alertPercentage}%'),
+              _buildDetailRow(context, context.tr('alert_threshold'),
+                  '${budget.alertPercentage}%'),
               if (budget.notes?.isNotEmpty == true)
-                _buildDetailRow(context, 'Notes', budget.notes!),
+                _buildDetailRow(context, context.tr('notes'), budget.notes!),
 
               const Spacer(),
 
@@ -248,7 +250,7 @@ class BudgetDetailsSheet extends StatelessWidget {
                               );
                             },
                         icon: const Icon(Icons.edit),
-                        label: const Text('Edit'),
+                        label: Text(context.tr('edit')),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: AppColors.info),
                           foregroundColor: AppColors.info,
@@ -268,7 +270,7 @@ class BudgetDetailsSheet extends StatelessWidget {
                           foregroundColor: Colors.white,
                         ),
                         icon: const Icon(Icons.delete),
-                        label: const Text('Hapus'),
+                        label: Text(context.tr('delete')),
                       ),
                     ),
                   ],
@@ -317,48 +319,30 @@ class BudgetDetailsSheet extends StatelessWidget {
     }
   }
 
-  String _getBudgetStatusText(String status) {
+  String _getBudgetStatusText(BuildContext context, String status) {
     switch (status) {
       case 'exceeded':
-        return 'Melebihi Budget';
+        return context.tr('budget_status_exceeded_alt');
       case 'full':
-        return 'Budget Penuh';
+        return context.tr('budget_status_full_alt');
       case 'warning':
-        return 'Mendekati Limit';
+        return context.tr('budget_status_warning_alt');
       default:
-        return 'Normal';
+        return context.tr('budget_status_normal_alt');
     }
   }
 
-  String _getPeriodText(BudgetModel budget) {
+  String _getPeriodText(BuildContext context, BudgetModel budget) {
     switch (budget.period) {
       case 'daily':
-        return 'Harian • ${budget.startDate.day}/${budget.startDate.month}/${budget.startDate.year}';
+        return '${context.tr('budget_period_daily')} • ${budget.startDate.day}/${budget.startDate.month}/${budget.startDate.year}';
       case 'weekly':
-        return 'Mingguan • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
+        return '${context.tr('budget_period_weekly')} • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
       case 'monthly':
-        return 'Bulanan • ${_getMonthName(budget.startDate.month)} ${budget.startDate.year}';
+        return '${context.tr('budget_period_monthly')} • ${context.getMonthName(budget.startDate.month)} ${budget.startDate.year}';
       default:
-        return 'Custom • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
+        return '${context.tr('budget_period_custom')} • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
     }
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember'
-    ];
-    return months[month - 1];
   }
 
   /// Static method untuk menampilkan budget details sheet

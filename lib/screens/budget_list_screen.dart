@@ -6,6 +6,7 @@ import '../utils/theme.dart';
 import '../widgets/add_budget_sheet.dart';
 import '../widgets/budget_details_sheet.dart';
 import '../widgets/delete_budget_dialog.dart';
+import '../l10n/localization_extension.dart';
 
 class BudgetListScreen extends StatefulWidget {
   const BudgetListScreen({super.key});
@@ -74,7 +75,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Budget Management'),
+        title: Text(context.tr('budget_management')),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -83,10 +84,10 @@ class _BudgetListScreenState extends State<BudgetListScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Aktif'),
-            Tab(text: 'Selesai'),
-            Tab(text: 'Semua'),
+          tabs: [
+            Tab(text: context.tr('active_budgets')),
+            Tab(text: context.tr('completed_budgets')),
+            Tab(text: context.tr('all_budgets')),
           ],
         ),
       ),
@@ -187,7 +188,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
             ),
             const SizedBox(height: AppSizes.paddingLarge),
             Text(
-              'Tidak ada budget $filterText',
+              context.tr('no_budget_filter', params: {'filter': filterText}),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context)
                         .colorScheme
@@ -198,7 +199,8 @@ class _BudgetListScreenState extends State<BudgetListScreen>
             ),
             const SizedBox(height: AppSizes.paddingSmall),
             Text(
-              'Coba pilih filter periode yang berbeda atau buat budget $filterText baru',
+              context
+                  .tr('try_different_filter', params: {'filter': filterText}),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context)
                         .colorScheme
@@ -217,11 +219,11 @@ class _BudgetListScreenState extends State<BudgetListScreen>
   String _getFilterText() {
     switch (_selectedPeriod) {
       case 'daily':
-        return 'harian';
+        return context.tr('budget_period_daily');
       case 'weekly':
-        return 'mingguan';
+        return context.tr('budget_period_weekly');
       case 'monthly':
-        return 'bulanan';
+        return context.tr('budget_period_monthly');
       case 'all':
       default:
         return '';
@@ -234,18 +236,18 @@ class _BudgetListScreenState extends State<BudgetListScreen>
 
     switch (type) {
       case 'active':
-        title = 'Belum ada budget aktif';
-        subtitle = 'Buat budget untuk memantau pengeluaran Anda';
+        title = context.tr('no_budget_active');
+        subtitle = context.tr('create_budget_desc');
         icon = Icons.pie_chart_outline;
         break;
       case 'inactive':
-        title = 'Belum ada budget yang selesai';
-        subtitle = 'Budget yang telah selesai akan muncul di sini';
+        title = context.tr('no_budget_completed');
+        subtitle = context.tr('completed_budgets_desc');
         icon = Icons.history;
         break;
       default:
-        title = 'Belum ada budget';
-        subtitle = 'Mulai dengan membuat budget pertama Anda';
+        title = context.tr('no_budget_all');
+        subtitle = context.tr('create_budget_first');
         icon = Icons.pie_chart_outline;
     }
 
@@ -287,7 +289,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
               ElevatedButton.icon(
                 onPressed: () => _showAddBudgetDialog(context),
                 icon: const Icon(Icons.add),
-                label: const Text('Buat Budget'),
+                label: Text(context.tr('create_budget')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.budget,
                   foregroundColor: Colors.white,
@@ -362,7 +364,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                         ),
                         const SizedBox(width: AppSizes.paddingSmall),
                         Text(
-                          'Budget Overview',
+                          context.tr('budget_overview'),
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: Colors.white,
@@ -415,7 +417,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                                 return Transform.scale(
                                   scale: _expandAnimation.value,
                                   child: _buildStatItem(
-                                    'Total Budget',
+                                    context.tr('total_budget'),
                                     'Rp ${_formatNumber(totalBudget)}',
                                     Icons.pie_chart,
                                   ),
@@ -430,7 +432,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                                 return Transform.scale(
                                   scale: _expandAnimation.value,
                                   child: _buildStatItem(
-                                    'Terpakai',
+                                    context.tr('average_usage'),
                                     '${averageUsage.toStringAsFixed(0)}%',
                                     Icons.trending_up,
                                   ),
@@ -445,7 +447,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                                 return Transform.scale(
                                   scale: _expandAnimation.value,
                                   child: _buildStatItem(
-                                    'Melebihi',
+                                    context.tr('exceeded_budgets'),
                                     '$exceededCount Budget',
                                     Icons.warning,
                                   ),
@@ -521,9 +523,9 @@ class _BudgetListScreenState extends State<BudgetListScreen>
       ),
       child: Row(
         children: [
-          const Text(
-            'Filter: ',
-            style: TextStyle(fontSize: 12), // Font lebih kecil
+          Text(
+            context.tr('filter_colon'),
+            style: const TextStyle(fontSize: 12), // Font lebih kecil
           ),
           const SizedBox(width: AppSizes.paddingSmall),
           Expanded(
@@ -531,10 +533,12 @@ class _BudgetListScreenState extends State<BudgetListScreen>
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip('all', 'Semua'),
-                  _buildFilterChip('daily', 'Harian'),
-                  _buildFilterChip('weekly', 'Mingguan'),
-                  _buildFilterChip('monthly', 'Bulanan'),
+                  _buildFilterChip('all', context.tr('all_periods')),
+                  _buildFilterChip('daily', context.tr('budget_period_daily')),
+                  _buildFilterChip(
+                      'weekly', context.tr('budget_period_weekly')),
+                  _buildFilterChip(
+                      'monthly', context.tr('budget_period_monthly')),
                 ],
               ),
             ),
@@ -610,7 +614,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              category?.name ?? 'Unknown Category',
+                              category?.name ?? context.tr('unknown_category'),
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
@@ -661,7 +665,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Terpakai: ${userSettings.formatCurrency(budget.spent)}',
+                            '${context.tr('used')}: ${userSettings.formatCurrency(budget.spent)}',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           Text(
@@ -690,7 +694,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Budget: ${userSettings.formatCurrency(budget.amount)}',
+                            '${context.tr('budgets')}: ${userSettings.formatCurrency(budget.amount)}',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: Theme.of(context)
@@ -700,7 +704,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                                     ),
                           ),
                           Text(
-                            'Sisa: ${userSettings.formatCurrency(budget.remaining)}',
+                            '${context.tr('remaining')}: ${userSettings.formatCurrency(budget.remaining)}',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: budget.remaining >= 0
@@ -737,45 +741,27 @@ class _BudgetListScreenState extends State<BudgetListScreen>
   String _getStatusText(String status) {
     switch (status) {
       case 'exceeded':
-        return 'Melampaui';
+        return context.tr('budget_status_exceeded');
       case 'full':
-        return 'Habis';
+        return context.tr('budget_status_full');
       case 'warning':
-        return 'Peringatan';
+        return context.tr('budget_status_warning');
       default:
-        return 'Normal';
+        return context.tr('budget_status_normal');
     }
   }
 
   String _getPeriodText(BudgetModel budget) {
     switch (budget.period) {
       case 'daily':
-        return 'Harian • ${budget.startDate.day}/${budget.startDate.month}/${budget.startDate.year}';
+        return '${context.tr('budget_period_daily')} • ${budget.startDate.day}/${budget.startDate.month}/${budget.startDate.year}';
       case 'weekly':
-        return 'Mingguan • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
+        return '${context.tr('budget_period_weekly')} • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
       case 'monthly':
-        return 'Bulanan • ${_getMonthName(budget.startDate.month)} ${budget.startDate.year}';
+        return '${context.tr('budget_period_monthly')} • ${context.getMonthName(budget.startDate.month)} ${budget.startDate.year}';
       default:
-        return 'Custom • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
+        return '${context.tr('budget_period_custom')} • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
     }
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember'
-    ];
-    return months[month - 1];
   }
 
   String _formatNumber(double number) {
