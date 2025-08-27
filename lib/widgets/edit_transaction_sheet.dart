@@ -6,6 +6,63 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../utils/theme.dart';
 import '../services/image_picker_service.dart';
+import '../l10n/localization_extension.dart';
+
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Remove all non-digit characters
+    String newText = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    // If empty, return empty
+    if (newText.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Format with thousand separators
+    String formattedText = _addThousandSeparator(newText);
+
+    // Calculate cursor position
+    int selectionIndex = formattedText.length;
+    if (newValue.selection.end < newValue.text.length) {
+      // If cursor is not at the end, try to maintain relative position
+      int originalCursorPos = newValue.selection.end;
+      int separatorsBeforeCursor =
+          ','.allMatches(newValue.text.substring(0, originalCursorPos)).length;
+      int newSeparatorsBeforeCursor =
+          ','.allMatches(formattedText.substring(0, originalCursorPos)).length;
+      selectionIndex = originalCursorPos +
+          (newSeparatorsBeforeCursor - separatorsBeforeCursor);
+      selectionIndex = selectionIndex.clamp(0, formattedText.length);
+    }
+
+    return TextEditingValue(
+      text: formattedText,
+      selection: TextSelection.collapsed(offset: selectionIndex),
+    );
+  }
+
+  String _addThousandSeparator(String value) {
+    if (value.length <= 3) return value;
+
+    String result = '';
+    int counter = 0;
+
+    for (int i = value.length - 1; i >= 0; i--) {
+      if (counter == 3) {
+        result = ',$result';
+        counter = 0;
+      }
+      result = value[i] + result;
+      counter++;
+    }
+
+    return result;
+  }
+}
 
 class EditTransactionSheet extends StatefulWidget {
   final String transactionId;
@@ -54,7 +111,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
           .expenses
           .firstWhere((e) => e.id == widget.transactionId);
 
-      _amountController.text = _expense!.amount.toString();
+      // Format amount with thousand separator when loading
+      _amountController.text = _formatAmountForDisplay(_expense!.amount);
       _descriptionController.text = _expense!.description;
       _locationController.text = _expense!.location ?? '';
       _selectedDate = _expense!.date;
@@ -72,7 +130,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
           .incomes
           .firstWhere((i) => i.id == widget.transactionId);
 
-      _amountController.text = _income!.amount.toString();
+      // Format amount with thousand separator when loading
+      _amountController.text = _formatAmountForDisplay(_income!.amount);
       _descriptionController.text = _income!.description;
       _sourceController.text = _income!.source;
       _selectedDate = _income!.date;
@@ -83,6 +142,35 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
       _isRecurring = _income!.isRecurring;
       _recurringPattern = _income!.recurringPattern ?? 'monthly';
     }
+  }
+
+  // Helper method to format amount for display
+  String _formatAmountForDisplay(double amount) {
+    // Convert double to integer string (remove decimal if it's .0)
+    String amountString =
+        amount % 1 == 0 ? amount.toInt().toString() : amount.toString();
+
+    // Apply thousand separator formatting
+    return _addThousandSeparator(amountString);
+  }
+
+  // Helper method to add thousand separator (same logic as in formatter)
+  String _addThousandSeparator(String value) {
+    if (value.length <= 3) return value;
+
+    String result = '';
+    int counter = 0;
+
+    for (int i = value.length - 1; i >= 0; i--) {
+      if (counter == 3) {
+        result = ',$result';
+        counter = 0;
+      }
+      result = value[i] + result;
+      counter++;
+    }
+
+    return result;
   }
 
   @override
@@ -160,7 +248,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Edit ${widget.isExpense ? 'Pengeluaran' : 'Pemasukan'}',
+                        context.tr('edit_transaction'),
                         style:
                             Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
@@ -171,7 +259,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Perbarui detail transaksi Anda',
+                        context.tr('edit_transaction_desc'),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -294,7 +382,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Jumlah ${widget.isExpense ? 'Pengeluaran' : 'Pemasukan'}',
+                context
+                    .tr(widget.isExpense ? 'expense_amount' : 'income_amount'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -309,7 +398,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
             controller: _amountController,
             keyboardType: TextInputType.number,
             inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
+              ThousandsSeparatorInputFormatter(),
             ],
             style: TextStyle(
               fontSize: 16,
@@ -322,7 +411,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 16,
               ),
-              prefixText: 'Rp ',
+              prefixText: context.tr('currency_symbol_idr'),
               prefixStyle: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -335,10 +424,13 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Jumlah tidak boleh kosong';
+                return context.tr('amount_is_required');
               }
-              if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                return 'Masukkan jumlah yang valid';
+              // Remove thousand separators before parsing
+              String cleanValue = value.replaceAll(',', '');
+              if (double.tryParse(cleanValue) == null ||
+                  double.parse(cleanValue) <= 0) {
+                return context.tr('valid_amount_required');
               }
               return null;
             },
@@ -380,7 +472,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Deskripsi',
+                context.tr('description'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -398,7 +490,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               color: Theme.of(context).colorScheme.onSurface,
             ),
             decoration: InputDecoration(
-              hintText: 'Contoh: Makan siang di restoran',
+              hintText: context.tr('example_description'),
               hintStyle: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 14,
@@ -410,7 +502,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Deskripsi tidak boleh kosong';
+                return context.tr('description_is_required');
               }
               return null;
             },
@@ -450,7 +542,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Kategori',
+                context.tr('category'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -472,12 +564,12 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                   fontSize: 14,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
-                decoration: const InputDecoration(
-                  hintText: 'Pilih kategori',
+                decoration: InputDecoration(
+                  hintText: context.tr('select_category'),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
                 ),
                 icon: Icon(
                   Icons.keyboard_arrow_down,
@@ -497,7 +589,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                 },
                 validator: (value) {
                   if (value == null) {
-                    return 'Pilih kategori';
+                    return context.tr('select_category');
                   }
                   return null;
                 },
@@ -541,7 +633,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Tanggal',
+                  context.tr('date'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -601,7 +693,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Metode Pembayaran',
+                context.tr('payment_method'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -627,12 +719,14 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               Icons.keyboard_arrow_down,
               color: AppColors.warning,
             ),
-            items: const [
-              DropdownMenuItem(value: 'cash', child: Text('Tunai')),
+            items: [
+              DropdownMenuItem(value: 'cash', child: Text(context.tr('cash'))),
               DropdownMenuItem(
-                  value: 'card', child: Text('Kartu Debit/Kredit')),
-              DropdownMenuItem(value: 'transfer', child: Text('Transfer Bank')),
-              DropdownMenuItem(value: 'ewallet', child: Text('E-Wallet')),
+                  value: 'card', child: Text(context.tr('credit_card'))),
+              DropdownMenuItem(
+                  value: 'transfer', child: Text(context.tr('bank_transfer'))),
+              DropdownMenuItem(
+                  value: 'ewallet', child: Text(context.tr('e_wallet'))),
             ],
             onChanged: (value) {
               setState(() {
@@ -642,7 +736,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
             },
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Pilih metode pembayaran';
+                return context.tr('select_payment_method');
               }
               return null;
             },
@@ -684,7 +778,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Lokasi (Opsional)',
+                context.tr('location_optional'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -702,7 +796,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               color: Theme.of(context).colorScheme.onSurface,
             ),
             decoration: InputDecoration(
-              hintText: 'Contoh: Mall, Restoran, Supermarket',
+              hintText: context.tr('location_example'),
               hintStyle: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 14,
@@ -748,7 +842,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Foto Struk (Opsional)',
+                context.tr('receipt_photo'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -849,11 +943,11 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Row(
+                      content: Row(
                         children: [
-                          Icon(Icons.check_circle, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text('Foto berhasil diperbarui'),
+                          const Icon(Icons.check_circle, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text(context.tr('photo_updated_successfully')),
                         ],
                       ),
                       backgroundColor: AppColors.success,
@@ -871,11 +965,11 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Row(
+                      content: Row(
                         children: [
-                          Icon(Icons.error, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text('Gagal mengambil foto'),
+                          const Icon(Icons.error, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text(context.tr('failed_to_take_photo')),
                         ],
                       ),
                       backgroundColor: AppColors.error,
@@ -910,7 +1004,9 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    _receiptPhotoPath != null ? 'Ganti Foto' : 'Ambil Foto',
+                    _receiptPhotoPath != null
+                        ? context.tr('change_photo')
+                        : context.tr('add_photo'),
                     style: TextStyle(
                       color: AppColors.info,
                       fontSize: 14,
@@ -956,7 +1052,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Sumber Pemasukan',
+                context.tr('income_source'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -973,7 +1069,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               color: Theme.of(context).colorScheme.onSurface,
             ),
             decoration: InputDecoration(
-              hintText: 'Contoh: Gaji, Freelance, Bonus',
+              hintText: context.tr('income_source_example'),
               hintStyle: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 14,
@@ -985,7 +1081,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Sumber pemasukan tidak boleh kosong';
+                return context.tr('income_source_is_required');
               }
               return null;
             },
@@ -1025,7 +1121,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Transaksi Berulang',
+                context.tr('recurring_transaction'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -1049,7 +1145,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ),
               Expanded(
                 child: Text(
-                  'Aktifkan transaksi berulang',
+                  context.tr('enable_recurring_transaction'),
                   style: TextStyle(
                     fontSize: 14,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -1067,7 +1163,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                 color: Theme.of(context).colorScheme.onSurface,
               ),
               decoration: InputDecoration(
-                hintText: 'Pilih pola pengulangan',
+                hintText: context.tr('select_repeat_pattern'),
                 hintStyle: TextStyle(
                   color:
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -1082,11 +1178,15 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                 Icons.keyboard_arrow_down,
                 color: AppTheme.primaryColor,
               ),
-              items: const [
-                DropdownMenuItem(value: 'daily', child: Text('Harian')),
-                DropdownMenuItem(value: 'weekly', child: Text('Mingguan')),
-                DropdownMenuItem(value: 'monthly', child: Text('Bulanan')),
-                DropdownMenuItem(value: 'yearly', child: Text('Tahunan')),
+              items: [
+                DropdownMenuItem(
+                    value: 'daily', child: Text(context.tr('daily'))),
+                DropdownMenuItem(
+                    value: 'weekly', child: Text(context.tr('weekly'))),
+                DropdownMenuItem(
+                    value: 'monthly', child: Text(context.tr('monthly'))),
+                DropdownMenuItem(
+                    value: 'yearly', child: Text(context.tr('yearly'))),
               ],
               onChanged: (value) {
                 setState(() {
@@ -1108,7 +1208,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
           child: OutlinedButton.icon(
             onPressed: _isLoading ? null : _deleteTransaction,
             icon: const Icon(Icons.delete),
-            label: const Text('Hapus'),
+            label: Text(context.tr('delete')),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.error,
               side: const BorderSide(color: AppColors.error),
@@ -1177,7 +1277,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Simpan Perubahan',
+                              context.tr('save_changes'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -1236,7 +1336,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
     });
 
     try {
-      final amount = double.parse(_amountController.text);
+      // Remove thousand separators before parsing
+      final amount = double.parse(_amountController.text.replaceAll(',', ''));
       final description = _descriptionController.text.trim();
 
       bool success = false;
@@ -1280,7 +1381,9 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      '${widget.isExpense ? 'Pengeluaran' : 'Pemasukan'} berhasil diperbarui',
+                      widget.isExpense
+                          ? context.tr('success_expense_updated')
+                          : context.tr('success_income_updated'),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -1300,7 +1403,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
           );
         }
       } else {
-        throw Exception('Gagal memperbarui transaksi');
+        throw Exception(context.tr('failed_to_update_transaction'));
       }
     } catch (e) {
       if (mounted) {
@@ -1352,7 +1455,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
             ),
             Expanded(
               child: Text(
-                'Konfirmasi Hapus',
+                context.tr('confirm_delete'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: AppColors.error,
                       fontWeight: FontWeight.w600,
@@ -1362,13 +1465,15 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
           ],
         ),
         content: Text(
-          'Apakah Anda yakin ingin menghapus ${widget.isExpense ? 'pengeluaran' : 'pemasukan'} ini? Tindakan ini tidak dapat dibatalkan.',
+          widget.isExpense
+              ? context.tr('confirm_delete_expense')
+              : context.tr('confirm_delete_income'),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+            child: Text(context.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -1379,7 +1484,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Hapus'),
+            child: Text(context.tr('delete')),
           ),
         ],
       ),
@@ -1415,7 +1520,9 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      '${widget.isExpense ? 'Pengeluaran' : 'Pemasukan'} berhasil dihapus',
+                      widget.isExpense
+                          ? context.tr('success_expense_deleted')
+                          : context.tr('success_income_deleted'),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -1435,7 +1542,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
           );
         }
       } else {
-        throw Exception('Gagal menghapus transaksi');
+        throw Exception(context.tr('failed_to_delete_transaction'));
       }
     } catch (e) {
       if (mounted) {

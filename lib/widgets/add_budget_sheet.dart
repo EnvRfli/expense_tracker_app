@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../models/models.dart';
 import '../utils/theme.dart';
+import '../l10n/localization_extension.dart';
 
 class AddBudgetSheet extends StatefulWidget {
   final String? categoryId;
@@ -35,11 +36,11 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
   bool _isRecurring = false;
   bool _isLoading = false;
 
-  // Predefined periods
-  final Map<String, String> _periods = {
-    'daily': 'Harian',
-    'weekly': 'Mingguan',
-    'monthly': 'Bulanan',
+  // Predefined periods - will be translated in build method
+  final Map<String, String> _periodKeys = {
+    'daily': 'budget_period_daily',
+    'weekly': 'budget_period_weekly',
+    'monthly': 'budget_period_monthly',
   };
 
   // Check if budget already exists
@@ -135,7 +136,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
   Future<void> _submitBudget() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCategoryId == null) {
-      _showErrorSnackBar('Pilih kategori terlebih dahulu');
+      _showErrorSnackBar(context.tr('select_category_first'));
       return;
     }
 
@@ -165,7 +166,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
 
         if (success && mounted) {
           Navigator.of(context).pop();
-          _showSuccessSnackBar('Budget berhasil diperbarui');
+          _showSuccessSnackBar(context.tr('budget_updated_successfully'));
         }
       } else {
         // Create new budget
@@ -186,12 +187,14 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
 
         if (success && mounted) {
           Navigator.of(context).pop();
-          _showSuccessSnackBar('Budget berhasil dibuat');
+          _showSuccessSnackBar(context.tr('budget_created_successfully'));
         }
       }
     } catch (e) {
-      final action = widget.budgetToEdit != null ? 'memperbarui' : 'membuat';
-      _showErrorSnackBar('Gagal $action budget: ${e.toString()}');
+      final action = widget.budgetToEdit != null
+          ? context.tr('failed_to_update_budget')
+          : context.tr('failed_to_create_budget');
+      _showErrorSnackBar('$action: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -317,8 +320,8 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                           children: [
                             Text(
                               widget.budgetToEdit != null
-                                  ? 'Edit Budget'
-                                  : 'Buat Budget Baru',
+                                  ? context.tr('edit_budget')
+                                  : context.tr('create_new_budget'),
                               style: Theme.of(context)
                                   .textTheme
                                   .headlineSmall
@@ -330,7 +333,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Atur batas pengeluaran untuk kategori',
+                              context.tr('set_spending_limit'),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -358,39 +361,39 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Period Selection
-                    _buildSectionTitle('Periode Budget'),
+                    _buildSectionTitle(context.tr('budget_period')),
                     _buildPeriodSelector(),
                     const SizedBox(height: AppSizes.paddingLarge),
 
                     // Category Selection
-                    _buildSectionTitle('Kategori'),
+                    _buildSectionTitle(context.tr('category')),
                     _buildCategorySelector(),
                     const SizedBox(height: AppSizes.paddingLarge),
 
                     // Amount Input
-                    _buildSectionTitle('Jumlah Budget'),
+                    _buildSectionTitle(context.tr('budget_amount')),
                     _buildAmountInput(),
                     const SizedBox(height: AppSizes.paddingLarge),
 
                     // Date Range (for custom periods)
                     if (_selectedPeriod != 'daily') ...[
-                      _buildSectionTitle('Periode Waktu'),
+                      _buildSectionTitle(context.tr('time_period')),
                       _buildDateRangeSelector(),
                       const SizedBox(height: AppSizes.paddingLarge),
                     ],
 
                     // Alert Settings
-                    _buildSectionTitle('Pengaturan Notifikasi'),
+                    _buildSectionTitle(context.tr('notification_settings')),
                     _buildAlertSettings(),
                     const SizedBox(height: AppSizes.paddingLarge),
 
                     // Recurring Settings
-                    _buildSectionTitle('Budget Berulang'),
+                    _buildSectionTitle(context.tr('recurring_budget')),
                     _buildRecurringSettings(),
                     const SizedBox(height: AppSizes.paddingLarge),
 
                     // Notes
-                    _buildSectionTitle('Catatan (Opsional)'),
+                    _buildSectionTitle(context.tr('notes_optional')),
                     _buildNotesInput(),
                     const SizedBox(height: AppSizes.paddingExtraLarge),
                   ],
@@ -428,7 +431,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                             const SizedBox(width: AppSizes.paddingSmall),
                             Expanded(
                               child: Text(
-                                'Budget Sudah Ada',
+                                context.tr('budget_already_exists_title'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleSmall
@@ -442,7 +445,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                         ),
                         const SizedBox(height: AppSizes.paddingSmall),
                         Text(
-                          'Budget untuk kategori ini dan periode yang sama sudah ada.',
+                          context.tr('budget_exists_message'),
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: AppColors.warning,
@@ -453,7 +456,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                           Consumer<UserSettingsProvider>(
                             builder: (context, userSettings, child) {
                               return Text(
-                                'Budget saat ini: ${userSettings.formatCurrency(existingBudget.amount)}',
+                                '${context.tr('current_budget')}: ${userSettings.formatCurrency(existingBudget.amount)}',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
@@ -527,8 +530,8 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                                 )
                               : Text(
                                   widget.budgetToEdit != null
-                                      ? 'Update Budget'
-                                      : 'Buat Budget',
+                                      ? context.tr('update_budget')
+                                      : context.tr('create_budget'),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -539,7 +542,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                       if (_hasExistingBudget) ...[
                         const SizedBox(height: AppSizes.paddingSmall),
                         Text(
-                          'Hapus budget yang ada terlebih dahulu atau pilih kategori/periode yang berbeda',
+                          context.tr('delete_existing_budget_first'),
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context)
@@ -583,7 +586,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
         borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
       ),
       child: Column(
-        children: _periods.entries.map((entry) {
+        children: _periodKeys.entries.map((entry) {
           final isSelected = _selectedPeriod == entry.key;
           return InkWell(
             onTap: () {
@@ -596,7 +599,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
               padding: const EdgeInsets.all(AppSizes.paddingMedium),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.budget.withOpacity(0.1) : null,
-                border: entry.key != _periods.keys.last
+                border: entry.key != _periodKeys.keys.last
                     ? Border(
                         bottom: BorderSide(
                           color: Theme.of(context)
@@ -623,7 +626,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   const SizedBox(width: AppSizes.paddingMedium),
                   Expanded(
                     child: Text(
-                      entry.value,
+                      context.tr(entry.value),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: isSelected
                                 ? FontWeight.w600
@@ -667,12 +670,12 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                 ),
                 const SizedBox(height: AppSizes.paddingMedium),
                 Text(
-                  'Belum ada kategori pengeluaran',
+                  context.tr('no_expense_categories'),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: AppSizes.paddingSmall),
                 Text(
-                  'Buat kategori pengeluaran terlebih dahulu',
+                  context.tr('create_expense_category_first'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context)
                             .colorScheme
@@ -783,7 +786,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
             ThousandsFormatter(),
           ],
           decoration: InputDecoration(
-            hintText: 'Masukkan jumlah budget',
+            hintText: context.tr('enter_budget_amount'),
             prefixText: 'Rp ',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -795,12 +798,12 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Jumlah budget tidak boleh kosong';
+              return context.tr('budget_amount_required');
             }
             final amount =
                 double.tryParse(value.replaceAll('.', '').replaceAll(',', ''));
             if (amount == null || amount <= 0) {
-              return 'Jumlah budget harus lebih dari 0';
+              return context.tr('budget_amount_must_be_positive');
             }
             return null;
           },
@@ -827,7 +830,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tanggal Mulai',
+                    context.tr('start_date'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context)
                               .colorScheme
@@ -839,7 +842,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   Text(
                     _startDate != null
                         ? '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'
-                        : 'Pilih tanggal',
+                        : context.tr('select_date'),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
@@ -863,7 +866,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tanggal Selesai',
+                    context.tr('end_date'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context)
                               .colorScheme
@@ -875,7 +878,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   Text(
                     _endDate != null
                         ? '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
-                        : 'Pilih tanggal',
+                        : context.tr('select_date'),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
@@ -900,9 +903,8 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       child: Column(
         children: [
           SwitchListTile(
-            title: const Text('Aktifkan Notifikasi'),
-            subtitle:
-                const Text('Dapatkan notifikasi saat mendekati batas budget'),
+            title: Text(context.tr('enable_notifications')),
+            subtitle: Text(context.tr('notification_subtitle')),
             value: _alertEnabled,
             onChanged: (value) {
               setState(() {
@@ -919,7 +921,8 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Peringatan pada ${_alertPercentage}% dari budget',
+                    context.tr('warning_at_percentage',
+                        params: {'percentage': _alertPercentage.toString()}),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: AppSizes.paddingSmall),
@@ -1010,7 +1013,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Budget Berulang Otomatis',
+                      context.tr('auto_recurring_budget'),
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -1061,7 +1064,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   const SizedBox(width: AppSizes.paddingSmall),
                   Expanded(
                     child: Text(
-                      'Budget baru akan otomatis dibuat dengan jumlah yang sama untuk periode berikutnya.',
+                      context.tr('auto_budget_info'),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.budget,
                             fontWeight: FontWeight.w500,
@@ -1080,13 +1083,13 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
   String _getRecurringDescription() {
     switch (_selectedPeriod) {
       case 'daily':
-        return 'Budget akan dibuat otomatis setiap hari';
+        return context.tr('budget_will_be_created_daily');
       case 'weekly':
-        return 'Budget akan dibuat otomatis setiap minggu';
+        return context.tr('budget_will_be_created_weekly');
       case 'monthly':
-        return 'Budget akan dibuat otomatis setiap bulan';
+        return context.tr('budget_will_be_created_monthly');
       default:
-        return 'Budget akan dibuat otomatis untuk periode berikutnya';
+        return context.tr('budget_will_be_created_next_period');
     }
   }
 
@@ -1095,7 +1098,7 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       controller: _notesController,
       maxLines: 3,
       decoration: InputDecoration(
-        hintText: 'Contoh: Budget untuk belanja bulanan',
+        hintText: context.tr('example_budget_note'),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
         ),
