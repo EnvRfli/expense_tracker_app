@@ -1460,7 +1460,7 @@ class QuickAddSheet extends StatelessWidget {
               if (amountController.text.isNotEmpty) {
                 // Add quick transaction logic here
                 Navigator.of(context).pop();
-                Navigator.of(context).pop(); // Close the quick add sheet too
+                Navigator.of(context).pop();
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -1472,7 +1472,7 @@ class QuickAddSheet extends StatelessWidget {
                 );
               }
             },
-            child: const Text('Simpan'),
+            child: Text(context.tr('save')),
           ),
         ],
       ),
