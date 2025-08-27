@@ -99,6 +99,14 @@ abstract class AppLocalizations {
     'select_payment_method': 'Pilih Metode Pembayaran',
     'location_optional': 'Lokasi (Opsional)',
     'location_example': 'Contoh: Mall, Restoran, Supermarket',
+    'receipt_photo': 'Foto Struk (Opsional)',
+    'success_photo_added': 'Foto berhasil ditambahkan',
+    'failed_photo_add': 'Gagal menambahkan foto',
+    'change_photo': 'Ganti Foto',
+    'add_photo': 'Tambah Foto',
+    'income_source': 'Sumber Pemasukan',
+    'income_source_example': 'Contoh: Gaji, Freelance, Hadiah',
+    'income_source_is_required': 'Sumber pemasukan tidak boleh kosong',
 
     // Budget
     'budget_management': 'Budget Management',
@@ -304,6 +312,14 @@ abstract class AppLocalizations {
     'select_payment_method': 'Select Payment Method',
     'location_optional': 'Location (Optional)',
     'location_example': 'E.g.: Mall, Restaurant, Supermarket',
+    'receipt_photo': 'Receipt Picture (Optional)',
+    'success_photo_added': 'Picture added successfully',
+    'failed_photo_add': 'Failed to add Picture',
+    'change_photo': 'Change Picture',
+    'add_photo': 'Add Picture',
+    'income_source': 'Income Source',
+    'income_source_example': 'E.g.: Salary, Freelance, Gift',
+    'income_source_is_required': 'Income source cannot be empty',
 
     // Budget
     'budget_management': 'Budget Management',

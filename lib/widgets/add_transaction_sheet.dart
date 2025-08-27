@@ -821,7 +821,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Foto Struk (Opsional)',
+                context.tr('receipt_photo'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -922,11 +922,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Row(
+                      content: Row(
                         children: [
                           Icon(Icons.check_circle, color: Colors.white),
                           SizedBox(width: 8),
-                          Text('Foto berhasil ditambahkan'),
+                          Text(context.tr('success_photo_added')),
                         ],
                       ),
                       backgroundColor: AppColors.success,
@@ -944,11 +944,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Row(
+                      content: Row(
                         children: [
                           Icon(Icons.error, color: Colors.white),
                           SizedBox(width: 8),
-                          Text('Gagal mengambil foto'),
+                          Text(context.tr('failed_photo_add')),
                         ],
                       ),
                       backgroundColor: AppColors.error,
@@ -983,7 +983,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    _receiptPhotoPath != null ? 'Ganti Foto' : 'Ambil Foto',
+                    _receiptPhotoPath != null
+                        ? context.tr('change_photo')
+                        : context.tr('add_photo'),
                     style: TextStyle(
                       color: AppColors.info,
                       fontSize: 14,
@@ -1029,7 +1031,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Sumber Pemasukan',
+                context.tr('income_source'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -1046,7 +1048,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               color: Theme.of(context).colorScheme.onSurface,
             ),
             decoration: InputDecoration(
-              hintText: 'Contoh: Gaji, Freelance, Bonus',
+              hintText: context.tr('income_source_example'),
               hintStyle: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 14,
@@ -1058,7 +1060,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Sumber pemasukan tidak boleh kosong';
+                return context.tr('income_source_is_required');
               }
               return null;
             },
