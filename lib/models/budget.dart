@@ -63,13 +63,10 @@ class BudgetModel extends HiveObject {
     this.isRecurring = false,
   });
 
-  // Getter untuk persentase penggunaan budget
   double get usagePercentage => amount > 0 ? (spent / amount * 100) : 0;
 
-  // Getter untuk sisa budget
   double get remaining => amount - spent;
 
-  // Getter untuk status budget
   String get status {
     if (spent > amount) return 'exceeded';
     if (spent == amount)
