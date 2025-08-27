@@ -352,7 +352,7 @@ class UserSettingsProvider extends BaseProvider {
   }
 
   bool isFirstTimeSetup() {
-    return _user == null || _user!.createdAt.isAtSameMomentAs(_user!.updatedAt);
+    return _user == null || !_user!.isSetupCompleted;
   }
 
   Future<bool> completeFirstTimeSetup({
@@ -371,6 +371,7 @@ class UserSettingsProvider extends BaseProvider {
         language: language,
         notificationEnabled: enableNotifications,
         notificationTime: notificationTime,
+        isSetupCompleted: true,
         updatedAt: DateTime.now(),
       );
 

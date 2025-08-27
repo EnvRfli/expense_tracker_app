@@ -61,6 +61,9 @@ class UserModel extends HiveObject {
   @HiveField(18)
   bool pinEnabled; // Whether PIN authentication is enabled
 
+  @HiveField(19)
+  bool isSetupCompleted; // Whether onboarding setup is completed
+
   UserModel({
     required this.id,
     this.currency = 'IDR',
@@ -81,6 +84,7 @@ class UserModel extends HiveObject {
     this.budgetAlertPercentage = 80,
     this.pinCode,
     this.pinEnabled = false,
+    this.isSetupCompleted = false,
   });
 
   // Convert to JSON untuk Google Drive backup
@@ -105,6 +109,7 @@ class UserModel extends HiveObject {
       'budgetAlertPercentage': budgetAlertPercentage,
       'pinCode': pinCode,
       'pinEnabled': pinEnabled,
+      'isSetupCompleted': isSetupCompleted,
     };
   }
 
@@ -134,6 +139,7 @@ class UserModel extends HiveObject {
       budgetAlertPercentage: json['budgetAlertPercentage'] ?? 80,
       pinCode: json['pinCode'],
       pinEnabled: json['pinEnabled'] ?? false,
+      isSetupCompleted: json['isSetupCompleted'] ?? false,
     );
   }
 
@@ -156,6 +162,7 @@ class UserModel extends HiveObject {
     int? budgetAlertPercentage,
     String? pinCode,
     bool? pinEnabled,
+    bool? isSetupCompleted,
   }) {
     return UserModel(
       id: id,
@@ -178,6 +185,7 @@ class UserModel extends HiveObject {
           budgetAlertPercentage ?? this.budgetAlertPercentage,
       pinCode: pinCode ?? this.pinCode,
       pinEnabled: pinEnabled ?? this.pinEnabled,
+      isSetupCompleted: isSetupCompleted ?? this.isSetupCompleted,
     );
   }
 
