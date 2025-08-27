@@ -821,7 +821,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Foto Struk (Opsional)',
+                context.tr('receipt_photo'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -922,11 +922,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Row(
+                      content: Row(
                         children: [
                           Icon(Icons.check_circle, color: Colors.white),
                           SizedBox(width: 8),
-                          Text('Foto berhasil ditambahkan'),
+                          Text(context.tr('success_photo_added')),
                         ],
                       ),
                       backgroundColor: AppColors.success,
@@ -944,11 +944,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Row(
+                      content: Row(
                         children: [
                           Icon(Icons.error, color: Colors.white),
                           SizedBox(width: 8),
-                          Text('Gagal mengambil foto'),
+                          Text(context.tr('failed_photo_add')),
                         ],
                       ),
                       backgroundColor: AppColors.error,
@@ -983,7 +983,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    _receiptPhotoPath != null ? 'Ganti Foto' : 'Ambil Foto',
+                    _receiptPhotoPath != null
+                        ? context.tr('change_photo')
+                        : context.tr('add_photo'),
                     style: TextStyle(
                       color: AppColors.info,
                       fontSize: 14,
@@ -1029,7 +1031,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ),
               const SizedBox(width: 8),
               Text(
-                'Sumber Pemasukan',
+                context.tr('income_source'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -1046,7 +1048,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               color: Theme.of(context).colorScheme.onSurface,
             ),
             decoration: InputDecoration(
-              hintText: 'Contoh: Gaji, Freelance, Bonus',
+              hintText: context.tr('income_source_example'),
               hintStyle: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 14,
@@ -1058,7 +1060,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Sumber pemasukan tidak boleh kosong';
+                return context.tr('income_source_is_required');
               }
               return null;
             },
@@ -1109,7 +1111,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Tambah ${isIncome ? 'Pemasukan' : 'Pengeluaran'}',
+                  isIncome
+                      ? context.tr('add_income')
+                      : context.tr('add_expense'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -1205,7 +1209,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  '${isIncome ? 'Pemasukan' : 'Pengeluaran'} berhasil ditambahkan',
+                  isIncome
+                      ? context.tr('success_income_added')
+                      : context.tr('success_expense_added'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1261,7 +1267,7 @@ class QuickAddSheet extends StatelessWidget {
           ),
 
           Text(
-            'Tambah Cepat',
+            context.tr('fast_add'),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -1339,7 +1345,7 @@ class QuickAddSheet extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.add),
-              label: const Text('Transaksi Custom'),
+              label: Text(context.tr('custom_transaction')),
             ),
           ),
         ],
@@ -1424,18 +1430,19 @@ class QuickAddSheet extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Tambah ${isIncome ? 'Pemasukan' : 'Pengeluaran'}'),
+        title: Text(
+            isIncome ? context.tr('add_income') : context.tr('add_expense')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Kategori: $category'),
+            Text('Category: $category'),
             const SizedBox(height: AppSizes.paddingMedium),
             TextFormField(
               controller: amountController,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Jumlah',
+              decoration: InputDecoration(
+                labelText: context.tr('total'),
                 prefixText: 'Rp ',
                 border: OutlineInputBorder(),
               ),
@@ -1446,7 +1453,7 @@ class QuickAddSheet extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
+            child: Text(context.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1457,7 +1464,8 @@ class QuickAddSheet extends StatelessWidget {
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('$category berhasil ditambahkan'),
+                    content: Text(
+                        '$category' + ' ' + context.tr('successfully_added')),
                     backgroundColor:
                         isIncome ? AppColors.income : AppColors.expense,
                   ),
