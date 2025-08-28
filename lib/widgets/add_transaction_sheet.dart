@@ -703,7 +703,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             items: [
               DropdownMenuItem(value: 'cash', child: Text(context.tr('cash'))),
               DropdownMenuItem(
-                  value: 'card', child: Text('Kartu Debit/Kredit')),
+                  value: 'card', child: Text(context.tr('credit_card'))),
               DropdownMenuItem(
                   value: 'transfer', child: Text(context.tr('bank_transfer'))),
               DropdownMenuItem(value: 'ewallet', child: Text('E-Wallet')),

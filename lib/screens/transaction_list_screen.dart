@@ -340,7 +340,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                           ? categoryProvider.expenseCategories
                           : categoryProvider.categories)
                   .map((cat) => ListTile(
-                        title: Text(cat.name),
+                        title: Text(context.getCategoryDisplayName(cat),
+                            overflow: TextOverflow.ellipsis),
                         onTap: () {
                           setState(() => _selectedCategoryId = cat.id);
                           Navigator.pop(context);

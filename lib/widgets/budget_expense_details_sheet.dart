@@ -62,7 +62,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Detail Pengeluaran',
+                          context.tr('expense_details'),
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -97,7 +97,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Total Pengeluaran',
+                          context.tr('total_expenses'),
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context)
@@ -120,7 +120,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Dari Budget',
+                          context.tr('from_budget'),
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context)
@@ -146,23 +146,22 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Daftar Pengeluaran (${expenses.length})',
+                    context.tr('expense_list') + ' (${expenses.length})',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                   ),
-                  SizedBox(
-                    width: 12,
-                  ),
-                  Expanded(
+                  Flexible(
                     child: Text(
-                      _getPeriodText(budget),
+                      _getPeriodText(context, budget),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
                                 .withOpacity(0.6),
                           ),
+                      textAlign: TextAlign.end,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -199,7 +198,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.paddingMedium),
           Text(
-            'Belum ada pengeluaran',
+            context.tr('no_expenses_in_period'),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color:
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
@@ -207,7 +206,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.paddingSmall),
           Text(
-            'Pengeluaran dalam periode ini akan muncul di sini',
+            context.tr('expenses_will_appear_here'),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color:
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
@@ -251,7 +250,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
         children: [
           const SizedBox(height: 4),
           Text(
-            _formatDate(expense.date),
+            _formatDate(context, expense.date),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color:
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
@@ -297,24 +296,9 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
       ..sort((a, b) => b.date.compareTo(a.date)); // Sort by date descending
   }
 
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des'
-    ];
-
+  String _formatDate(BuildContext context, DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
-    final month = months[date.month - 1];
+    final month = context.getShortMonthName(date.month);
     final year = date.year;
     final hour = date.hour.toString().padLeft(2, '0');
     final minute = date.minute.toString().padLeft(2, '0');
@@ -334,35 +318,17 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
     }
   }
 
-  String _getPeriodText(BudgetModel budget) {
+  String _getPeriodText(BuildContext context, BudgetModel budget) {
     switch (budget.period) {
       case 'daily':
-        return 'Harian • ${budget.startDate.day}/${budget.startDate.month}/${budget.startDate.year}';
+        return '${context.tr('budget_period_daily')} • ${budget.startDate.day}/${budget.startDate.month}/${budget.startDate.year}';
       case 'weekly':
-        return 'Mingguan • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
+        return '${context.tr('budget_period_weekly')} • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
       case 'monthly':
-        return 'Bulanan • ${_getMonthName(budget.startDate.month)} ${budget.startDate.year}';
+        return '${context.tr('budget_period_monthly')} • ${context.getMonthName(budget.startDate.month)} ${budget.startDate.year}';
       default:
-        return 'Custom • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
+        return '${context.tr('budget_period_custom')} • ${budget.startDate.day}/${budget.startDate.month} - ${budget.endDate.day}/${budget.endDate.month}';
     }
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember'
-    ];
-    return months[month - 1];
   }
 
   /// Static method untuk menampilkan budget expense details sheet

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/user_settings_provider.dart';
 import '../services/auth_service.dart';
 import '../utils/theme.dart';
+import '../l10n/localization_extension.dart';
 
 class PinSetupScreen extends StatefulWidget {
   final bool isEdit;
@@ -23,7 +24,8 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isEdit ? 'Ubah PIN' : 'Setup PIN'),
+        title: Text(
+            widget.isEdit ? context.tr('change_pin') : context.tr('setup_pin')),
         foregroundColor: Colors.white,
       ),
       body: Padding(
@@ -49,8 +51,10 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
             // Title
             Text(
               _isConfirming
-                  ? 'Konfirmasi PIN Anda'
-                  : (widget.isEdit ? 'Masukkan PIN Baru' : 'Buat PIN Keamanan'),
+                  ? context.tr('confirm_your_pin')
+                  : (widget.isEdit
+                      ? context.tr('enter_new_pin')
+                      : context.tr('create_security_pin')),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primaryColor,
@@ -62,8 +66,8 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
             // Subtitle
             Text(
               _isConfirming
-                  ? 'Masukkan kembali PIN untuk konfirmasi'
-                  : 'PIN 6 digit untuk keamanan aplikasi',
+                  ? context.tr('enter_pin_again_to_confirm')
+                  : context.tr('pin_6_digits_for_app_security'),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -261,7 +265,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
     if (_currentPin == _confirmPin) {
       _savePin();
     } else {
-      _showError('PIN tidak cocok. Silakan coba lagi.');
+      _showError(context.tr('pin_not_match_try_again'));
       setState(() {
         _confirmPin = '';
       });
@@ -288,18 +292,19 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(widget.isEdit
-                  ? 'PIN berhasil diubah!'
-                  : 'PIN berhasil dibuat!'),
+                  ? context.tr('pin_changed_successfully')
+                  : context.tr('pin_created_successfully')),
               backgroundColor: AppColors.success,
             ),
           );
           Navigator.of(context).pop(true);
         }
       } else {
-        _showError('Gagal menyimpan PIN. Silakan coba lagi.');
+        _showError(context.tr('failed_to_save_pin_try_again'));
       }
     } catch (e) {
-      _showError('Terjadi kesalahan: $e');
+      _showError(
+          context.tr('error_occurred').replaceAll('{error}', e.toString()));
     } finally {
       if (mounted) {
         setState(() {

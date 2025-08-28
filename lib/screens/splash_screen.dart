@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
@@ -5,6 +7,7 @@ import '../providers/base_provider.dart';
 import '../services/budget_notification_service.dart';
 import '../services/recurring_budget_service.dart';
 import '../utils/theme.dart';
+import '../l10n/localization_extension.dart';
 import 'dashboard_screen.dart';
 import 'onboarding_screen.dart';
 
@@ -16,17 +19,36 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
+  late AnimationController _loadingAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  Timer? _loadingTextTimer;
+
+  // Loading states
+  String _currentLoadingText = '';
+  final List<String> _loadingSteps = [
+    'Initializing...',
+    'Loading your data...',
+    'Setting up categories...',
+    'Preparing dashboard...',
+    'Almost ready...',
+  ];
 
   @override
   void initState() {
     super.initState();
 
+    // Main animation controller for initial entrance (no repeat)
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    // Separate controller for loading animation
+    _loadingAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
@@ -35,15 +57,15 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+      curve: Curves.easeIn,
     ));
 
     _scaleAnimation = Tween<double>(
-      begin: 0.5,
+      begin: 0.8,
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
+      curve: Curves.elasticOut,
     ));
 
     // Defer initialization until after the first frame
@@ -53,21 +75,39 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _initializeApp() async {
-    // Start animation
+    // Start entrance animation (once only)
     _animationController.forward();
+
+    // Start loading animation (repeat)
+    _loadingAnimationController.repeat();
+
+    // Start loading text animation
+    _startLoadingTextAnimation();
 
     // Initialize all providers
     await _initializeProviders();
 
-    // Wait for animation to complete
-    await _animationController.forward();
-
     // Wait a bit more for user to see the splash
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 2000));
 
     if (mounted) {
       _navigateToNextScreen();
     }
+  }
+
+  void _startLoadingTextAnimation() {
+    int currentIndex = 0;
+    _loadingTextTimer =
+        Timer.periodic(const Duration(milliseconds: 600), (timer) {
+      if (mounted && currentIndex < _loadingSteps.length) {
+        setState(() {
+          _currentLoadingText = _loadingSteps[currentIndex];
+        });
+        currentIndex++;
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   Future<void> _initializeProviders() async {
@@ -148,9 +188,74 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
+  Widget _buildAnimatedLoadingIndicator() {
+    return SizedBox(
+      height: 50,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Static Money Icon (no pulsing)
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: const Icon(
+              Icons.account_balance_wallet_outlined,
+              size: 16,
+              color: Colors.white,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Animated Dots with separate controller
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(3, (index) {
+              return AnimatedBuilder(
+                animation: _loadingAnimationController,
+                builder: (context, child) {
+                  // Calculate delay for each dot
+                  double delay = index * 0.2;
+                  double animationValue =
+                      ((_loadingAnimationController.value - delay) % 1.0);
+
+                  // Create smooth wave effect
+                  double opacity = 0.3 +
+                      (0.7 *
+                          (0.5 + 0.5 * math.sin(animationValue * 2 * math.pi)));
+
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(opacity),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  );
+                },
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _loadingTextTimer?.cancel();
     _animationController.dispose();
+    _loadingAnimationController.dispose();
     super.dispose();
   }
 
@@ -196,7 +301,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                     // App Name
                     Text(
-                      'Expense Tracker',
+                      context.tr('expense_tracker'),
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 color: Colors.white,
@@ -208,7 +313,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                     // App Tagline
                     Text(
-                      'Kelola Keuangan dengan Mudah',
+                      context.tr('manage_finances_easily'),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white70,
                           ),
@@ -216,13 +321,21 @@ class _SplashScreenState extends State<SplashScreen>
 
                     const SizedBox(height: AppSizes.paddingExtraLarge),
 
-                    // Loading Indicator
-                    const SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        strokeWidth: 3,
+                    // Loading Indicator - Animated Dots
+                    _buildAnimatedLoadingIndicator(),
+
+                    const SizedBox(height: AppSizes.paddingMedium),
+
+                    // Loading Text
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Text(
+                        _currentLoadingText,
+                        key: ValueKey(_currentLoadingText),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white60,
+                              fontSize: 12,
+                            ),
                       ),
                     ),
                   ],

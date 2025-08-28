@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/user_settings_provider.dart';
 import '../services/auth_service.dart';
 import '../utils/theme.dart';
+import '../l10n/localization_extension.dart';
 
 class PinEntryScreen extends StatefulWidget {
   final String title;
@@ -12,8 +13,8 @@ class PinEntryScreen extends StatefulWidget {
 
   const PinEntryScreen({
     super.key,
-    this.title = 'Masukkan PIN',
-    this.subtitle = 'Masukkan PIN untuk melanjutkan',
+    this.title = '',
+    this.subtitle = '',
     this.showBiometricOption = true,
     this.onSuccess,
   });
@@ -84,7 +85,9 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
               // Title
               Text(
-                widget.title,
+                widget.title.isNotEmpty
+                    ? widget.title
+                    : context.tr('enter_pin'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -95,7 +98,9 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
               // Subtitle
               Text(
-                widget.subtitle,
+                widget.subtitle.isNotEmpty
+                    ? widget.subtitle
+                    : context.tr('enter_pin_to_continue'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white.withOpacity(0.8),
                     ),
@@ -127,7 +132,9 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                     ),
                   ),
                   child: Text(
-                    'PIN salah. Sisa percobaan: ${maxAttempts - _attempts}',
+                    context
+                        .tr('incorrect_pin_remaining_attempts')
+                        .replaceAll('{attempts}', '${maxAttempts - _attempts}'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.red[100],
                           fontWeight: FontWeight.w500,
@@ -333,11 +340,12 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
         if (_attempts >= maxAttempts) {
           _showMaxAttemptsDialog();
         } else {
-          _showError('PIN salah. Silakan coba lagi.');
+          _showError(context.tr('incorrect_pin_try_again'));
         }
       }
     } catch (e) {
-      _showError('Terjadi kesalahan: $e');
+      _showError(
+          context.tr('error_occurred').replaceAll('{error}', e.toString()));
     } finally {
       if (mounted) {
         setState(() {
@@ -373,7 +381,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
       final authenticated =
           await AuthService.instance.authenticateWithBiometric(
-        reason: 'Verifikasi identitas Anda untuk membuka aplikasi',
+        reason: context.tr('verify_identity_to_open_app'),
       );
 
       if (authenticated) {
@@ -398,10 +406,9 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Terlalu Banyak Percobaan'),
-        content: const Text(
-          'Anda telah mencoba memasukkan PIN sebanyak 5 kali. '
-          'Silakan tunggu sebentar sebelum mencoba lagi atau restart aplikasi.',
+        title: Text(context.tr('too_many_attempts')),
+        content: Text(
+          context.tr('max_attempts_message'),
         ),
         actions: [
           TextButton(
@@ -411,7 +418,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                 _attempts = 0;
               });
             },
-            child: const Text('OK'),
+            child: Text(context.tr('ok')),
           ),
         ],
       ),

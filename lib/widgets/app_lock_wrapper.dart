@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/user_settings_provider.dart';
 import '../services/auth_service.dart';
 import '../screens/pin_entry_screen.dart';
+import '../l10n/localization_extension.dart';
 
 class AppLockWrapper extends StatefulWidget {
   final Widget child;
@@ -19,7 +20,7 @@ class _AppLockWrapperState extends State<AppLockWrapper>
   bool _isLocked = false;
   bool _hasInitialized = false;
   int _retryCount = 0;
-  static const int _maxRetries = 50; // Maximum 5 seconds with 100ms delay
+  static const int _maxRetries = 50;
 
   @override
   void initState() {
@@ -55,8 +56,8 @@ class _AppLockWrapperState extends State<AppLockWrapper>
   Widget build(BuildContext context) {
     if (_isLocked) {
       return PinEntryScreen(
-        title: 'Aplikasi Terkunci',
-        subtitle: 'Masukkan PIN atau gunakan biometrik untuk membuka',
+        title: context.tr('app_locked'),
+        subtitle: context.tr('enter_pin_or_biometric'),
         onSuccess: () {
           setState(() {
             _isLocked = false;

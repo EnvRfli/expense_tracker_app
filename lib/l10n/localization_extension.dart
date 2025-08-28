@@ -43,6 +43,29 @@ extension LocalizationExtension on BuildContext {
     return month.toString();
   }
 
+  /// Get short month name in current language
+  String getShortMonthName(int month) {
+    const monthShortKeys = [
+      'month_short_january',
+      'month_short_february',
+      'month_short_march',
+      'month_short_april',
+      'month_short_may',
+      'month_short_june',
+      'month_short_july',
+      'month_short_august',
+      'month_short_september',
+      'month_short_october',
+      'month_short_november',
+      'month_short_december'
+    ];
+
+    if (month >= 1 && month <= 12) {
+      return tr(monthShortKeys[month - 1]);
+    }
+    return month.toString();
+  }
+
   /// Get day name in current language
   String getDayName(int weekday) {
     const dayKeys = [

@@ -485,7 +485,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 const SizedBox(height: AppSizes.paddingSmall),
                 ...List.generate(entries.length.clamp(0, 6), (i) {
                   final cat = categoryProvider.getCategoryById(entries[i].key);
-                  final name = cat?.name ?? context.tr('others');
+                  final name = context.tr(cat?.name ?? 'others');
                   final amount = entries[i].value;
                   final color = AppColors.getCategoryColor(i);
                   return Padding(
