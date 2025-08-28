@@ -14,6 +14,7 @@ abstract class AppLocalizations {
     'delete': 'Hapus',
     'edit': 'Edit',
     'add': 'Tambah',
+    'close': 'Tutup',
     'confirm_delete': 'Konfirmasi Hapus',
     'confirm_delete_expense':
         'Apakah Anda yakin ingin menghapus pengeluaran ini? Tindakan ini tidak dapat dibatalkan.',
@@ -382,8 +383,65 @@ abstract class AppLocalizations {
     'success_budget_deleted': 'Budget berhasil dihapus',
     'success_backup_completed': 'Backup berhasil diselesaikan',
     'success_restore_completed': 'Restore berhasil diselesaikan',
-  };
 
+    // Additional Settings Strings
+    'delete_pin': 'Hapus PIN',
+    'confirm_delete_pin_with_biometric':
+        'Menghapus PIN akan menonaktifkan autentikasi biometrik juga. Apakah Anda yakin?',
+    'confirm_delete_pin_only':
+        'Apakah Anda yakin ingin menghapus PIN keamanan?',
+    'pin_and_biometric_deleted':
+        'PIN dan autentikasi biometrik berhasil dihapus',
+    'pin_deleted_successfully': 'PIN berhasil dihapus',
+    'monthly_budget_dialog_title': 'Budget Bulanan',
+    'budget_amount_label': 'Jumlah Budget',
+    'budget_amount_hint': 'Masukkan jumlah budget bulanan',
+    'enter_valid_amount': 'Masukkan jumlah yang valid',
+    'budget_percentage_dialog_title': 'Persentase Alert Budget',
+    'reset_settings_dialog_title': 'Reset Pengaturan',
+    'reset_settings_confirmation':
+        'Apakah Anda yakin ingin mengembalikan semua pengaturan ke default? Tindakan ini tidak dapat dibatalkan.',
+    'settings_reset_success': 'Pengaturan berhasil direset',
+    'analyzing_file': 'Menganalisa file...',
+    'importing_data': 'Mengimpor data...',
+    'import_successful': 'Import Berhasil!',
+    'import_failed': 'Import Gagal!',
+    'import_results': 'Hasil Import:',
+    'total_data': 'Total data',
+    'import_success_count': 'Berhasil',
+    'import_failed_count': 'Gagal',
+    'import_failed_reason':
+        'Data yang gagal mungkin karena format tidak sesuai atau data sudah ada.',
+    'close_button': 'Tutup',
+    'error_importing': 'Error saat import: {error}',
+    'error_message': 'Error: {error}',
+    'reset': 'Reset',
+    'about_app_desc':
+        'Aplikasi pencatat keuangan pribadi yang mudah dan praktis',
+
+    // Categories
+    // Expense Categories
+    'category_food_drink': 'Makanan & Minuman',
+    'category_transportation': 'Transportasi',
+    'category_shopping': 'Belanja',
+    'category_entertainment': 'Hiburan',
+    'category_health': 'Kesehatan',
+    'category_bills': 'Tagihan',
+    'category_other_expense': 'Lainnya',
+
+    // Income Categories
+    'category_salary': 'Gaji',
+    'category_freelance': 'Freelance',
+    'category_investment': 'Investasi',
+    'category_other_income': 'Lainnya',
+    'category_bonus': 'Bonus',
+
+    // Quick Actions Categories
+    'quick_food': 'Makan',
+    'quick_transport': 'Transport',
+    'quick_general_expense': 'Pengeluaran Umum',
+    'quick_general_income': 'Pemasukan Umum',
+  };
   static const Map<String, String> _en = {
     // Navigation & General
     'halo': 'Hello!',
@@ -398,6 +456,7 @@ abstract class AppLocalizations {
     'delete': 'Delete',
     'edit': 'Edit',
     'add': 'Add',
+    'close': 'Close',
     'confirm_delete': 'Confirm Delete',
     'confirm_delete_expense':
         'Are you sure you want to delete this expense? This action cannot be undone.',
@@ -761,6 +820,62 @@ abstract class AppLocalizations {
     'success_budget_deleted': 'Budget deleted successfully',
     'success_backup_completed': 'Backup completed successfully',
     'success_restore_completed': 'Restore completed successfully',
+
+    // Additional Settings Strings
+    'delete_pin': 'Delete PIN',
+    'confirm_delete_pin_with_biometric':
+        'Deleting PIN will also disable biometric authentication. Are you sure?',
+    'confirm_delete_pin_only': 'Are you sure you want to delete PIN security?',
+    'pin_and_biometric_deleted':
+        'PIN and biometric authentication successfully deleted',
+    'pin_deleted_successfully': 'PIN successfully deleted',
+    'monthly_budget_dialog_title': 'Monthly Budget',
+    'budget_amount_label': 'Budget Amount',
+    'budget_amount_hint': 'Enter monthly budget amount',
+    'enter_valid_amount': 'Enter a valid amount',
+    'budget_percentage_dialog_title': 'Budget Alert Percentage',
+    'reset_settings_dialog_title': 'Reset Settings',
+    'reset_settings_confirmation':
+        'Are you sure you want to restore all settings to default? This action cannot be undone.',
+    'settings_reset_success': 'Settings successfully reset',
+    'analyzing_file': 'Analyzing file...',
+    'importing_data': 'Importing data...',
+    'import_successful': 'Import Successful!',
+    'import_failed': 'Import Failed!',
+    'import_results': 'Import Results:',
+    'total_data': 'Total data',
+    'import_success_count': 'Successful',
+    'import_failed_count': 'Failed',
+    'import_failed_reason':
+        'Failed data might be due to incorrect format or data already exists.',
+    'close_button': 'Close',
+    'error_importing': 'Error importing: {error}',
+    'error_message': 'Error: {error}',
+    'reset': 'Reset',
+    'about_app_desc': 'A simple and practical personal finance tracker app',
+
+    // Categories
+    // Expense Categories
+    'category_food_drink': 'Food & Drinks',
+    'category_transportation': 'Transportation',
+    'category_shopping': 'Shopping',
+    'category_entertainment': 'Entertainment',
+    'category_health': 'Health',
+    'category_bills': 'Bills',
+    'category_other_expense': 'Others',
+
+    // Income Categories
+    'category_salary': 'Salary',
+    'category_freelance': 'Freelance',
+    'category_investment': 'Investment',
+    'category_other_income': 'Others',
+    'category_bonus': 'Bonus',
+
+    // Quick Actions Categories
+    'quick_food': 'Food',
+    'quick_transport': 'Transport',
+    'quick_general_expense': 'General Expense',
+    'quick_general_income': 'General Income',
   };
 
   static String translate(String key, String languageCode,

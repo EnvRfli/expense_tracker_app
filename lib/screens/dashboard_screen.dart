@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../utils/theme.dart';
 import '../widgets/dashboard_widgets.dart';
+import '../widgets/localized_category_name.dart';
 import '../widgets/add_transaction_sheet.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
@@ -343,7 +344,7 @@ class _AddTransactionBottomSheetState extends State<AddTransactionBottomSheet>
                   items: categoryProvider.expenseCategories.map((category) {
                     return DropdownMenuItem(
                       value: category.id,
-                      child: Text(category.name),
+                      child: LocalizedCategoryName(category: category),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -432,7 +433,7 @@ class _AddTransactionBottomSheetState extends State<AddTransactionBottomSheet>
                   items: categoryProvider.incomeCategories.map((category) {
                     return DropdownMenuItem(
                       value: category.id,
-                      child: Text(category.name),
+                      child: LocalizedCategoryName(category: category),
                     );
                   }).toList(),
                   onChanged: (value) {

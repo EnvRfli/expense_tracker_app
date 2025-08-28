@@ -7,6 +7,7 @@ import '../providers/providers.dart';
 import '../utils/theme.dart';
 import '../services/image_picker_service.dart';
 import '../l10n/localization_extension.dart';
+import '../widgets/localized_category_name.dart';
 
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   @override
@@ -578,7 +579,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                 items: categories.map((category) {
                   return DropdownMenuItem(
                     value: category,
-                    child: Text(category.name),
+                    child: LocalizedCategoryName(category: category),
                   );
                 }).toList(),
                 onChanged: (value) {

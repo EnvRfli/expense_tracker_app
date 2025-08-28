@@ -405,15 +405,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _getCurrencyName(String currency) {
     switch (currency) {
       case 'IDR':
-        return 'Rupiah (IDR)';
+        return context.tr('currency_idr');
       case 'USD':
-        return 'US Dollar (USD)';
+        return context.tr('currency_usd');
       case 'EUR':
-        return 'Euro (EUR)';
+        return context.tr('currency_eur');
       case 'SGD':
-        return 'Singapore Dollar (SGD)';
+        return context.tr('currency_sgd');
       case 'MYR':
-        return 'Malaysian Ringgit (MYR)';
+        return context.tr('currency_myr');
       default:
         return currency;
     }
@@ -422,11 +422,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _getThemeName(String theme) {
     switch (theme) {
       case 'light':
-        return 'Terang';
+        return context.tr('theme_light');
       case 'dark':
-        return 'Gelap';
+        return context.tr('theme_dark');
       case 'system':
-        return 'Ikuti Sistem';
+        return context.tr('theme_system');
       default:
         return theme;
     }
@@ -616,14 +616,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus PIN'),
+        title: Text(context.tr('delete_pin')),
         content: Text(userSettings.biometricEnabled
-            ? 'Menghapus PIN akan menonaktifkan autentikasi biometrik juga. Apakah Anda yakin?'
-            : 'Apakah Anda yakin ingin menghapus PIN keamanan?'),
+            ? context.tr('confirm_delete_pin_with_biometric')
+            : context.tr('confirm_delete_pin_only')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+            child: Text(context.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -643,15 +643,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(userSettings.biometricEnabled
-                        ? 'PIN dan autentikasi biometrik berhasil dihapus'
-                        : 'PIN berhasil dihapus'),
+                        ? context.tr('pin_and_biometric_deleted')
+                        : context.tr('pin_deleted_successfully')),
                     backgroundColor: AppColors.success,
                   ),
                 );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Hapus'),
+            child: Text(context.tr('delete')),
           ),
         ],
       ),
@@ -682,17 +682,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final shouldExport = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Konfirmasi Export Data'),
-          content: const Text('Apakah Anda yakin ingin mengekspor data? '
-              'Data akan disimpan dalam format CSV ke folder Downloads/ExpenseTracker.'),
+          title: Text(context.tr('export_data_confirmation')),
+          content: Text(context.tr('export_data_message')),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal'),
+              child: Text(context.tr('cancel')),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Export'),
+              child: Text(context.tr('export')),
             ),
           ],
         ),
@@ -710,7 +709,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               CircularProgressIndicator(),
               const SizedBox(width: 16),
-              const Text('Mengekspor data...'),
+              Text(context.tr('exporting_data')),
             ],
           ),
         ),
@@ -725,7 +724,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (exportedFiles.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Tidak ada data untuk diekspor'),
+            content: Text(context.tr('no_data_to_export')),
             backgroundColor: AppColors.warning,
           ),
         );
@@ -740,14 +739,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Icon(Icons.check_circle, color: Colors.green, size: 24),
               const SizedBox(width: 8),
-              const Text('Export Berhasil!'),
+              Expanded(
+                child: Text(
+                  context.tr('success_data_exported'),
+                ),
+              ),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Data berhasil diekspor:'),
+              Text(context.tr('success_data_exported') + ':'),
               const SizedBox(height: 12),
               ...exportedFiles.entries.map((entry) {
                 // Extract directory path from full file path
@@ -778,20 +781,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: Colors.blue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      '📱 Cara mengakses file:',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[700]),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '1. Buka File Manager\n2. Cari folder "Download" atau "ExpenseTracker"\n3. File CSV tersedia untuk dibagikan',
-                      style: TextStyle(fontSize: 11, color: Colors.blue[600]),
+                    Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        context.tr('csv_file_can_be_opened'),
+                        style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                      ),
                     ),
                   ],
                 ),
@@ -801,7 +799,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
+              child: Text(context.tr('ok')),
             ),
           ],
         ),
@@ -810,7 +808,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Navigator.pop(context); // Close loading dialog if still open
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content: Text(
+              context.tr('error_message', params: {'error': e.toString()})),
           backgroundColor: AppColors.error,
         ),
       );
@@ -828,7 +827,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               CircularProgressIndicator(),
               const SizedBox(width: 16),
-              const Text('Menganalisis file...'),
+              Text(context.tr('analyzing_file')),
             ],
           ),
         ),
@@ -858,7 +857,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $errorMessage'),
+          content: Text(
+              context.tr('error_message', params: {'error': errorMessage})),
           backgroundColor: AppColors.error,
         ),
       );
@@ -877,7 +877,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               CircularProgressIndicator(),
               const SizedBox(width: 16),
-              const Text('Mengimpor data...'),
+              Text(context.tr('importing_data')),
             ],
           ),
         ),
@@ -898,7 +898,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Navigator.pop(context); // Close loading dialog if still open
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error during import: $e'),
+          content: Text(
+              context.tr('error_importing', params: {'error': e.toString()})),
           backgroundColor: AppColors.error,
         ),
       );
@@ -924,7 +925,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              isSuccess ? 'Import Berhasil!' : 'Import Gagal!',
+              isSuccess
+                  ? context.tr('import_successful')
+                  : context.tr('import_failed'),
               style: TextStyle(
                 color: isSuccess ? AppColors.success : AppColors.error,
                 fontSize: 18,
@@ -950,7 +953,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '📊 Hasil Import:',
+                context.tr('import_results'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -958,11 +961,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              _buildImportStatRow('📋 Total data', total.toString()),
               _buildImportStatRow(
-                  '✅ Berhasil', success.toString(), AppColors.success),
-              _buildImportStatRow('❌ Gagal', failed.toString(),
-                  failed > 0 ? AppColors.error : null),
+                  '📋 ' + context.tr('total_data'), total.toString()),
+              _buildImportStatRow('✅ ' + context.tr('import_success_count'),
+                  success.toString(), AppColors.success),
+              _buildImportStatRow('❌ ' + context.tr('import_failed_count'),
+                  failed.toString(), failed > 0 ? AppColors.error : null),
               if (failed > 0) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -972,7 +976,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    '⚠️ Data yang gagal mungkin karena format tidak sesuai atau data sudah ada.',
+                    '⚠️ ' + context.tr('import_failed_reason'),
                     style: TextStyle(fontSize: 11, color: Colors.orange[800]),
                   ),
                 ),
@@ -984,7 +988,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.close, size: 16),
-            label: const Text('Tutup'),
+            label: Text(context.tr('close_button')),
             style: ElevatedButton.styleFrom(
               backgroundColor: isSuccess ? AppColors.success : AppColors.error,
               foregroundColor: Colors.white,
@@ -1037,10 +1041,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: AppTheme.primaryColor,
       ),
       children: [
-        const Text(
-            'Aplikasi pencatat keuangan pribadi yang mudah dan praktis.'),
+        Text(context.tr('about_app_desc')),
         const SizedBox(height: 16),
-        const Text('Developed with ❤️ using Flutter'),
+        Text('Developed with ❤️ using Flutter'),
       ],
     );
   }
@@ -1049,28 +1052,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset Pengaturan'),
-        content: const Text(
-            'Apakah Anda yakin ingin mengembalikan semua pengaturan ke default? '
-            'Tindakan ini tidak dapat dibatalkan.'),
+        title: Text(context.tr('reset_settings_dialog_title')),
+        content: Text(context.tr('reset_settings_confirmation')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+            child: Text(context.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () {
               userSettings.resetToDefault();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Pengaturan berhasil direset'),
+                SnackBar(
+                  content: Text(context.tr('settings_reset_success')),
                   backgroundColor: AppColors.success,
                 ),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Reset'),
+            child: Text(context.tr('reset')),
           ),
         ],
       ),
@@ -1108,13 +1109,13 @@ class _MonthlyBudgetDialogState extends State<_MonthlyBudgetDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Budget Bulanan'),
+      title: Text(context.tr('monthly_budget_dialog_title')),
       content: TextField(
         controller: _controller,
         keyboardType: TextInputType.number,
         decoration: InputDecoration(
-          labelText: 'Jumlah Budget',
-          hintText: 'Masukkan jumlah budget bulanan',
+          labelText: context.tr('budget_amount_label'),
+          hintText: context.tr('budget_amount_hint'),
           prefixText: widget.userSettings.getCurrencySymbol() + ' ',
           border: const OutlineInputBorder(),
         ),
@@ -1122,7 +1123,7 @@ class _MonthlyBudgetDialogState extends State<_MonthlyBudgetDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Batal'),
+          child: Text(context.tr('cancel')),
         ),
         ElevatedButton(
           onPressed: () {
@@ -1133,14 +1134,14 @@ class _MonthlyBudgetDialogState extends State<_MonthlyBudgetDialog> {
               Navigator.pop(context);
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Masukkan jumlah yang valid'),
+                SnackBar(
+                  content: Text(context.tr('enter_valid_amount')),
                   backgroundColor: AppColors.error,
                 ),
               );
             }
           },
-          child: const Text('Simpan'),
+          child: Text(context.tr('save')),
         ),
       ],
     );
@@ -1170,7 +1171,7 @@ class _BudgetPercentageDialogState extends State<_BudgetPercentageDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Persentase Alert Budget'),
+      title: Text(context.tr('budget_percentage_dialog_title')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [50, 70, 80, 90, 100].map((percentage) {
@@ -1189,7 +1190,7 @@ class _BudgetPercentageDialogState extends State<_BudgetPercentageDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Batal'),
+          child: Text(context.tr('cancel')),
         ),
         ElevatedButton(
           onPressed: () {
@@ -1198,7 +1199,7 @@ class _BudgetPercentageDialogState extends State<_BudgetPercentageDialog> {
             );
             Navigator.pop(context);
           },
-          child: const Text('Simpan'),
+          child: Text(context.tr('save')),
         ),
       ],
     );

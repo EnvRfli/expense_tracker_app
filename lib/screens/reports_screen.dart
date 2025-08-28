@@ -734,7 +734,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Tutup'),
+              child: Text(context.tr('close')),
             ),
           ],
         ),

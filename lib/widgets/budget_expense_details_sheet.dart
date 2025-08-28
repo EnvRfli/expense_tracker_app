@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../models/models.dart';
 import '../utils/theme.dart';
+import '../l10n/localization_extension.dart';
 
 class BudgetExpenseDetailsSheet extends StatelessWidget {
   final BudgetModel budget;
@@ -68,7 +69,7 @@ class BudgetExpenseDetailsSheet extends StatelessWidget {
                                   ),
                         ),
                         Text(
-                          category?.name ?? 'Unknown Category',
+                          context.getCategoryDisplayName(category),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Theme.of(context)

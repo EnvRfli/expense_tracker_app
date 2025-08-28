@@ -614,7 +614,7 @@ class _BudgetListScreenState extends State<BudgetListScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              category?.name ?? context.tr('unknown_category'),
+                              context.getCategoryDisplayName(category),
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium

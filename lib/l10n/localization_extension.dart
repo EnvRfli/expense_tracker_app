@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_settings_provider.dart';
+import '../models/models.dart';
 import 'app_localizations.dart';
 
 extension LocalizationExtension on BuildContext {
@@ -152,5 +153,102 @@ extension LocalizationExtension on BuildContext {
       default:
         return period;
     }
+  }
+
+  /// Get category name in current language based on category ID
+  String getCategoryName(String categoryId) {
+    switch (categoryId) {
+      // Expense categories
+      case 'exp_food':
+        return tr('category_food_drink');
+      case 'exp_transport':
+        return tr('category_transportation');
+      case 'exp_shopping':
+        return tr('category_shopping');
+      case 'exp_entertainment':
+        return tr('category_entertainment');
+      case 'exp_health':
+        return tr('category_health');
+      case 'exp_bills':
+        return tr('category_bills');
+
+      // Income categories
+      case 'inc_salary':
+        return tr('category_salary');
+      case 'inc_freelance':
+        return tr('category_freelance');
+      case 'inc_investment':
+        return tr('category_investment');
+      case 'inc_other':
+        return tr('category_other_income');
+
+      default:
+        return categoryId;
+    }
+  }
+
+  /// Get localized category name for default categories
+  String getDefaultCategoryName(String name) {
+    switch (name) {
+      // Expense categories
+      case 'Makanan & Minuman':
+        return tr('category_food_drink');
+      case 'Transportasi':
+        return tr('category_transportation');
+      case 'Belanja':
+        return tr('category_shopping');
+      case 'Hiburan':
+        return tr('category_entertainment');
+      case 'Kesehatan':
+        return tr('category_health');
+      case 'Tagihan':
+        return tr('category_bills');
+
+      // Income categories
+      case 'Gaji':
+        return tr('category_salary');
+      case 'Freelance':
+        return tr('category_freelance');
+      case 'Investasi':
+        return tr('category_investment');
+      case 'Lainnya':
+        return tr('category_other_income');
+
+      // Quick action categories
+      case 'Makan':
+        return tr('quick_food');
+      case 'Transport':
+        return tr('quick_transport');
+      case 'Bonus':
+        return tr('category_bonus');
+
+      default:
+        return name;
+    }
+  }
+
+  /// Get localized category name from CategoryModel
+  /// This is a shorthand helper to avoid repetitive conditionals
+  String getCategoryDisplayName(CategoryModel? category) {
+    if (category == null) return 'Unknown';
+
+    if (category.isDefault && category.name.startsWith('category_')) {
+      return tr(category.name);
+    }
+
+    return category.name;
+  }
+
+  /// Static method to get category display name without BuildContext
+  /// Uses Indonesian as fallback for notification services
+  static String getCategoryDisplayNameStatic(CategoryModel? category) {
+    if (category == null) return 'Unknown';
+
+    if (category.isDefault && category.name.startsWith('category_')) {
+      // Use Indonesian as fallback for notifications
+      return AppLocalizations.translate(category.name, 'id');
+    }
+
+    return category.name;
   }
 }

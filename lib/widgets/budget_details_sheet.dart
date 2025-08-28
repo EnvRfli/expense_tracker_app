@@ -74,7 +74,7 @@ class BudgetDetailsSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          category?.name ?? context.tr('unknown_category'),
+                          context.getCategoryDisplayName(category),
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,

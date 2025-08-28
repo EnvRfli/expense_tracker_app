@@ -68,7 +68,7 @@ class DeleteBudgetDialog extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      category?.name ?? 'Unknown Category',
+                      context.getCategoryDisplayName(category),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

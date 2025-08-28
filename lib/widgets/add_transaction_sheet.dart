@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../utils/theme.dart';
 import '../services/image_picker_service.dart';
 import '../l10n/localization_extension.dart';
+import '../widgets/localized_category_name.dart';
 
 // Custom formatter untuk format ribuan dengan koma
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
@@ -557,7 +558,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                 items: categories.map((category) {
                   return DropdownMenuItem(
                     value: category,
-                    child: Text(category.name),
+                    child: LocalizedCategoryName(category: category),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -1277,24 +1278,28 @@ class QuickAddSheet extends StatelessWidget {
           // Quick expense buttons
           _buildQuickActionSection(
             context,
-            'Pengeluaran Umum',
+            context.tr('quick_general_expense'),
             [
               {
-                'name': 'Makan',
+                'name': context.tr('quick_food'),
                 'icon': Icons.restaurant,
                 'color': Colors.orange
               },
               {
-                'name': 'Transport',
+                'name': context.tr('quick_transport'),
                 'icon': Icons.directions_car,
                 'color': Colors.blue
               },
               {
-                'name': 'Belanja',
+                'name': context.tr('category_shopping'),
                 'icon': Icons.shopping_cart,
                 'color': Colors.green
               },
-              {'name': 'Hiburan', 'icon': Icons.movie, 'color': Colors.purple},
+              {
+                'name': context.tr('category_entertainment'),
+                'icon': Icons.movie,
+                'color': Colors.purple
+              },
             ],
             false,
           ),
@@ -1304,16 +1309,20 @@ class QuickAddSheet extends StatelessWidget {
           // Quick income buttons
           _buildQuickActionSection(
             context,
-            'Pemasukan Umum',
+            context.tr('quick_general_income'),
             [
-              {'name': 'Gaji', 'icon': Icons.work, 'color': Colors.teal},
               {
-                'name': 'Bonus',
+                'name': context.tr('category_salary'),
+                'icon': Icons.work,
+                'color': Colors.teal
+              },
+              {
+                'name': context.tr('category_bonus'),
                 'icon': Icons.card_giftcard,
                 'color': Colors.amber
               },
               {
-                'name': 'Investasi',
+                'name': context.tr('category_investment'),
                 'icon': Icons.trending_up,
                 'color': Colors.indigo
               },

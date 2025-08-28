@@ -74,6 +74,9 @@ class DatabaseService {
     // Create default categories if not exists
     if (_categoryBox.isEmpty) {
       await _createDefaultCategories();
+    } else {
+      // Migrate existing categories to use localization keys
+      await migrateCategoryNamesToLocalizationKeys();
     }
   }
 
@@ -83,7 +86,7 @@ class DatabaseService {
       // Expense categories
       CategoryModel(
         id: 'exp_food',
-        name: 'Makanan & Minuman',
+        name: 'category_food_drink', // Using localization key
         type: 'expense',
         iconCodePoint: '0xe57d', // Icons.restaurant
         colorValue: '#FF5722',
@@ -93,7 +96,7 @@ class DatabaseService {
       ),
       CategoryModel(
         id: 'exp_transport',
-        name: 'Transportasi',
+        name: 'category_transportation', // Using localization key
         type: 'expense',
         iconCodePoint: '0xe1a5', // Icons.directions_car
         colorValue: '#2196F3',
@@ -103,7 +106,7 @@ class DatabaseService {
       ),
       CategoryModel(
         id: 'exp_shopping',
-        name: 'Belanja',
+        name: 'category_shopping', // Using localization key
         type: 'expense',
         iconCodePoint: '0xe59c', // Icons.shopping_cart
         colorValue: '#E91E63',
@@ -113,7 +116,7 @@ class DatabaseService {
       ),
       CategoryModel(
         id: 'exp_entertainment',
-        name: 'Hiburan',
+        name: 'category_entertainment', // Using localization key
         type: 'expense',
         iconCodePoint: '0xe5d2', // Icons.movie
         colorValue: '#9C27B0',
@@ -123,7 +126,7 @@ class DatabaseService {
       ),
       CategoryModel(
         id: 'exp_health',
-        name: 'Kesehatan',
+        name: 'category_health', // Using localization key
         type: 'expense',
         iconCodePoint: '0xe571', // Icons.local_hospital
         colorValue: '#4CAF50',
@@ -133,7 +136,7 @@ class DatabaseService {
       ),
       CategoryModel(
         id: 'exp_bills',
-        name: 'Tagihan',
+        name: 'category_bills', // Using localization key
         type: 'expense',
         iconCodePoint: '0xe8e7', // Icons.receipt_long
         colorValue: '#FF9800',
@@ -145,7 +148,7 @@ class DatabaseService {
       // Income categories
       CategoryModel(
         id: 'inc_salary',
-        name: 'Gaji',
+        name: 'category_salary', // Using localization key
         type: 'income',
         iconCodePoint: '0xe8e8', // Icons.work
         colorValue: '#4CAF50',
@@ -155,7 +158,7 @@ class DatabaseService {
       ),
       CategoryModel(
         id: 'inc_freelance',
-        name: 'Freelance',
+        name: 'category_freelance', // Using localization key
         type: 'income',
         iconCodePoint: '0xe3b6', // Icons.laptop_mac
         colorValue: '#00BCD4',
@@ -165,7 +168,7 @@ class DatabaseService {
       ),
       CategoryModel(
         id: 'inc_investment',
-        name: 'Investasi',
+        name: 'category_investment', // Using localization key
         type: 'income',
         iconCodePoint: '0xe227', // Icons.trending_up
         colorValue: '#8BC34A',
@@ -175,7 +178,7 @@ class DatabaseService {
       ),
       CategoryModel(
         id: 'inc_other',
-        name: 'Lainnya',
+        name: 'category_other_income', // Using localization key
         type: 'income',
         iconCodePoint: '0xe83a', // Icons.more_horiz
         colorValue: '#607D8B',
@@ -187,6 +190,38 @@ class DatabaseService {
 
     for (final category in defaultCategories) {
       await _categoryBox.put(category.id, category);
+    }
+  }
+
+  // Migrate existing categories to use localization keys
+  Future<void> migrateCategoryNamesToLocalizationKeys() async {
+    final categoryMigrationMap = {
+      'Makanan & Minuman': 'category_food_drink',
+      'Transportasi': 'category_transportation',
+      'Belanja': 'category_shopping',
+      'Hiburan': 'category_entertainment',
+      'Kesehatan': 'category_health',
+      'Tagihan': 'category_bills',
+      'Gaji': 'category_salary',
+      'Freelance': 'category_freelance',
+      'Investasi': 'category_investment',
+      'Lainnya': 'category_other_income',
+    };
+
+    // Get all categories
+    final allCategories = _categoryBox.values.toList();
+
+    for (final category in allCategories) {
+      if (category.isDefault &&
+          categoryMigrationMap.containsKey(category.name)) {
+        // Update the category name to use localization key
+        final updatedCategory = category.copyWith(
+          name: categoryMigrationMap[category.name]!,
+          updatedAt: DateTime.now(),
+        );
+
+        await _categoryBox.put(category.id, updatedCategory);
+      }
     }
   }
 

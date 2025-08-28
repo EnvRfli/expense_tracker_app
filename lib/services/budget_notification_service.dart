@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../models/models.dart';
+import '../l10n/localization_extension.dart';
 
 typedef TZDateTime = tz.TZDateTime;
 
@@ -224,7 +225,8 @@ class BudgetNotificationService {
       iOS: iOSPlatformChannelSpecifics,
     );
 
-    final String title = 'Budget Alert: ${category.name}';
+    final String title =
+        'Budget Alert: ${LocalizationExtension.getCategoryDisplayNameStatic(category)}';
     final String body =
         'You have used ${budget.usagePercentage.toStringAsFixed(0)}% of your budget (${_formatCurrency(budget.spent)} / ${_formatCurrency(budget.amount)})';
 
@@ -287,11 +289,13 @@ class BudgetNotificationService {
     final String body;
 
     if (budget.status == 'full') {
-      title = '💯 Budget Completed: ${category.name}';
+      title =
+          '💯 Budget Completed: ${LocalizationExtension.getCategoryDisplayNameStatic(category)}';
       body =
           'You have reached your budget limit! Spent: ${_formatCurrency(budget.spent)} / Budget: ${_formatCurrency(budget.amount)}';
     } else {
-      title = '⚠️ Budget Exceeded: ${category.name}';
+      title =
+          '⚠️ Budget Exceeded: ${LocalizationExtension.getCategoryDisplayNameStatic(category)}';
       body =
           'You have exceeded your budget! Spent: ${_formatCurrency(budget.spent)} / Budget: ${_formatCurrency(budget.amount)}';
     }
@@ -342,7 +346,7 @@ class BudgetNotificationService {
 
     final String title = '✅ Budget Created';
     final String body =
-        'New ${budget.period} budget created for ${category.name}: ${_formatCurrency(budget.amount)}';
+        'New ${budget.period} budget created for ${LocalizationExtension.getCategoryDisplayNameStatic(category)}: ${_formatCurrency(budget.amount)}';
 
     await _flutterLocalNotificationsPlugin.show(
       budget.id.hashCode + 2000,

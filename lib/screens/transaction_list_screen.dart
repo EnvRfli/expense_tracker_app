@@ -7,6 +7,7 @@ import '../models/expense.dart';
 import '../models/income.dart';
 import '../widgets/add_transaction_sheet.dart';
 import '../widgets/edit_transaction_sheet.dart';
+import '../widgets/localized_category_name.dart';
 import '../utils/theme.dart';
 import '../l10n/localization_extension.dart';
 
@@ -249,10 +250,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               child: Text(
                 _selectedCategoryId == null
                     ? context.tr('category')
-                    : categoryProvider
-                            .getCategoryById(_selectedCategoryId!)
-                            ?.name ??
-                        context.tr('category'),
+                    : context.getCategoryDisplayName(
+                        categoryProvider.getCategoryById(_selectedCategoryId!)),
                 style: TextStyle(
                   fontSize: 12,
                   color: _selectedCategoryId == null
@@ -416,7 +415,7 @@ class _TransactionTile extends StatelessWidget {
       ),
       title:
           Text(item.description, style: Theme.of(context).textTheme.bodyLarge),
-      subtitle: Text(category?.name ?? '-',
+      subtitle: Text(context.getCategoryDisplayName(category),
           style: Theme.of(context).textTheme.bodyMedium),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../models/models.dart';
 import '../utils/theme.dart';
+import '../widgets/localized_category_name.dart';
 import '../l10n/localization_extension.dart';
 
 class AddBudgetSheet extends StatefulWidget {
@@ -763,8 +764,8 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                       ),
                       const SizedBox(width: AppSizes.paddingMedium),
                       Expanded(
-                        child: Text(
-                          category.name,
+                        child: LocalizedCategoryName(
+                          category: category,
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontWeight: isSelected

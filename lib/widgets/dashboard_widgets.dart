@@ -470,7 +470,7 @@ class _FilteredTransactionsSheet extends StatelessWidget {
                             children: [
                               const SizedBox(height: 4),
                               Text(
-                                category?.name ?? 'Unknown',
+                                context.getCategoryDisplayName(category),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
@@ -945,7 +945,7 @@ class BudgetOverviewCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        category?.name ?? 'Unknown',
+                        context.getCategoryDisplayName(category),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
@@ -1119,7 +1119,7 @@ class RecentTransactionsCard extends StatelessWidget {
                             ),
                       ),
                       Text(
-                        '${category?.name ?? 'Unknown'} • ${data.date.day}/${data.date.month}',
+                        '${context.getCategoryDisplayName(category)} • ${data.date.day}/${data.date.month}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -1209,7 +1209,7 @@ class SpendingByCategoryCard extends StatelessWidget {
 
                     return _buildCategoryItem(
                       context,
-                      category?.name ?? 'Unknown',
+                      context.getCategoryDisplayName(category),
                       categoryTotal,
                       percentage.toDouble(),
                       userSettings,
