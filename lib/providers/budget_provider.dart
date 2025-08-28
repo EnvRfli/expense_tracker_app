@@ -23,6 +23,29 @@ class BudgetProvider extends BaseProvider {
       _budgets = DatabaseService.instance.budgets.values.toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
+      print('=== Load Budgets Debug ===');
+      print('Total budgets loaded: ${_budgets.length}');
+
+      // Backfill recurringTime for existing budgets that don't have it
+      await _backfillRecurringTime();
+
+      for (final budget in _budgets) {
+        print('Budget: ${budget.id}');
+        print('  Period: ${budget.period}');
+        print('  Active: ${budget.isActive}');
+        print('  Recurring: ${budget.isRecurring}');
+        print('  Start: ${budget.startDate}');
+        print('  End: ${budget.endDate}');
+        print('  Recurring Time: ${budget.recurringTime}');
+        print('  ---');
+      }
+
+      final recurringBudgets = _budgets
+          .where((b) => b.isRecurring && b.recurringTime != null)
+          .toList();
+      print('Recurring budgets with recurringTime: ${recurringBudgets.length}');
+      print('========================');
+
       final now = DateTime.now();
       for (int i = 0; i < _budgets.length; i++) {
         final budget = _budgets[i];
@@ -33,6 +56,38 @@ class BudgetProvider extends BaseProvider {
         }
       }
     });
+  }
+
+  // Backfill recurringTime for existing budgets that don't have it
+  Future<void> _backfillRecurringTime() async {
+    bool hasUpdates = false;
+
+    for (int i = 0; i < _budgets.length; i++) {
+      final budget = _budgets[i];
+
+      // If budget is recurring but doesn't have recurringTime, calculate it
+      if (budget.isRecurring && budget.recurringTime == null) {
+        // H+1 dari end date (hari setelahnya jam 00:00:00)
+        final calculatedRecurringTime = DateTime(
+            budget.endDate.year, budget.endDate.month, budget.endDate.day + 1);
+
+        final updatedBudget = budget.copyWith(
+          recurringTime: calculatedRecurringTime,
+          updatedAt: DateTime.now(),
+        );
+
+        _budgets[i] = updatedBudget;
+        await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
+        hasUpdates = true;
+
+        print(
+            'Backfilled recurringTime for budget ${budget.id}: $calculatedRecurringTime');
+      }
+    }
+
+    if (hasUpdates) {
+      print('✅ Backfill recurringTime completed');
+    }
   }
 
   Future<bool> addBudget({
@@ -71,6 +126,14 @@ class BudgetProvider extends BaseProvider {
       }
 
       final now = DateTime.now();
+
+      // Calculate recurringTime if this is a recurring budget
+      DateTime? recurringTime;
+      if (isRecurring) {
+        // H+1 dari end date (hari setelahnya jam 00:00:00)
+        recurringTime = DateTime(endDate.year, endDate.month, endDate.day + 1);
+      }
+
       final budget = BudgetModel(
         id: _uuid.v4(),
         categoryId: categoryId,
@@ -84,12 +147,34 @@ class BudgetProvider extends BaseProvider {
         alertPercentage: alertPercentage,
         notes: notes,
         isRecurring: isRecurring,
+        recurringTime: recurringTime,
       );
+
+      print('=== Creating Budget ===');
+      print('Budget ID: ${budget.id}');
+      print('Category: $categoryId');
+      print('Period: $period');
+      print('Start: $startDate');
+      print('End: $endDate');
+      print('Is Recurring: $isRecurring');
+      print('Recurring Time: $recurringTime');
+      print('========================');
 
       final spent = _calculateSpentAmount(categoryId, startDate, endDate);
       final budgetWithSpent = budget.updateSpent(spent);
 
       await DatabaseService.instance.budgets.put(budget.id, budgetWithSpent);
+
+      print('=== Budget Saved to Database ===');
+      print('Budget ID: ${budgetWithSpent.id}');
+      print('Is Recurring: ${budgetWithSpent.isRecurring}');
+
+      // Immediately verify from database
+      final savedBudget = DatabaseService.instance.budgets.get(budget.id);
+      print('=== Verification from Database ===');
+      print('Saved Budget ID: ${savedBudget?.id}');
+      print('Saved Is Recurring: ${savedBudget?.isRecurring}');
+      print('===================================');
 
       await SyncService.instance.trackChange(
         dataType: 'budget',
@@ -576,8 +661,9 @@ class BudgetProvider extends BaseProvider {
   Future<void> createRecurringBudgets() async {
     await handleAsync(() async {
       final now = DateTime.now();
+      // Use recurringTime for better precision
       final recurringBudgets = _budgets
-          .where((budget) => budget.isRecurring && budget.isActive)
+          .where((budget) => budget.isRecurring && budget.recurringTime != null)
           .toList();
 
       print('=== Checking Recurring Budgets ===');
@@ -586,10 +672,16 @@ class BudgetProvider extends BaseProvider {
 
       for (final budget in recurringBudgets) {
         print(
-            'Checking budget: ${budget.id} (${budget.period}) - End: ${budget.endDate}');
+            'Checking budget: ${budget.id} (${budget.period}) - Recurring Time: ${budget.recurringTime}');
 
-        if (now.isAfter(budget.endDate)) {
-          print('Budget ${budget.id} has expired, creating next period');
+        // Check if today >= recurringTime (meaning it's time to create next period)
+        final todayStart = DateTime(now.year, now.month, now.day);
+        final recurringDate = DateTime(budget.recurringTime!.year,
+            budget.recurringTime!.month, budget.recurringTime!.day);
+
+        if (todayStart.isAfter(recurringDate) ||
+            todayStart.isAtSameMomentAs(recurringDate)) {
+          print('Time to create next period for budget ${budget.id}');
 
           final nextPeriodDates =
               _calculateNextPeriodDates(budget.period, budget.endDate);
@@ -635,6 +727,19 @@ class BudgetProvider extends BaseProvider {
             if (success) {
               print(
                   '✅ Auto-created recurring budget for category ${budget.categoryId}, period ${budget.period}');
+
+              // Update current budget's recurringTime to next period
+              final newRecurringTime = DateTime(
+                  nextPeriodDates['end']!.year,
+                  nextPeriodDates['end']!.month,
+                  nextPeriodDates['end']!.day + 1);
+              final updatedBudget = budget.copyWith(
+                recurringTime: newRecurringTime,
+                updatedAt: DateTime.now(),
+              );
+              await DatabaseService.instance.budgets
+                  .put(budget.id, updatedBudget);
+              print('Updated recurringTime to: $newRecurringTime');
             } else {
               print(
                   '❌ Failed to create recurring budget for category ${budget.categoryId}');
@@ -692,8 +797,9 @@ class BudgetProvider extends BaseProvider {
   Future<void> checkAndCreateOverdueBudgets() async {
     await handleAsync(() async {
       final now = DateTime.now();
+      // FIXED: Include inactive recurring budgets that may need catch-up periods
       final recurringBudgets = _budgets
-          .where((budget) => budget.isRecurring && budget.isActive)
+          .where((budget) => budget.isRecurring) // Remove isActive requirement
           .toList();
 
       print('=== Checking Overdue Recurring Budgets ===');
@@ -765,5 +871,35 @@ class BudgetProvider extends BaseProvider {
     await checkAndCreateOverdueBudgets();
     await createRecurringBudgets();
     print('✅ Force check complete');
+  }
+
+  // Debug method: Force set budget as recurring (for testing)
+  Future<void> forceSetBudgetRecurring(
+      String budgetId, bool isRecurring) async {
+    await handleAsync(() async {
+      final budget = DatabaseService.instance.budgets.get(budgetId);
+      if (budget != null) {
+        DateTime? recurringTime;
+        if (isRecurring) {
+          // Calculate recurringTime as H+1 dari end date
+          recurringTime = DateTime(budget.endDate.year, budget.endDate.month,
+              budget.endDate.day + 1);
+        }
+
+        final updatedBudget = budget.copyWith(
+          isRecurring: isRecurring,
+          recurringTime: recurringTime,
+          updatedAt: DateTime.now(),
+        );
+
+        await DatabaseService.instance.budgets.put(budgetId, updatedBudget);
+        await loadBudgets();
+
+        print(
+            '✅ Budget $budgetId isRecurring set to $isRecurring, recurringTime: $recurringTime');
+      } else {
+        print('❌ Budget $budgetId not found');
+      }
+    });
   }
 }

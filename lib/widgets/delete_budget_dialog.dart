@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
+import '../l10n/localization_extension.dart';
 import '../models/models.dart';
 import '../utils/theme.dart';
 
@@ -14,8 +15,9 @@ class DeleteBudgetDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<CategoryProvider, UserSettingsProvider>(
-      builder: (context, categoryProvider, userSettings, child) {
+    return Consumer3<CategoryProvider, UserSettingsProvider, BudgetProvider>(
+      builder:
+          (context, categoryProvider, userSettings, budgetProvider, child) {
         final category = categoryProvider.getCategoryById(budget.categoryId);
 
         return AlertDialog(
@@ -38,8 +40,8 @@ class DeleteBudgetDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSizes.paddingMedium),
-              const Expanded(
-                child: Text('Hapus Budget'),
+              Expanded(
+                child: Text(context.tr('delete_budget')),
               ),
             ],
           ),
@@ -48,12 +50,13 @@ class DeleteBudgetDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Apakah Anda yakin ingin menghapus budget ini?',
+                context.tr('confirm_delete_budget'),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: AppSizes.paddingMedium),
               Container(
                 padding: const EdgeInsets.all(AppSizes.paddingMedium),
+                width: double.infinity,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
@@ -76,7 +79,8 @@ class DeleteBudgetDialog extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     Text(
-                      'Terpakai: ${userSettings.formatCurrency(budget.spent)}',
+                      context.tr('used') +
+                          ' : ${userSettings.formatCurrency(budget.spent)}',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
@@ -84,7 +88,7 @@ class DeleteBudgetDialog extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.paddingMedium),
               Text(
-                'Tindakan ini tidak dapat dibatalkan.',
+                context.tr('deleting_budget_cannot_be_undone'),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.error,
                       fontStyle: FontStyle.italic,
@@ -98,15 +102,70 @@ class DeleteBudgetDialog extends StatelessWidget {
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.onSurface,
               ),
-              child: const Text('Batal'),
+              child: Text(context.tr('cancel')),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () async {
+                try {
+                  // Show loading indicator
+                  Navigator.of(context).pop(null);
+
+                  // Show loading dialog
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+
+                  // Delete budget
+                  final success = await budgetProvider.deleteBudget(budget.id);
+
+                  // Close loading dialog
+                  Navigator.of(context).pop();
+
+                  if (success) {
+                    // Show success message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(context.tr('success_budget_deleted')),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+
+                    // Return true to indicate success
+                    Navigator.of(context).pop(true);
+                  } else {
+                    // Show error message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(context.tr('failed_to_delete_budget')),
+                        backgroundColor: AppColors.error,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  // Close loading dialog if still open
+                  Navigator.of(context).pop();
+
+                  // Show error message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: ${e.toString()}'),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Hapus'),
+              child: Text(context.tr('delete')),
             ),
           ],
         );

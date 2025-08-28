@@ -170,6 +170,16 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
         }
       } else {
         // Create new budget
+        print('=== UI Creating Budget ===');
+        print('Category: $_selectedCategoryId');
+        print('Period: $_selectedPeriod');
+        print('Start: $_startDate');
+        print('End: $_endDate');
+        print('Alert Enabled: $_alertEnabled');
+        print('Alert Percentage: $_alertPercentage');
+        print('Is Recurring: $_isRecurring');
+        print('=========================');
+
         success = await budgetProvider.addBudget(
           categoryId: _selectedCategoryId!,
           amount: double.parse(

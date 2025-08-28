@@ -14,18 +14,24 @@ class RecurringBudgetService {
 
   // Initialize the service with budget provider
   void initialize(BudgetProvider budgetProvider) {
+    print('🔄 Initializing RecurringBudgetService...');
     _budgetProvider = budgetProvider;
     _startPeriodicCheck();
+    print('✅ RecurringBudgetService initialized successfully');
   }
 
   // Start periodic check for recurring budgets
   void _startPeriodicCheck() {
+    print('⏰ Starting periodic check every 15 minutes');
+
     // Check every 15 minutes for recurring budgets (especially important for daily budgets)
     _timer = Timer.periodic(const Duration(minutes: 15), (timer) {
+      print('⏰ Timer triggered - checking recurring budgets');
       _checkAndCreateRecurringBudgets();
     });
 
     // Also check immediately
+    print('🔄 Performing immediate check...');
     _checkAndCreateRecurringBudgets();
   }
 

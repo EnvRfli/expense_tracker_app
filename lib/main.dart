@@ -123,15 +123,6 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp>
     await context.read<BudgetProvider>().initialize();
     await context.read<SyncProvider>().initialize();
 
-    // Initialize recurring budget service after budget provider is ready
-    try {
-      final budgetProvider = context.read<BudgetProvider>();
-      RecurringBudgetService.instance.initialize(budgetProvider);
-      print('Recurring budget service initialized in main');
-    } catch (e) {
-      print('Error initializing recurring budget service in main: $e');
-    }
-
     _isInitialized = true;
   }
 

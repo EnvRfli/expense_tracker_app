@@ -46,6 +46,10 @@ class BudgetModel extends HiveObject {
   @HiveField(13)
   bool isRecurring; // Apakah budget ini recurring/berulang
 
+  @HiveField(14)
+  DateTime?
+      recurringTime; // Tanggal untuk check recurring budget (H+1 dari endDate)
+
   BudgetModel({
     required this.id,
     required this.categoryId,
@@ -61,6 +65,7 @@ class BudgetModel extends HiveObject {
     this.alertPercentage = 80,
     this.notes,
     this.isRecurring = false,
+    this.recurringTime,
   });
 
   double get usagePercentage => amount > 0 ? (spent / amount * 100) : 0;
@@ -92,6 +97,7 @@ class BudgetModel extends HiveObject {
       'alertPercentage': alertPercentage,
       'notes': notes,
       'isRecurring': isRecurring,
+      'recurringTime': recurringTime?.toIso8601String(),
     };
   }
 
@@ -112,6 +118,9 @@ class BudgetModel extends HiveObject {
       alertPercentage: json['alertPercentage'] ?? 80,
       notes: json['notes'],
       isRecurring: json['isRecurring'] ?? false,
+      recurringTime: json['recurringTime'] != null
+          ? DateTime.parse(json['recurringTime'])
+          : null,
     );
   }
 
@@ -129,6 +138,7 @@ class BudgetModel extends HiveObject {
     int? alertPercentage,
     String? notes,
     bool? isRecurring,
+    DateTime? recurringTime,
   }) {
     return BudgetModel(
       id: id,
@@ -145,6 +155,7 @@ class BudgetModel extends HiveObject {
       alertPercentage: alertPercentage ?? this.alertPercentage,
       notes: notes ?? this.notes,
       isRecurring: isRecurring ?? this.isRecurring,
+      recurringTime: recurringTime ?? this.recurringTime,
     );
   }
 

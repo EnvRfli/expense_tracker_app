@@ -224,6 +224,10 @@ abstract class AppLocalizations {
     'auto_budget_info':
         'Budget baru akan otomatis dibuat dengan jumlah yang sama untuk periode berikutnya.',
     'example_budget_note': 'Contoh: Budget untuk belanja bulanan',
+    'confirm_delete_budget': 'Apakah anda yakin ingin menghapus budget ini ?',
+    'deleting_budget_cannot_be_undone':
+        'Menghapus budget tidak dapat dibatalkan',
+    'delete_budget': 'Hapus Budget',
 
     // Reports
     'reports_title': 'Laporan',
@@ -363,6 +367,7 @@ abstract class AppLocalizations {
     'success_income_deleted': 'Pemasukan berhasil dihapus',
     'failed_to_update_transaction': 'Gagal memperbarui transaksi',
     'failed_to_delete_transaction': 'Gagal menghapus transaksi',
+    'failed_to_delete_budget': 'Gagal menghapus budget',
     'success_budget_added': 'Budget berhasil ditambahkan',
     'success_budget_updated': 'Budget berhasil diperbarui',
     'success_budget_deleted': 'Budget berhasil dihapus',
@@ -592,6 +597,9 @@ abstract class AppLocalizations {
     'auto_budget_info':
         'New budget will be automatically created with the same amount for the next period.',
     'example_budget_note': 'Example: Budget for monthly shopping',
+    'confirm_delete_budget': 'Are you sure you want to delete this budget?',
+    'deleting_budget_cannot_be_undone': 'Deleting budget cannot be undone',
+    'delete_budget': 'Delete Budget',
 
     // Reports
     'reports_title': 'Reports',
@@ -729,6 +737,7 @@ abstract class AppLocalizations {
     'success_income_deleted': 'Income deleted successfully',
     'failed_to_update_transaction': 'Failed to update transaction',
     'failed_to_delete_transaction': 'Failed to delete transaction',
+    'failed_to_delete_budget': 'Failed to delete budget',
     'success_budget_added': 'Budget added successfully',
     'success_budget_updated': 'Budget updated successfully',
     'success_budget_deleted': 'Budget deleted successfully',

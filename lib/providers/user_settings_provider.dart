@@ -568,7 +568,7 @@ class UserSettingsProvider extends BaseProvider {
 
       final csvData = StringBuffer();
       csvData.writeln(
-          'ID,Category,Amount,Period,Start Date,End Date,Spent Amount,Is Active,Created At,Updated At');
+          'ID,Category,Amount,Period,Start Date,End Date,Spent Amount,Is Active,Is Recurring,Recurring Time,Created At,Updated At');
 
       for (final budget in budgets) {
         final category = categories.firstWhere(
@@ -585,7 +585,7 @@ class UserSettingsProvider extends BaseProvider {
         );
 
         csvData.writeln(
-            '${budget.id},"${category.name}",${budget.amount},${budget.period},${budget.startDate.toIso8601String()},${budget.endDate.toIso8601String()},${budget.spent},${budget.isActive},${budget.createdAt.toIso8601String()},${budget.updatedAt.toIso8601String()}');
+            '${budget.id},"${category.name}",${budget.amount},${budget.period},${budget.startDate.toIso8601String()},${budget.endDate.toIso8601String()},${budget.spent},${budget.isActive},${budget.isRecurring},"${budget.recurringTime?.toIso8601String() ?? ''}",${budget.createdAt.toIso8601String()},${budget.updatedAt.toIso8601String()}');
       }
 
       final file = File('${exportDir.path}/budgets_$timestamp.csv');
@@ -870,7 +870,8 @@ class UserSettingsProvider extends BaseProvider {
     for (int i = 1; i < lines.length; i++) {
       try {
         final fields = _parseCSVLine(lines[i]);
-        if (fields.length >= 10) {
+        if (fields.length >= 12) {
+          // Updated to require 12 fields including recurringTime
           if (DatabaseService.instance.budgets.containsKey(fields[0])) {
             continue;
           }
@@ -884,11 +885,16 @@ class UserSettingsProvider extends BaseProvider {
             startDate: DateTime.parse(fields[4]),
             endDate: DateTime.parse(fields[5]),
             isActive: fields[7].toLowerCase() == 'true',
-            createdAt: DateTime.parse(fields[8]),
-            updatedAt: DateTime.parse(fields[9]),
+            isRecurring: fields.length > 8
+                ? (fields[8].toLowerCase() == 'true')
+                : false, // Read isRecurring from CSV
+            recurringTime: fields.length > 9 && fields[9].isNotEmpty
+                ? DateTime.parse(fields[9])
+                : null, // Read recurringTime from CSV
+            createdAt: DateTime.parse(fields[10]),
+            updatedAt: DateTime.parse(fields[11]),
             alertEnabled: true,
             alertPercentage: 80,
-            isRecurring: false,
           );
 
           await DatabaseService.instance.budgets.put(budget.id, budget);
@@ -1366,7 +1372,7 @@ class UserSettingsProvider extends BaseProvider {
       final categories = DatabaseService.instance.categories.values.toList();
       final csvData = StringBuffer();
       csvData.writeln(
-          'ID,Category,Budget Amount,Spent Amount,Period,Start Date,End Date,Alert Percentage,Is Active,Created At,Updated At');
+          'ID,Category,Budget Amount,Spent Amount,Period,Start Date,End Date,Alert Percentage,Is Active,Is Recurring,Recurring Time,Created At,Updated At');
 
       for (final budget in budgets) {
         final category = categories.firstWhere(
@@ -1392,6 +1398,8 @@ class UserSettingsProvider extends BaseProvider {
           budget.endDate.toIso8601String(),
           budget.alertPercentage,
           budget.isActive,
+          budget.isRecurring,
+          budget.recurringTime?.toIso8601String() ?? '',
           budget.createdAt.toIso8601String(),
           budget.updatedAt.toIso8601String(),
         ].map((field) => '"$field"').join(','));
@@ -1577,9 +1585,9 @@ class UserSettingsProvider extends BaseProvider {
     try {
       final fields = _parseCSVLineForFilePicker(line);
 
-      if (fields.length < 11) {
+      if (fields.length < 12) {
         throw Exception(
-            'Invalid budget CSV format. Expected 11 fields, got ${fields.length}');
+            'Invalid budget CSV format. Expected at least 12 fields, got ${fields.length}');
       }
 
       final id = fields[0].isEmpty
@@ -1600,10 +1608,16 @@ class UserSettingsProvider extends BaseProvider {
         endDate: DateTime.parse(fields[6]),
         alertPercentage: int.parse(fields[7]), // alert percentage
         isActive: fields[8].toLowerCase() == 'true',
-        createdAt: DateTime.parse(fields[9]),
-        updatedAt: DateTime.parse(fields[10]),
+        isRecurring: fields.length > 9
+            ? (fields[9].toLowerCase() == 'true')
+            : false, // Read isRecurring from CSV
+        recurringTime: fields.length > 10 && fields[10].isNotEmpty
+            ? DateTime.parse(fields[10])
+            : null, // Read recurringTime from CSV
+        createdAt: DateTime.parse(fields[11]),
+        updatedAt:
+            fields.length > 12 ? DateTime.parse(fields[12]) : DateTime.now(),
         alertEnabled: true,
-        isRecurring: false,
       );
 
       await DatabaseService.instance.budgets.put(budget.id, budget);
