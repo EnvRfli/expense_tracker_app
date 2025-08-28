@@ -317,6 +317,27 @@ abstract class AppLocalizations {
     'biometric_auth_failed': 'Autentikasi biometrik gagal',
     'biometric_enabled_success': 'Autentikasi biometrik diaktifkan',
     'biometric_disabled_success': 'Autentikasi biometrik dinonaktifkan',
+
+    // Onboarding
+    'onboarding_welcome_title': 'Selamat Datang!',
+    'onboarding_welcome_desc': 'Kelola keuangan Anda dengan mudah dan praktis',
+    'onboarding_transactions_title': 'Catat Transaksi',
+    'onboarding_transactions_desc':
+        'Catat pemasukan dan pengeluaran harian Anda',
+    'onboarding_budget_title': 'Pantau Budget',
+    'onboarding_budget_desc':
+        'Atur dan pantau budget bulanan untuk setiap kategori',
+    'onboarding_backup_title': 'Export & Import Data',
+    'onboarding_backup_desc':
+        'Backup data Anda dengan export ke CSV dan import saat diperlukan',
+    'back': 'Kembali',
+    'next': 'Lanjut',
+    'start_setup': 'Mulai Setup',
+    'initial_setup': 'Setup Awal',
+    'complete_setup': 'Selesai Setup',
+    'daily_reminder_desc': 'Pengingat harian untuk mencatat transaksi',
+    'reminder_time': 'Waktu Pengingat',
+    'select_time': 'Pilih waktu',
     'app_info': 'Informasi aplikasi dan developer',
     'reset_settings': 'Reset Pengaturan',
     'reset_to_default': 'Kembalikan ke pengaturan default',
@@ -804,6 +825,26 @@ abstract class AppLocalizations {
     'biometric_auth_failed': 'Biometric authentication failed',
     'biometric_enabled_success': 'Biometric authentication enabled',
     'biometric_disabled_success': 'Biometric authentication disabled',
+
+    // Onboarding
+    'onboarding_welcome_title': 'Welcome!',
+    'onboarding_welcome_desc': 'Manage your finances easily and practically',
+    'onboarding_transactions_title': 'Record Transactions',
+    'onboarding_transactions_desc': 'Record your daily income and expenses',
+    'onboarding_budget_title': 'Monitor Budget',
+    'onboarding_budget_desc':
+        'Set and monitor monthly budget for each category',
+    'onboarding_backup_title': 'Export & Import Data',
+    'onboarding_backup_desc':
+        'Backup your data by exporting to CSV and import when needed',
+    'back': 'Back',
+    'next': 'Next',
+    'start_setup': 'Start Setup',
+    'initial_setup': 'Initial Setup',
+    'complete_setup': 'Complete Setup',
+    'daily_reminder_desc': 'Daily reminder to record transactions',
+    'reminder_time': 'Reminder Time',
+    'select_time': 'Select time',
     'app_info': 'App information and developer',
     'reset_settings': 'Reset Settings',
     'reset_to_default': 'Reset to default settings',

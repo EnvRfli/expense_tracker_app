@@ -40,12 +40,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         icon: Icons.pie_chart,
         color: AppColors.budget,
       ),
-      OnboardingPage(
-        title: context.tr('onboarding_backup_title'),
-        description: context.tr('onboarding_backup_desc'),
-        icon: Icons.import_export,
-        color: AppColors.info,
-      ),
     ];
   }
 

@@ -7,7 +7,6 @@ import '../models/expense.dart';
 import '../models/income.dart';
 import '../widgets/add_transaction_sheet.dart';
 import '../widgets/edit_transaction_sheet.dart';
-import '../widgets/localized_category_name.dart';
 import '../utils/theme.dart';
 import '../l10n/localization_extension.dart';
 
