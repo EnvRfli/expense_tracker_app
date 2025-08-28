@@ -112,7 +112,7 @@ class _TimeseriesChart extends StatelessWidget {
                 return Text(
                   formatValue(value),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10, // Ukuran font yang lebih kecil
+                        fontSize: 10,
                       ),
                   textAlign: TextAlign.right,
                 );
@@ -173,8 +173,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         actions: [
           IconButton(
             onPressed: () async {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(context.tr('export_csv'))));
+              await _exportData();
             },
             icon: const Icon(Icons.download),
             tooltip: context.tr('export_csv'),
@@ -610,5 +609,149 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _exportData() async {
+    try {
+      // Show export confirmation dialog first
+      final shouldExport = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(context.tr('export_data_confirmation')),
+          content: Text(context.tr('export_data_message')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(context.tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Export'),
+            ),
+          ],
+        ),
+      );
+
+      // If user cancelled, return early
+      if (shouldExport != true) return;
+
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              const SizedBox(width: 16),
+              Text(context.tr('exporting_data')),
+            ],
+          ),
+        ),
+      );
+
+      final userSettings =
+          Provider.of<UserSettingsProvider>(context, listen: false);
+      final exportedFiles = await userSettings.exportDataToDownloads();
+
+      Navigator.pop(context); // Close loading dialog
+
+      if (exportedFiles.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('no_data_to_export')),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+        return;
+      }
+
+      // Show success dialog with file locations
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  context.tr('success_data_exported'),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(context.tr('success_data_exported') + ' :'),
+              const SizedBox(height: 12),
+              ...exportedFiles.entries.map((entry) {
+                // Extract directory path from full file path
+                final filePath = entry.value;
+                final fileName = filePath.split('/').last;
+                final dirPath =
+                    filePath.substring(0, filePath.lastIndexOf('/'));
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('• $fileName',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        '  Path: $dirPath',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        context.tr('csv_file_can_be_opened'),
+                        style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Tutup'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // Close loading dialog if still open
+      Navigator.pop(context);
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(context.tr('error_when_exporting') + ' : ${e.toString()}'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }

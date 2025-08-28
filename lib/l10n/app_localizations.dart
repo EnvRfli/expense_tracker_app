@@ -247,6 +247,14 @@ abstract class AppLocalizations {
     'top_expense': 'Pengeluaran',
     'top_income': 'Pemasukan',
     'period_range': '{start} - {end}',
+    'export_data_confirmation': 'Konfirmasi Export Data',
+    'export_data_message':
+        'Data transaksi, kategori, pemasukan, dan budget akan diexport ke file CSV terpisah di folder Downloads/ExpenseTracker di perangkat Anda.',
+    'exporting_data': 'Mengexport data...',
+    'no_data_to_export': 'Tidak ada data untuk diexport',
+    'success_data_exported': 'Data berhasil diexport',
+    'csv_file_can_be_opened':
+        'File CSV dapat dibuka dengan aplikasi spreadsheet seperti Excel atau Google Sheets',
 
     // Settings
     'currency': 'Mata Uang',
@@ -356,6 +364,7 @@ abstract class AppLocalizations {
     'error_invalid_date': 'Tanggal tidak valid',
     'error_network': 'Kesalahan jaringan',
     'error_unknown': 'Terjadi kesalahan yang tidak diketahui',
+    'error_when_exporting': 'Error saat export data',
 
     // Success Messages
     'success_transaction_added': 'Transaksi berhasil ditambahkan',
@@ -619,6 +628,14 @@ abstract class AppLocalizations {
     'top_expense': 'Expense',
     'top_income': 'Income',
     'period_range': '{start} - {end}',
+    'export_data_confirmation': 'Export Data Confirmation',
+    'export_data_message':
+        'Transaction, category, income, and budget data will be exported to separate CSV files in the Downloads/ExpenseTracker folder on your device.',
+    'exporting_data': 'Exporting data...',
+    'no_data_to_export': 'No data to export',
+    'success_data_exported': 'Data exported successfully',
+    'csv_file_can_be_opened':
+        'CSV files can be opened with spreadsheet apps like Excel or Google Sheets',
 
     // Settings
     'currency': 'Currency',
@@ -726,6 +743,7 @@ abstract class AppLocalizations {
     'error_invalid_date': 'Invalid date',
     'error_network': 'Network error',
     'error_unknown': 'An unknown error occurred',
+    'error_when_exporting': 'Error when exporting data',
 
     // Success Messages
     'success_transaction_added': 'Transaction added successfully',
