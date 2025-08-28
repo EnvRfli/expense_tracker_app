@@ -1,11 +1,11 @@
 {
-    "name": "expense_tracker_app",
-    "short_name": "expense_tracker_app",
+    "name": "Expense Tracker",
+    "short_name": "Expense Tracker",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",
     "theme_color": "#hexcode",
-    "description": "A new Flutter project.",
+    "description": "Personal Finance Management App",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
