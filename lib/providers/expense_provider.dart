@@ -8,6 +8,9 @@ class ExpenseProvider extends BaseProvider {
   List<ExpenseModel> _expenses = [];
   ExpenseModel? _selectedExpense;
 
+  // Track monthly budget notifications to prevent duplicates
+  static String? _lastMonthlyBudgetNotificationKey;
+
   Function()? onExpenseChanged;
 
   List<ExpenseModel> get expenses => _expenses;
@@ -77,6 +80,9 @@ class ExpenseProvider extends BaseProvider {
           specificCategoryId: categoryId,
           forceReset: false,
           isFromUserAction: true);
+
+      // Check monthly budget alert
+      await _checkMonthlyBudgetAlert();
 
       if (onExpenseChanged != null) {
         onExpenseChanged!();
@@ -152,6 +158,9 @@ class ExpenseProvider extends BaseProvider {
             .checkBudgetAlerts(specificCategoryId: categoryId);
       }
 
+      // Check monthly budget alert
+      await _checkMonthlyBudgetAlert();
+
       if (onExpenseChanged != null) {
         onExpenseChanged!();
       }
@@ -181,6 +190,9 @@ class ExpenseProvider extends BaseProvider {
       await _updateBudgetSpent(expense.categoryId);
 
       await loadExpenses();
+
+      // Check monthly budget alert after deleting expense
+      await _checkMonthlyBudgetAlert();
 
       if (onExpenseChanged != null) {
         onExpenseChanged!();
@@ -366,6 +378,76 @@ class ExpenseProvider extends BaseProvider {
         return date1.year == date2.year;
       default:
         return date1.month == date2.month && date1.year == date2.year;
+    }
+  }
+
+  Future<void> _checkMonthlyBudgetAlert() async {
+    try {
+      final currentMonthTotal = getCurrentMonthTotal();
+      final userModel = DatabaseService.instance.getCurrentUser();
+
+      if (userModel != null &&
+          userModel.monthlyBudgetLimit != null &&
+          userModel.budgetAlertEnabled) {
+        final monthlyBudget = userModel.monthlyBudgetLimit!;
+        final usagePercentage = (currentMonthTotal / monthlyBudget * 100);
+        final alertThreshold = userModel.budgetAlertPercentage.toDouble();
+
+        if (usagePercentage >= alertThreshold) {
+          final now = DateTime.now();
+          final currentMonth = DateTime(now.year, now.month);
+          final notificationKey =
+              '${currentMonth.millisecondsSinceEpoch}_${usagePercentage.floor()}';
+
+          // Only send notification if we haven't sent one for this month and percentage level
+          if (_lastMonthlyBudgetNotificationKey != notificationKey) {
+            await _showMonthlyBudgetNotification(
+              currentMonthTotal,
+              monthlyBudget,
+              usagePercentage,
+            );
+            _lastMonthlyBudgetNotificationKey = notificationKey;
+          }
+        }
+      }
+    } catch (e) {
+      print('Error checking monthly budget alert: $e');
+    }
+  }
+
+  Future<void> _showMonthlyBudgetNotification(
+    double currentExpenses,
+    double monthlyBudget,
+    double usagePercentage,
+  ) async {
+    try {
+      final notificationService = NotificationService.instance;
+
+      String title;
+      String body;
+
+      if (usagePercentage >= 100) {
+        title = '⚠️ Monthly Budget Exceeded!';
+        body =
+            'You have exceeded your monthly budget! Spent: Rp ${currentExpenses.toStringAsFixed(0)} / Budget: Rp ${monthlyBudget.toStringAsFixed(0)}';
+      } else if (usagePercentage >= 90) {
+        title = '🚨 Monthly Budget Alert!';
+        body =
+            'You have used ${usagePercentage.toStringAsFixed(0)}% of your monthly budget (Rp ${currentExpenses.toStringAsFixed(0)} / Rp ${monthlyBudget.toStringAsFixed(0)})';
+      } else {
+        title = '⚠️ Monthly Budget Warning';
+        body =
+            'You have used ${usagePercentage.toStringAsFixed(0)}% of your monthly budget (Rp ${currentExpenses.toStringAsFixed(0)} / Rp ${monthlyBudget.toStringAsFixed(0)})';
+      }
+
+      await notificationService.showNotification(
+        id: 'monthly_budget_alert'.hashCode,
+        title: title,
+        body: body,
+        payload: 'monthly_budget_alert',
+      );
+    } catch (e) {
+      print('Error showing monthly budget notification: $e');
     }
   }
 }

@@ -64,14 +64,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _selectedIndex = index;
           });
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: 'Beranda',
+            label: context.tr('home_page'),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
-            label: 'Transaksi',
+            label: context.tr('transactions'),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.pie_chart),
@@ -79,11 +79,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.analytics),
-            label: 'Laporan',
+            label: context.tr('reports'),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
-            label: 'Pengaturan',
+            label: context.tr('settings'),
           ),
         ],
       ),
