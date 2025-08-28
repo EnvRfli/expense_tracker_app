@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
-import '../services/recurring_budget_service.dart';
 import '../utils/theme.dart';
 import '../widgets/dashboard_widgets.dart';
 import '../widgets/add_transaction_sheet.dart';
@@ -149,126 +148,7 @@ class DashboardHomeTab extends StatelessWidget {
               ),
               titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
             ),
-            actions: [
-              // Debug button untuk force check recurring budget
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
-                onSelected: (value) async {
-                  if (value == 'check_recurring') {
-                    print('🔄 Manual recurring budget check triggered');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('🔄 Checking recurring budgets...'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-
-                    try {
-                      await RecurringBudgetService.instance.checkNow();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('✅ Recurring budget check completed'),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    } catch (e) {
-                      print('❌ Error in manual check: $e');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('❌ Error: $e'),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
-                    }
-                  } else if (value == 'debug_budgets') {
-                    // Debug: Load dan tampilkan semua budget
-                    final budgetProvider = context.read<BudgetProvider>();
-                    await budgetProvider.loadBudgets();
-
-                    print('=== ALL BUDGETS DEBUG ===');
-                    for (final budget in budgetProvider.budgets) {
-                      print('ID: ${budget.id}');
-                      print('Period: ${budget.period}');
-                      print('Active: ${budget.isActive}');
-                      print('Recurring: ${budget.isRecurring}');
-                      print('Start: ${budget.startDate}');
-                      print('End: ${budget.endDate}');
-                      print('---');
-                    }
-                    print('========================');
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            '📊 Found ${budgetProvider.budgets.length} budgets. Check console for details.'),
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  } else if (value == 'force_recurring') {
-                    // Debug: Force set first budget as recurring untuk testing
-                    final budgetProvider = context.read<BudgetProvider>();
-                    await budgetProvider.loadBudgets();
-
-                    if (budgetProvider.budgets.isNotEmpty) {
-                      final firstBudget = budgetProvider.budgets.first;
-                      await budgetProvider.forceSetBudgetRecurring(
-                          firstBudget.id, true);
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              '✅ Budget ${firstBudget.id} set as recurring'),
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('❌ No budgets found'),
-                          backgroundColor: Colors.red,
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
-                    }
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'check_recurring',
-                    child: Row(
-                      children: [
-                        Icon(Icons.refresh),
-                        SizedBox(width: 8),
-                        Text('Check Recurring Budget'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'debug_budgets',
-                    child: Row(
-                      children: [
-                        Icon(Icons.bug_report),
-                        SizedBox(width: 8),
-                        Text('Debug All Budgets'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'force_recurring',
-                    child: Row(
-                      children: [
-                        Icon(Icons.settings),
-                        SizedBox(width: 8),
-                        Text('Force Set Recurring'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            actions: [],
           ),
           SliverPadding(
             padding: const EdgeInsets.all(AppSizes.paddingMedium),
