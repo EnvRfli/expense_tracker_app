@@ -229,6 +229,10 @@ abstract class AppLocalizations {
     'deleting_budget_cannot_be_undone':
         'Menghapus budget tidak dapat dibatalkan',
     'delete_budget': 'Hapus Budget',
+    'expense_details': 'Detail Pengeluaran',
+    'total_expenses': 'Total Pengeluaran',
+    'from_budget': 'dari budget',
+    'expense_list': 'Daftar Pengeluaran',
 
     // Reports
     'reports_title': 'Laporan',
@@ -242,6 +246,8 @@ abstract class AppLocalizations {
     'top_transactions': 'Transaksi Teratas',
     'no_data': 'Tidak ada data',
     'no_expenses_in_period': 'Tidak ada pengeluaran di periode ini',
+    'expenses_will_appear_here':
+        'Pengeluaran dalam periode ini akan muncul di sini',
     'no_transactions_in_period': 'Tidak ada transaksi di periode ini',
     'others': 'Lainnya',
     'more_categories': '+ {count} lainnya',
@@ -323,6 +329,33 @@ abstract class AppLocalizations {
     'budget_alert_warning': 'Peringatan saat mendekati batas budget',
     'budget_percentage_desc': '{percentage}% dari budget',
 
+    // PIN and Security
+    'enter_pin': 'Masukkan PIN',
+    'enter_pin_to_continue': 'Masukkan PIN untuk melanjutkan',
+    'change_pin': 'Ubah PIN',
+    'setup_pin': 'Setup PIN',
+    'confirm_your_pin': 'Konfirmasi PIN Anda',
+    'enter_new_pin': 'Masukkan PIN Baru',
+    'create_security_pin': 'Buat PIN Keamanan',
+    'enter_pin_again_to_confirm': 'Masukkan kembali PIN untuk konfirmasi',
+    'pin_6_digits_for_app_security': 'PIN 6 digit untuk keamanan aplikasi',
+    'pin_not_match_try_again': 'PIN tidak cocok. Silakan coba lagi.',
+    'pin_changed_successfully': 'PIN berhasil diubah!',
+    'pin_created_successfully': 'PIN berhasil dibuat!',
+    'failed_to_save_pin_try_again': 'Gagal menyimpan PIN. Silakan coba lagi.',
+    'incorrect_pin_remaining_attempts': 'PIN salah. Sisa percobaan: {attempts}',
+    'incorrect_pin_try_again': 'PIN salah. Silakan coba lagi.',
+    'too_many_attempts': 'Terlalu Banyak Percobaan',
+    'max_attempts_message':
+        'Anda telah mencoba memasukkan PIN sebanyak 5 kali. Silakan tunggu sebentar sebelum mencoba lagi atau restart aplikasi.',
+    'verify_identity_to_open_app':
+        'Verifikasi identitas Anda untuk membuka aplikasi',
+    'error_occurred': 'Terjadi kesalahan: {error}',
+
+    // App Info
+    'expense_tracker': 'Expense Tracker',
+    'manage_finances_easily': 'Kelola Keuangan dengan Mudah',
+
     // Currencies
     'currency_idr': 'Rupiah Indonesia (IDR)',
     'currency_usd': 'US Dollar (USD)',
@@ -348,6 +381,20 @@ abstract class AppLocalizations {
     'month_october': 'Oktober',
     'month_november': 'November',
     'month_december': 'Desember',
+
+    // Short Months
+    'month_short_january': 'Jan',
+    'month_short_february': 'Feb',
+    'month_short_march': 'Mar',
+    'month_short_april': 'Apr',
+    'month_short_may': 'Mei',
+    'month_short_june': 'Jun',
+    'month_short_july': 'Jul',
+    'month_short_august': 'Agu',
+    'month_short_september': 'Sep',
+    'month_short_october': 'Okt',
+    'month_short_november': 'Nov',
+    'month_short_december': 'Des',
 
     // Days
     'day_monday': 'Senin',
@@ -418,6 +465,9 @@ abstract class AppLocalizations {
     'reset': 'Reset',
     'about_app_desc':
         'Aplikasi pencatat keuangan pribadi yang mudah dan praktis',
+    'app_locked': 'Aplikasi Terkunci',
+    'enter_pin_or_biometric':
+        'Masukkan PIN atau gunakan biometrik untuk membuka',
 
     // Categories
     // Expense Categories
@@ -668,6 +718,10 @@ abstract class AppLocalizations {
     'confirm_delete_budget': 'Are you sure you want to delete this budget?',
     'deleting_budget_cannot_be_undone': 'Deleting budget cannot be undone',
     'delete_budget': 'Delete Budget',
+    'expense_details': 'Expense Details',
+    'total_expenses': 'Total Expenses',
+    'from_budget': 'from budget',
+    'expense_list': 'Expense List',
 
     // Reports
     'reports_title': 'Reports',
@@ -681,6 +735,7 @@ abstract class AppLocalizations {
     'top_transactions': 'Top Transactions',
     'no_data': 'No data',
     'no_expenses_in_period': 'No expenses in this period',
+    'expenses_will_appear_here': 'Expenses in this period will appear here',
     'no_transactions_in_period': 'No transactions in this period',
     'others': 'Others',
     'more_categories': '+ {count} others',
@@ -760,6 +815,33 @@ abstract class AppLocalizations {
     'budget_alert_warning': 'Warning when approaching budget limit',
     'budget_percentage_desc': '{percentage}% of budget',
 
+    // PIN and Security
+    'enter_pin': 'Enter PIN',
+    'enter_pin_to_continue': 'Enter PIN to continue',
+    'change_pin': 'Change PIN',
+    'setup_pin': 'Setup PIN',
+    'confirm_your_pin': 'Confirm Your PIN',
+    'enter_new_pin': 'Enter New PIN',
+    'create_security_pin': 'Create Security PIN',
+    'enter_pin_again_to_confirm': 'Enter PIN again to confirm',
+    'pin_6_digits_for_app_security': '6-digit PIN for app security',
+    'pin_not_match_try_again': 'PIN does not match. Please try again.',
+    'pin_changed_successfully': 'PIN changed successfully!',
+    'pin_created_successfully': 'PIN created successfully!',
+    'failed_to_save_pin_try_again': 'Failed to save PIN. Please try again.',
+    'incorrect_pin_remaining_attempts':
+        'Incorrect PIN. Remaining attempts: {attempts}',
+    'incorrect_pin_try_again': 'Incorrect PIN. Please try again.',
+    'too_many_attempts': 'Too Many Attempts',
+    'max_attempts_message':
+        'You have tried entering PIN 5 times. Please wait a moment before trying again or restart the app.',
+    'verify_identity_to_open_app': 'Verify your identity to open the app',
+    'error_occurred': 'An error occurred: {error}',
+
+    // App Info
+    'expense_tracker': 'Expense Tracker',
+    'manage_finances_easily': 'Manage Finances Easily',
+
     // Currencies
     'currency_idr': 'Indonesian Rupiah (IDR)',
     'currency_usd': 'US Dollar (USD)',
@@ -785,6 +867,20 @@ abstract class AppLocalizations {
     'month_october': 'October',
     'month_november': 'November',
     'month_december': 'December',
+
+    // Short Months
+    'month_short_january': 'Jan',
+    'month_short_february': 'Feb',
+    'month_short_march': 'Mar',
+    'month_short_april': 'Apr',
+    'month_short_may': 'May',
+    'month_short_june': 'Jun',
+    'month_short_july': 'Jul',
+    'month_short_august': 'Aug',
+    'month_short_september': 'Sep',
+    'month_short_october': 'Oct',
+    'month_short_november': 'Nov',
+    'month_short_december': 'Dec',
 
     // Days
     'day_monday': 'Monday',
@@ -853,6 +949,8 @@ abstract class AppLocalizations {
     'error_message': 'Error: {error}',
     'reset': 'Reset',
     'about_app_desc': 'A simple and practical personal finance tracker app',
+    'app_locked': 'App Locked',
+    'enter_pin_or_biometric': 'Enter PIN or use biometric to unlock',
 
     // Categories
     // Expense Categories
