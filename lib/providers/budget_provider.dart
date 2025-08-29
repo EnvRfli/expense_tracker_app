@@ -26,7 +26,6 @@ class BudgetProvider extends BaseProvider {
       print('=== Load Budgets Debug ===');
       print('Total budgets loaded: ${_budgets.length}');
 
-      // Backfill recurringTime for existing budgets that don't have it
       await _backfillRecurringTime();
 
       for (final budget in _budgets) {
@@ -58,16 +57,13 @@ class BudgetProvider extends BaseProvider {
     });
   }
 
-  // Backfill recurringTime for existing budgets that don't have it
   Future<void> _backfillRecurringTime() async {
     bool hasUpdates = false;
 
     for (int i = 0; i < _budgets.length; i++) {
       final budget = _budgets[i];
 
-      // If budget is recurring but doesn't have recurringTime, calculate it
       if (budget.isRecurring && budget.recurringTime == null) {
-        // H+1 dari end date (hari setelahnya jam 00:00:00)
         final calculatedRecurringTime = DateTime(
             budget.endDate.year, budget.endDate.month, budget.endDate.day + 1);
 
@@ -127,10 +123,8 @@ class BudgetProvider extends BaseProvider {
 
       final now = DateTime.now();
 
-      // Calculate recurringTime if this is a recurring budget
       DateTime? recurringTime;
       if (isRecurring) {
-        // H+1 dari end date (hari setelahnya jam 00:00:00)
         recurringTime = DateTime(endDate.year, endDate.month, endDate.day + 1);
       }
 
@@ -640,28 +634,17 @@ class BudgetProvider extends BaseProvider {
   Future<void> createRecurringBudgets() async {
     await handleAsync(() async {
       final now = DateTime.now();
-      // Use recurringTime for better precision
       final recurringBudgets = _budgets
           .where((budget) => budget.isRecurring && budget.recurringTime != null)
           .toList();
 
-      print('=== Checking Recurring Budgets ===');
-      print('Current time: $now');
-      print('Found ${recurringBudgets.length} recurring budgets');
-
       for (final budget in recurringBudgets) {
-        print(
-            'Checking budget: ${budget.id} (${budget.period}) - Recurring Time: ${budget.recurringTime}');
-
-        // Check if today >= recurringTime (meaning it's time to create next period)
         final todayStart = DateTime(now.year, now.month, now.day);
         final recurringDate = DateTime(budget.recurringTime!.year,
             budget.recurringTime!.month, budget.recurringTime!.day);
 
         if (todayStart.isAfter(recurringDate) ||
             todayStart.isAtSameMomentAs(recurringDate)) {
-          print('Time to create next period for budget ${budget.id}');
-
           final nextPeriodDates =
               _calculateNextPeriodDates(budget.period, budget.endDate);
 
@@ -707,7 +690,6 @@ class BudgetProvider extends BaseProvider {
               print(
                   '✅ Auto-created recurring budget for category ${budget.categoryId}, period ${budget.period}');
 
-              // Update current budget's recurringTime to next period
               final newRecurringTime = DateTime(
                   nextPeriodDates['end']!.year,
                   nextPeriodDates['end']!.month,
@@ -740,7 +722,6 @@ class BudgetProvider extends BaseProvider {
       String period, DateTime lastEndDate) {
     switch (period) {
       case 'daily':
-        // For daily budget, next period starts the next day at 00:00:00
         final nextStart = DateTime(
             lastEndDate.year, lastEndDate.month, lastEndDate.day + 1, 0, 0, 0);
         final nextEnd = DateTime(
@@ -776,7 +757,6 @@ class BudgetProvider extends BaseProvider {
   Future<void> checkAndCreateOverdueBudgets() async {
     await handleAsync(() async {
       final now = DateTime.now();
-      // FIXED: Include inactive recurring budgets that may need catch-up periods
       final recurringBudgets = _budgets
           .where((budget) => budget.isRecurring) // Remove isActive requirement
           .toList();
@@ -844,7 +824,6 @@ class BudgetProvider extends BaseProvider {
     });
   }
 
-  // Force check all recurring budgets manually (for testing/debugging)
   Future<void> forceCheckRecurringBudgets() async {
     print('🔄 Force checking recurring budgets...');
     await checkAndCreateOverdueBudgets();
@@ -852,7 +831,6 @@ class BudgetProvider extends BaseProvider {
     print('✅ Force check complete');
   }
 
-  // Debug method: Force set budget as recurring (for testing)
   Future<void> forceSetBudgetRecurring(
       String budgetId, bool isRecurring) async {
     await handleAsync(() async {
@@ -860,7 +838,6 @@ class BudgetProvider extends BaseProvider {
       if (budget != null) {
         DateTime? recurringTime;
         if (isRecurring) {
-          // Calculate recurringTime as H+1 dari end date
           recurringTime = DateTime(budget.endDate.year, budget.endDate.month,
               budget.endDate.day + 1);
         }
