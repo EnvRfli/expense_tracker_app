@@ -8,7 +8,6 @@ class ExpenseProvider extends BaseProvider {
   List<ExpenseModel> _expenses = [];
   ExpenseModel? _selectedExpense;
 
-  // Track monthly budget notifications to prevent duplicates
   static String? _lastMonthlyBudgetNotificationKey;
 
   Function()? onExpenseChanged;
@@ -81,7 +80,6 @@ class ExpenseProvider extends BaseProvider {
           forceReset: false,
           isFromUserAction: true);
 
-      // Check monthly budget alert
       await _checkMonthlyBudgetAlert();
 
       if (onExpenseChanged != null) {
@@ -158,7 +156,6 @@ class ExpenseProvider extends BaseProvider {
             .checkBudgetAlerts(specificCategoryId: categoryId);
       }
 
-      // Check monthly budget alert
       await _checkMonthlyBudgetAlert();
 
       if (onExpenseChanged != null) {
@@ -191,7 +188,6 @@ class ExpenseProvider extends BaseProvider {
 
       await loadExpenses();
 
-      // Check monthly budget alert after deleting expense
       await _checkMonthlyBudgetAlert();
 
       if (onExpenseChanged != null) {
@@ -399,7 +395,6 @@ class ExpenseProvider extends BaseProvider {
           final notificationKey =
               '${currentMonth.millisecondsSinceEpoch}_${usagePercentage.floor()}';
 
-          // Only send notification if we haven't sent one for this month and percentage level
           if (_lastMonthlyBudgetNotificationKey != notificationKey) {
             await _showMonthlyBudgetNotification(
               currentMonthTotal,
