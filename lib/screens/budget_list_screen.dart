@@ -171,7 +171,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     }
   }
 
-  // Widget untuk empty state karena filter (bukan karena tidak ada data)
   Widget _buildFilteredEmptyState() {
     final filterText = _getFilterText();
 
@@ -215,7 +214,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     );
   }
 
-  // Fungsi untuk mendapatkan text filter yang dipilih
   String _getFilterText() {
     switch (_selectedPeriod) {
       case 'daily':
@@ -329,7 +327,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
       ),
       child: Column(
         children: [
-          // Header dengan tombol expand/collapse
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -391,8 +388,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
               ),
             ),
           ),
-
-          // Content yang bisa di-expand/collapse dengan animasi smooth
           ClipRect(
             child: AnimatedBuilder(
               animation: _expandAnimation,
@@ -495,7 +490,6 @@ class _BudgetListScreenState extends State<BudgetListScreen>
     );
   }
 
-  // Fungsi untuk memfilter budget berdasarkan periode yang dipilih
   List<BudgetModel> _filterBudgetsByPeriod(List<BudgetModel> budgets) {
     if (_selectedPeriod == 'all') {
       return budgets;
