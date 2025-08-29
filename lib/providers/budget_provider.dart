@@ -150,31 +150,10 @@ class BudgetProvider extends BaseProvider {
         recurringTime: recurringTime,
       );
 
-      print('=== Creating Budget ===');
-      print('Budget ID: ${budget.id}');
-      print('Category: $categoryId');
-      print('Period: $period');
-      print('Start: $startDate');
-      print('End: $endDate');
-      print('Is Recurring: $isRecurring');
-      print('Recurring Time: $recurringTime');
-      print('========================');
-
       final spent = _calculateSpentAmount(categoryId, startDate, endDate);
       final budgetWithSpent = budget.updateSpent(spent);
 
       await DatabaseService.instance.budgets.put(budget.id, budgetWithSpent);
-
-      print('=== Budget Saved to Database ===');
-      print('Budget ID: ${budgetWithSpent.id}');
-      print('Is Recurring: ${budgetWithSpent.isRecurring}');
-
-      // Immediately verify from database
-      final savedBudget = DatabaseService.instance.budgets.get(budget.id);
-      print('=== Verification from Database ===');
-      print('Saved Budget ID: ${savedBudget?.id}');
-      print('Saved Is Recurring: ${savedBudget?.isRecurring}');
-      print('===================================');
 
       await SyncService.instance.trackChange(
         dataType: 'budget',
