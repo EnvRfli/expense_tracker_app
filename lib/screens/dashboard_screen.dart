@@ -140,7 +140,8 @@ class DashboardHomeTab extends StatelessWidget {
                         ),
                   ),
                   Text(
-                    'Hari ini, ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                    context.tr('this_day') +
+                        ', ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white70,
                         ),

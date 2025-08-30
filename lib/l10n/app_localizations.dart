@@ -3,6 +3,7 @@ abstract class AppLocalizations {
   static const Map<String, String> _id = {
     // Navigation & General
     'halo': 'Halo!',
+    'this_day': 'Hari Ini',
     'home_page': 'Beranda',
     'dashboard': 'Dashboard',
     'transactions': 'Transaksi',
@@ -517,6 +518,7 @@ abstract class AppLocalizations {
   static const Map<String, String> _en = {
     // Navigation & General
     'halo': 'Hello!',
+    'this_day': 'Today',
     'home_page': 'Home',
     'dashboard': 'Dashboard',
     'transactions': 'Transactions',
