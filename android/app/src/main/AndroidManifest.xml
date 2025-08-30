@@ -32,7 +32,8 @@
         android:label="Expense Tracker"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
-        android:enableOnBackInvokedCallback="true">
+        android:enableOnBackInvokedCallback="true"
+        tools:replace="android:label">
         <activity
             android:name=".MainActivity"
             android:exported="true"
