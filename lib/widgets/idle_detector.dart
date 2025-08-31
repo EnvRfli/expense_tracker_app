@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../screens/pin_entry_screen.dart';
 import '../services/app_lock_state.dart';
+import '../l10n/localization_extension.dart';
 
 /// A top-level wrapper that detects user inactivity (front-end only)
 /// and shows a blocking dialog after [idleDuration] without input.
@@ -133,7 +134,7 @@ class _IdleDetectorState extends State<IdleDetector>
 
       await showDialog<void>(
         context: dialogContext,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (ctx) {
           return StatefulBuilder(
             builder: (ctx, setState) {
@@ -151,70 +152,30 @@ class _IdleDetectorState extends State<IdleDetector>
                 },
               );
 
-              return Theme(
-                data: Theme.of(ctx),
+              return PopScope(
+                canPop: true,
+                onPopInvokedWithResult: (didPop, result) {
+                  if (didPop) {
+                    countdownTimer?.cancel();
+                    countdownTimer = null;
+                  }
+                },
                 child: AlertDialog(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  title: Row(
-                    children: [
-                      Icon(
-                        Icons.access_time_rounded,
-                        color: Theme.of(ctx).colorScheme.primary,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Are you still there?',
-                          style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(ctx).colorScheme.onSurface,
-                          ),
+                  title: Text(
+                    context.tr('inactive_warning'),
+                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                      ),
-                    ],
                   ),
-                  content: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'The app will be locked for security in:',
-                          style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(ctx).colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '$secondsLeft',
-                            style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(ctx).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'seconds',
-                          style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                  content: Text(
+                    context.tr('app_lock_countdown', params: {
+                      'seconds': secondsLeft.toString(),
+                    }),
+                    style: Theme.of(ctx).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
                   ),
                   actions: [
                     TextButton(
@@ -223,37 +184,9 @@ class _IdleDetectorState extends State<IdleDetector>
                         countdownTimer = null;
                         Navigator.of(ctx, rootNavigator: true).pop();
                       },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Theme.of(ctx).colorScheme.primary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            size: 18,
-                            color: Theme.of(ctx).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'I\'m still here',
-                            style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(ctx).colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: Text(context.tr('keep_staying')),
                     ),
                   ],
-                  actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                 ),
               );
             },
@@ -262,15 +195,12 @@ class _IdleDetectorState extends State<IdleDetector>
       );
     } finally {
       _dialogShowing = false;
-      // After dialog dismissal, restart the idle timer so the next inactivity
-      // period is detected again.
       if (mounted) {
         _resetTimer();
       }
     }
   }
 
-  // Wrap entire subtree to listen for pointer and keyboard interactions.
   @override
   Widget build(BuildContext context) {
     return Focus(

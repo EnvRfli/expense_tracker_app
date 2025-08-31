@@ -516,7 +516,11 @@ abstract class AppLocalizations {
     'quick_transport': 'Transport',
     'quick_general_expense': 'Pengeluaran Umum',
     'quick_general_income': 'Pemasukan Umum',
+    'inactive_warning': 'Kamu masih disini ? ',
+    'keep_staying': 'Tetap di aplikasi',
+    'app_lock_countdown': 'Aplikasi akan dikunci dalam {seconds} detik',
   };
+
   static const Map<String, String> _en = {
     // Navigation & General
     'halo': 'Hello!',
@@ -1023,6 +1027,9 @@ abstract class AppLocalizations {
     'quick_transport': 'Transport',
     'quick_general_expense': 'General Expense',
     'quick_general_income': 'General Income',
+    'inactive_warning': "You're still there ? ",
+    'keep_staying': "Keep Staying",
+    'app_lock_countdown': 'App will be locked in {seconds} seconds',
   };
 
   static String translate(String key, String languageCode,
