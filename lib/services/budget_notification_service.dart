@@ -1,5 +1,4 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../models/models.dart';
@@ -57,9 +56,7 @@ class BudgetNotificationService {
   }
 
   void _onNotificationResponse(NotificationResponse response) {
-    if (kDebugMode) {
-      print('Notification response: ${response.payload}');
-    }
+    // Handle notification response if needed
   }
 
   Future<void> checkBudgetAlerts(
@@ -71,15 +68,7 @@ class BudgetNotificationService {
 
     // If this is not from user action and we're suppressing startup notifications, return early
     if (!isFromUserAction && _suppressStartupNotifications) {
-      if (kDebugMode) {
-        print('=== Suppressing startup notifications ===');
-      }
       return;
-    }
-
-    // Always allow notifications from user actions, even during startup suppression
-    if (isFromUserAction && kDebugMode) {
-      print('=== User action detected - notifications allowed ===');
     }
 
     // Filter budgets to check only the specific category if provided
@@ -89,38 +78,8 @@ class BudgetNotificationService {
             .toList()
         : budgets;
 
-    if (kDebugMode) {
-      print('=== Budget Alert Check ===');
-      print('Specific category: $specificCategoryId');
-      print('Is from user action: $isFromUserAction');
-      print('Suppress startup notifications: $_suppressStartupNotifications');
-      print('Total budgets: ${budgets.length}');
-      print('Budgets to check: ${budgetsToCheck.length}');
-
-      // Show which budgets will be checked
-      for (final budget in budgetsToCheck) {
-        final category = categories.firstWhere(
-          (cat) => cat.id == budget.categoryId,
-          orElse: () => CategoryModel(
-            id: '',
-            name: 'Unknown',
-            type: 'expense',
-            iconCodePoint: Icons.category.codePoint.toString(),
-            colorValue: Colors.grey.value.toString(),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-        print('Will check budget: ${category.name} (${budget.categoryId})');
-      }
-    }
-
     for (final budget in budgetsToCheck) {
       if (!budget.isActive || !budget.alertEnabled) {
-        if (kDebugMode) {
-          print(
-              'Skipping budget ${budget.id}: active=${budget.isActive}, alertEnabled=${budget.alertEnabled}');
-        }
         continue;
       }
 
@@ -136,14 +95,6 @@ class BudgetNotificationService {
           updatedAt: DateTime.now(),
         ),
       );
-
-      if (kDebugMode) {
-        print('Checking budget for ${category.name}:');
-        print('  Usage: ${budget.usagePercentage.toStringAsFixed(1)}%');
-        print('  Alert threshold: ${budget.alertPercentage}%');
-        print('  Status: ${budget.status}');
-        print('  Spent: ${budget.spent} / ${budget.amount}');
-      }
 
       // Check if budget has reached alert threshold
       if (budget.usagePercentage >= budget.alertPercentage) {
@@ -165,23 +116,12 @@ class BudgetNotificationService {
 
     // Check if we've already sent this notification
     if (_sentNotifications.contains(notificationKey)) {
-      if (kDebugMode) {
-        print(
-            'Skipping duplicate notification for ${category.name}: $notificationKey');
-      }
       return;
     }
 
     // Check if we're crossing a new threshold (only send notifications when crossing thresholds)
     final lastPercentage = _lastAlertPercentages[budget.id] ?? 0.0;
     final currentPercentage = budget.usagePercentage;
-
-    if (kDebugMode) {
-      print('Threshold check for ${category.name}:');
-      print('  Last percentage: ${lastPercentage.toStringAsFixed(1)}%');
-      print('  Current percentage: ${currentPercentage.toStringAsFixed(1)}%');
-      print('  Alert threshold: ${budget.alertPercentage}%');
-    }
 
     // Only send notification if:
     // 1. This is the first time reaching the alert threshold, OR
@@ -190,14 +130,6 @@ class BudgetNotificationService {
             currentPercentage >= budget.alertPercentage) ||
         (currentPercentage.floor() ~/ 10 > lastPercentage.floor() ~/ 10 &&
             currentPercentage >= budget.alertPercentage);
-
-    if (kDebugMode) {
-      print('Should send notification: $shouldSendNotification');
-      print(
-          '  First time crossing threshold: ${lastPercentage < budget.alertPercentage && currentPercentage >= budget.alertPercentage}');
-      print(
-          '  Crossing new 10% boundary: ${currentPercentage.floor() ~/ 10 > lastPercentage.floor() ~/ 10 && currentPercentage >= budget.alertPercentage}');
-    }
 
     if (!shouldSendNotification) {
       return;
@@ -241,11 +173,6 @@ class BudgetNotificationService {
     // Track that we've sent this notification
     _sentNotifications.add(notificationKey);
     _lastAlertPercentages[budget.id] = currentPercentage;
-
-    if (kDebugMode) {
-      print(
-          'Budget alert shown for ${category.name}: ${budget.usagePercentage.toStringAsFixed(0)}%');
-    }
   }
 
   Future<void> _showBudgetExceededAlert(
@@ -256,9 +183,6 @@ class BudgetNotificationService {
 
     // Check if we've already sent the exceeded notification for this budget
     if (_sentNotifications.contains(exceededKey)) {
-      if (kDebugMode) {
-        print('Skipping duplicate exceeded notification for ${category.name}');
-      }
       return;
     }
 
@@ -310,10 +234,6 @@ class BudgetNotificationService {
 
     // Track that we've sent the exceeded notification
     _sentNotifications.add(exceededKey);
-
-    if (kDebugMode) {
-      print('Budget ${budget.status} alert shown for ${category.name}');
-    }
   }
 
   Future<void> showBudgetCreatedNotification(
@@ -485,9 +405,6 @@ class BudgetNotificationService {
   void resetBudgetNotificationTracking(String budgetId) {
     _sentNotifications.removeWhere((key) => key.startsWith(budgetId));
     _lastAlertPercentages.remove(budgetId);
-    if (kDebugMode) {
-      print('Reset notification tracking for budget: $budgetId');
-    }
   }
 
   // Force reset tracking for category to ensure fresh notifications
@@ -497,17 +414,11 @@ class BudgetNotificationService {
     for (final budget in categoryBudgets) {
       resetBudgetNotificationTracking(budget.id);
     }
-    if (kDebugMode) {
-      print('Force reset tracking for category: $categoryId');
-    }
   }
 
   // Enable notifications after app startup
   void enableNotifications() {
     _suppressStartupNotifications = false;
-    if (kDebugMode) {
-      print('=== Budget notifications enabled ===');
-    }
   }
 
   String _formatCurrency(double amount) {
