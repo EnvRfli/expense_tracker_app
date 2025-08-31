@@ -64,6 +64,9 @@ class UserModel extends HiveObject {
   @HiveField(19)
   bool isSetupCompleted; // Whether onboarding setup is completed
 
+  @HiveField(20)
+  int backgroundLockTimeout; // Auto-lock timeout in seconds when app goes to background
+
   UserModel({
     required this.id,
     this.currency = 'IDR',
@@ -85,6 +88,7 @@ class UserModel extends HiveObject {
     this.pinCode,
     this.pinEnabled = false,
     this.isSetupCompleted = false,
+    this.backgroundLockTimeout = 120, // Default 2 minutes
   });
 
   // Convert to JSON untuk Google Drive backup
@@ -110,6 +114,7 @@ class UserModel extends HiveObject {
       'pinCode': pinCode,
       'pinEnabled': pinEnabled,
       'isSetupCompleted': isSetupCompleted,
+      'backgroundLockTimeout': backgroundLockTimeout,
     };
   }
 
@@ -140,6 +145,8 @@ class UserModel extends HiveObject {
       pinCode: json['pinCode'],
       pinEnabled: json['pinEnabled'] ?? false,
       isSetupCompleted: json['isSetupCompleted'] ?? false,
+      backgroundLockTimeout:
+          json['backgroundLockTimeout'] ?? 120, // Default 2 minutes
     );
   }
 
@@ -163,6 +170,7 @@ class UserModel extends HiveObject {
     String? pinCode,
     bool? pinEnabled,
     bool? isSetupCompleted,
+    int? backgroundLockTimeout,
   }) {
     return UserModel(
       id: id,
@@ -186,6 +194,8 @@ class UserModel extends HiveObject {
       pinCode: pinCode ?? this.pinCode,
       pinEnabled: pinEnabled ?? this.pinEnabled,
       isSetupCompleted: isSetupCompleted ?? this.isSetupCompleted,
+      backgroundLockTimeout:
+          backgroundLockTimeout ?? this.backgroundLockTimeout,
     );
   }
 

@@ -16,8 +16,7 @@ class AppLockWrapper extends StatefulWidget {
   State<AppLockWrapper> createState() => _AppLockWrapperState();
 }
 
-class _AppLockWrapperState extends State<AppLockWrapper>
-    with WidgetsBindingObserver {
+class _AppLockWrapperState extends State<AppLockWrapper> {
   bool _isLocked = false;
   bool _hasInitialized = false;
   int _retryCount = 0;
@@ -26,31 +25,12 @@ class _AppLockWrapperState extends State<AppLockWrapper>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _checkLockStatus();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-
-    switch (state) {
-      case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-        _setAppBackgrounded();
-        break;
-      case AppLifecycleState.resumed:
-        _checkLockStatus();
-        break;
-      default:
-        break;
-    }
   }
 
   @override
@@ -83,6 +63,7 @@ class _AppLockWrapperState extends State<AppLockWrapper>
       if (!mounted) return;
 
       final userSettings = context.read<UserSettingsProvider>();
+
       if (userSettings.user == null ||
           (!userSettings.pinEnabled && !userSettings.biometricEnabled)) {
         setState(() {
@@ -167,6 +148,7 @@ class _AppLockWrapperState extends State<AppLockWrapper>
   Future<bool> _shouldResetAuthenticationStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final userSettings = context.read<UserSettingsProvider>();
 
       // Check when the app was last backgrounded
       final lastBackground = prefs.getInt('last_background_time') ?? 0;
@@ -180,6 +162,16 @@ class _AppLockWrapperState extends State<AppLockWrapper>
       final currentTime = DateTime.now().millisecondsSinceEpoch;
       final timeDifference = currentTime - lastBackground;
 
+      // SECURITY: Auto-lock based on user's configured timeout
+      // This protects against unauthorized access when device is borrowed
+      final backgroundLockThreshold =
+          userSettings.backgroundLockTimeout * 1000; // Convert to milliseconds
+
+      if (timeDifference > backgroundLockThreshold) {
+        // Force lock the app due to extended background time
+        return true;
+      }
+
       // If more than 10 seconds have passed, consider it a true app restart
       // Hot restart usually happens much faster than this
       final shouldReset = timeDifference > 10000; // 10 seconds
@@ -188,15 +180,6 @@ class _AppLockWrapperState extends State<AppLockWrapper>
     } catch (e) {
       // If there's an error, err on the side of security
       return true;
-    }
-  }
-
-  void _setAppBackgrounded() async {
-    final userSettings = context.read<UserSettingsProvider>();
-
-    // Only set background time if security is enabled
-    if (userSettings.pinEnabled || userSettings.biometricEnabled) {
-      await AuthService.instance.setAppBackgrounded();
     }
   }
 }

@@ -37,13 +37,14 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       pinCode: fields[17] as String?,
       pinEnabled: fields[18] as bool,
       isSetupCompleted: fields[19] as bool,
+      backgroundLockTimeout: fields[20] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserModel obj) {
     writer
-      ..writeByte(20)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -83,7 +84,9 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       ..writeByte(18)
       ..write(obj.pinEnabled)
       ..writeByte(19)
-      ..write(obj.isSetupCompleted);
+      ..write(obj.isSetupCompleted)
+      ..writeByte(20)
+      ..write(obj.backgroundLockTimeout);
   }
 
   @override

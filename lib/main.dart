@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/services.dart';
 import 'services/budget_notification_service.dart';
-import 'services/recurring_budget_service.dart';
 import 'providers/providers.dart';
 import 'screens/splash_screen.dart';
 import 'utils/theme.dart';
 import 'widgets/app_lock_wrapper.dart';
+import 'widgets/background_security_wrapper.dart';
 import 'widgets/idle_detector.dart';
 
 void main() async {
@@ -31,8 +31,7 @@ class ExpenseTrackerApp extends StatefulWidget {
   State<ExpenseTrackerApp> createState() => _ExpenseTrackerAppState();
 }
 
-class _ExpenseTrackerAppState extends State<ExpenseTrackerApp>
-    with WidgetsBindingObserver {
+class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
   bool _isInitialized = false;
   Future<void>? _initFuture;
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
@@ -40,24 +39,13 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    // Removed lifecycle observer - now handled by BackgroundSecurityWrapper
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    // Removed lifecycle observer cleanup
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-
-    // Check for recurring budgets when app resumes from background
-    if (state == AppLifecycleState.resumed && _isInitialized) {
-      print('App resumed - checking for recurring budgets');
-      RecurringBudgetService.instance.checkNow();
-    }
   }
 
   @override
@@ -97,28 +85,31 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp>
                 );
               }
 
-              return MaterialApp(
-                title: 'Expense Tracker',
-                debugShowCheckedModeBanner: false,
-                theme: AppTheme.lightTheme,
-                darkTheme: AppTheme.darkTheme,
-                themeMode: currentThemeMode,
+              return BackgroundSecurityWrapper(
                 navigatorKey: _navigatorKey,
-                builder: (context, child) {
-                  final baseChild = child ?? const SizedBox.shrink();
-                  // Initialize idle detector only if PIN is enabled
-                  if (userSettings.pinEnabled) {
-                    return IdleDetector(
-                      idleDuration: const Duration(seconds: 10),
-                      promptCountdown: const Duration(seconds: 10),
-                      navigatorKey: _navigatorKey,
-                      child: baseChild,
-                    );
-                  }
-                  return baseChild;
-                },
-                home: AppLockWrapper(
-                  child: const SplashScreen(),
+                child: MaterialApp(
+                  title: 'Expense Tracker',
+                  debugShowCheckedModeBanner: false,
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: currentThemeMode,
+                  navigatorKey: _navigatorKey,
+                  builder: (context, child) {
+                    final baseChild = child ?? const SizedBox.shrink();
+                    // Initialize idle detector only if PIN is enabled
+                    if (userSettings.pinEnabled) {
+                      return IdleDetector(
+                        idleDuration: const Duration(seconds: 120),
+                        promptCountdown: const Duration(seconds: 10),
+                        navigatorKey: _navigatorKey,
+                        child: baseChild,
+                      );
+                    }
+                    return baseChild;
+                  },
+                  home: AppLockWrapper(
+                    child: const SplashScreen(),
+                  ),
                 ),
               );
             },

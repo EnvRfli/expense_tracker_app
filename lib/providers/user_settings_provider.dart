@@ -23,6 +23,8 @@ class UserSettingsProvider extends BaseProvider {
   String? get pinCode => _user?.pinCode;
   bool get pinEnabled => _user?.pinEnabled ?? false;
   bool get isAmountVisible => _isAmountVisible;
+  int get backgroundLockTimeout =>
+      _user?.backgroundLockTimeout ?? 120; // Default 2 minutes
   @override
   Future<void> initialize() async {
     await handleAsyncSilent(() async {
@@ -230,6 +232,31 @@ class UserSettingsProvider extends BaseProvider {
         monthlyBudgetLimit: monthlyBudgetLimit,
         budgetAlertEnabled: budgetAlertEnabled,
         budgetAlertPercentage: budgetAlertPercentage,
+        updatedAt: DateTime.now(),
+      );
+
+      await DatabaseService.instance.updateUser(updatedUser);
+      await SyncService.instance.trackChange(
+        dataType: 'user',
+        dataId: updatedUser.id,
+        action: SyncAction.update,
+        dataSnapshot: updatedUser.toJson(),
+      );
+
+      _user = updatedUser;
+      notifyListeners();
+      return true;
+    });
+
+    return result ?? false;
+  }
+
+  Future<bool> updateBackgroundLockTimeout(int timeoutSeconds) async {
+    final result = await handleAsync(() async {
+      if (_user == null) return false;
+
+      final updatedUser = _user!.copyWith(
+        backgroundLockTimeout: timeoutSeconds,
         updatedAt: DateTime.now(),
       );
 

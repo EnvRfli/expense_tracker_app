@@ -10,7 +10,7 @@ class IdleDetector extends StatefulWidget {
   const IdleDetector({
     super.key,
     required this.child,
-    this.idleDuration = const Duration(seconds: 10),
+    this.idleDuration = const Duration(minutes: 2),
     this.navigatorKey,
     this.promptCountdown = const Duration(seconds: 10),
   });
@@ -151,19 +151,110 @@ class _IdleDetectorState extends State<IdleDetector>
                 },
               );
 
-              return AlertDialog(
-                title: const Text('are you still there?'),
-                content: Text('Redirecting in $secondsLeft s'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      countdownTimer?.cancel();
-                      countdownTimer = null;
-                      Navigator.of(ctx, rootNavigator: true).pop();
-                    },
-                    child: const Text('OK'),
+              return Theme(
+                data: Theme.of(ctx),
+                child: AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ],
+                  title: Row(
+                    children: [
+                      Icon(
+                        Icons.access_time_rounded,
+                        color: Theme.of(ctx).colorScheme.primary,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Are you still there?',
+                          style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(ctx).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'The app will be locked for security in:',
+                          style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(ctx).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$secondsLeft',
+                            style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(ctx).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'seconds',
+                          style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        countdownTimer?.cancel();
+                        countdownTimer = null;
+                        Navigator.of(ctx, rootNavigator: true).pop();
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(ctx).colorScheme.primary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 18,
+                            color: Theme.of(ctx).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'I\'m still here',
+                            style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(ctx).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                ),
               );
             },
           );
