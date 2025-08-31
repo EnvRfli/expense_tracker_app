@@ -45,8 +45,6 @@ class RecurringBudgetService {
 
       // Then check for new period budgets
       await _budgetProvider!.createRecurringBudgets();
-
-      print('Recurring budget check completed at ${DateTime.now()}');
     } catch (e) {
       print('Error checking recurring budgets: $e');
     }

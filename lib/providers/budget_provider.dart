@@ -23,28 +23,6 @@ class BudgetProvider extends BaseProvider {
       _budgets = DatabaseService.instance.budgets.values.toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-      print('=== Load Budgets Debug ===');
-      print('Total budgets loaded: ${_budgets.length}');
-
-      await _backfillRecurringTime();
-
-      for (final budget in _budgets) {
-        print('Budget: ${budget.id}');
-        print('  Period: ${budget.period}');
-        print('  Active: ${budget.isActive}');
-        print('  Recurring: ${budget.isRecurring}');
-        print('  Start: ${budget.startDate}');
-        print('  End: ${budget.endDate}');
-        print('  Recurring Time: ${budget.recurringTime}');
-        print('  ---');
-      }
-
-      final recurringBudgets = _budgets
-          .where((b) => b.isRecurring && b.recurringTime != null)
-          .toList();
-      print('Recurring budgets with recurringTime: ${recurringBudgets.length}');
-      print('========================');
-
       final now = DateTime.now();
       for (int i = 0; i < _budgets.length; i++) {
         final budget = _budgets[i];
@@ -55,35 +33,6 @@ class BudgetProvider extends BaseProvider {
         }
       }
     });
-  }
-
-  Future<void> _backfillRecurringTime() async {
-    bool hasUpdates = false;
-
-    for (int i = 0; i < _budgets.length; i++) {
-      final budget = _budgets[i];
-
-      if (budget.isRecurring && budget.recurringTime == null) {
-        final calculatedRecurringTime = DateTime(
-            budget.endDate.year, budget.endDate.month, budget.endDate.day + 1);
-
-        final updatedBudget = budget.copyWith(
-          recurringTime: calculatedRecurringTime,
-          updatedAt: DateTime.now(),
-        );
-
-        _budgets[i] = updatedBudget;
-        await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
-        hasUpdates = true;
-
-        print(
-            'Backfilled recurringTime for budget ${budget.id}: $calculatedRecurringTime');
-      }
-    }
-
-    if (hasUpdates) {
-      print('✅ Backfill recurringTime completed');
-    }
   }
 
   Future<bool> addBudget({
@@ -713,8 +662,6 @@ class BudgetProvider extends BaseProvider {
           print('Budget ${budget.id} is still active until ${budget.endDate}');
         }
       }
-
-      print('=== Recurring Budget Check Complete ===');
     });
   }
 
