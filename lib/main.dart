@@ -104,11 +104,19 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp>
                 darkTheme: AppTheme.darkTheme,
                 themeMode: currentThemeMode,
                 navigatorKey: _navigatorKey,
-                builder: (context, child) => IdleDetector(
-                  idleDuration: const Duration(seconds: 10),
-                  navigatorKey: _navigatorKey,
-                  child: child ?? const SizedBox.shrink(),
-                ),
+                builder: (context, child) {
+                  final baseChild = child ?? const SizedBox.shrink();
+                  // Initialize idle detector only if PIN is enabled
+                  if (userSettings.pinEnabled) {
+                    return IdleDetector(
+                      idleDuration: const Duration(seconds: 10),
+                      promptCountdown: const Duration(seconds: 10),
+                      navigatorKey: _navigatorKey,
+                      child: baseChild,
+                    );
+                  }
+                  return baseChild;
+                },
                 home: AppLockWrapper(
                   child: const SplashScreen(),
                 ),

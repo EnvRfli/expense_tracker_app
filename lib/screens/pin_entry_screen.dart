@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_settings_provider.dart';
 import '../services/auth_service.dart';
+import '../services/app_lock_state.dart';
 import '../utils/theme.dart';
 import '../l10n/localization_extension.dart';
 
@@ -32,6 +33,10 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Mark that PIN entry screen is showing (part of lock state)
+    AppLockState.setLockVisible(true);
+
     // Try biometric authentication first if available, with delay to ensure provider is ready
     if (widget.showBiometricOption) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -43,6 +48,13 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
         });
       });
     }
+  }
+
+  @override
+  void dispose() {
+    // Clear lock state when PIN entry screen is disposed
+    AppLockState.setLockVisible(false);
+    super.dispose();
   }
 
   bool _shouldShowBiometricOption() {
@@ -325,6 +337,8 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
           AuthService.instance.verifyPin(_enteredPin, storedPin)) {
         // PIN correct - mark as authenticated
         await AuthService.instance.markAsAuthenticated();
+        // Clear lock state before calling success callback
+        AppLockState.setLockVisible(false);
         if (widget.onSuccess != null) {
           widget.onSuccess!();
         } else {
@@ -387,6 +401,8 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
       if (authenticated) {
         // Mark as authenticated and call success callback
         await AuthService.instance.markAsAuthenticated();
+        // Clear lock state before calling success callback
+        AppLockState.setLockVisible(false);
         if (mounted) {
           if (widget.onSuccess != null) {
             widget.onSuccess!();

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/user_settings_provider.dart';
 import '../services/auth_service.dart';
+import '../services/app_lock_state.dart';
 import '../screens/pin_entry_screen.dart';
 import '../l10n/localization_extension.dart';
 
@@ -54,6 +55,9 @@ class _AppLockWrapperState extends State<AppLockWrapper>
 
   @override
   Widget build(BuildContext context) {
+    // Update global lock state
+    AppLockState.setLockVisible(_isLocked);
+
     if (_isLocked) {
       return PinEntryScreen(
         title: context.tr('app_locked'),

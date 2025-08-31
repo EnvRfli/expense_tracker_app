@@ -6,6 +6,7 @@ import '../providers/providers.dart';
 import '../providers/base_provider.dart';
 import '../services/budget_notification_service.dart';
 import '../services/recurring_budget_service.dart';
+import '../services/app_lock_state.dart';
 import '../utils/theme.dart';
 import '../l10n/localization_extension.dart';
 import 'dashboard_screen.dart';
@@ -39,6 +40,9 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+
+    // Mark splash as visible
+    AppLockState.setSplashVisible(true);
 
     // Main animation controller for initial entrance (no repeat)
     _animationController = AnimationController(
@@ -170,6 +174,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _navigateToNextScreen() {
+    // Mark splash as no longer visible before navigation
+    AppLockState.setSplashVisible(false);
+
     final userSettingsProvider = context.read<UserSettingsProvider>();
 
     // Check if this is first time setup
@@ -253,6 +260,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    // Ensure splash state is cleared when disposed
+    AppLockState.setSplashVisible(false);
     _loadingTextTimer?.cancel();
     _animationController.dispose();
     _loadingAnimationController.dispose();

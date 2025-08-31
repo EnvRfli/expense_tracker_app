@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../screens/pin_entry_screen.dart';
+import '../services/app_lock_state.dart';
 
 /// A top-level wrapper that detects user inactivity (front-end only)
 /// and shows a blocking dialog after [idleDuration] without input.
@@ -10,11 +12,13 @@ class IdleDetector extends StatefulWidget {
     required this.child,
     this.idleDuration = const Duration(seconds: 10),
     this.navigatorKey,
+    this.promptCountdown = const Duration(seconds: 10),
   });
 
   final Widget child;
   final Duration idleDuration;
   final GlobalKey<NavigatorState>? navigatorKey;
+  final Duration promptCountdown;
 
   @override
   State<IdleDetector> createState() => _IdleDetectorState();
@@ -30,14 +34,38 @@ class _IdleDetectorState extends State<IdleDetector>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _startTimer();
+
+    // Listen to app state changes to pause/resume idle detection
+    AppLockState.isLockVisible.addListener(_onAppStateChanged);
+    AppLockState.isSplashVisible.addListener(_onAppStateChanged);
+
+    _startTimerIfAppropriate();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    AppLockState.isLockVisible.removeListener(_onAppStateChanged);
+    AppLockState.isSplashVisible.removeListener(_onAppStateChanged);
     _cancelTimer();
     super.dispose();
+  }
+
+  void _onAppStateChanged() {
+    if (mounted) {
+      if (AppLockState.shouldDetectIdle && _isForeground) {
+        _startTimerIfAppropriate();
+      } else {
+        _cancelTimer();
+      }
+    }
+  }
+
+  void _startTimerIfAppropriate() {
+    // Only start timer if we should detect idle and app is in foreground
+    if (AppLockState.shouldDetectIdle && _isForeground && !_dialogShowing) {
+      _startTimer();
+    }
   }
 
   @override
@@ -64,31 +92,80 @@ class _IdleDetectorState extends State<IdleDetector>
   }
 
   void _resetTimer() {
-    if (!_isForeground) return;
+    if (!_isForeground || !AppLockState.shouldDetectIdle) return;
     _startTimer();
   }
 
   Future<void> _onIdle() async {
-    if (!mounted || _dialogShowing || !_isForeground) return;
+    if (!mounted ||
+        _dialogShowing ||
+        !_isForeground ||
+        !AppLockState.shouldDetectIdle) return;
     _dialogShowing = true;
     try {
       // Prefer using the navigatorKey context if provided to ensure we
       // present above the app's Navigator.
       final dialogContext = widget.navigatorKey?.currentContext ?? context;
+      int secondsLeft = widget.promptCountdown.inSeconds;
+      Timer? countdownTimer;
+
+      Future<void> lockNow() async {
+        // Close dialog first if still open
+        if (Navigator.of(dialogContext, rootNavigator: true).canPop()) {
+          Navigator.of(dialogContext, rootNavigator: true).pop();
+        }
+        // Navigate to PIN screen
+        final nav = widget.navigatorKey?.currentState ?? Navigator.of(context);
+        await nav.push(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (_) => PinEntryScreen(
+              title: 'App Locked',
+              subtitle: 'Enter PIN to continue',
+              onSuccess: () {
+                // On success, simply pop the lock screen
+                if (nav.canPop()) nav.pop();
+              },
+            ),
+          ),
+        );
+      }
+
       await showDialog<void>(
         context: dialogContext,
         barrierDismissible: false,
         builder: (ctx) {
-          return AlertDialog(
-            title: const Text('are you still there?'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx, rootNavigator: true).pop();
+          return StatefulBuilder(
+            builder: (ctx, setState) {
+              countdownTimer ??= Timer.periodic(
+                const Duration(seconds: 1),
+                (t) {
+                  if (!mounted) return;
+                  if (secondsLeft <= 1) {
+                    t.cancel();
+                    // Trigger lock
+                    lockNow();
+                  } else {
+                    setState(() => secondsLeft -= 1);
+                  }
                 },
-                child: const Text('OK'),
-              ),
-            ],
+              );
+
+              return AlertDialog(
+                title: const Text('are you still there?'),
+                content: Text('Redirecting in $secondsLeft s'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      countdownTimer?.cancel();
+                      countdownTimer = null;
+                      Navigator.of(ctx, rootNavigator: true).pop();
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
+            },
           );
         },
       );
