@@ -7,6 +7,7 @@ import 'providers/providers.dart';
 import 'screens/splash_screen.dart';
 import 'utils/theme.dart';
 import 'widgets/app_lock_wrapper.dart';
+import 'widgets/idle_detector.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,7 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp>
     with WidgetsBindingObserver {
   bool _isInitialized = false;
   Future<void>? _initFuture;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -101,6 +103,12 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp>
                 theme: AppTheme.lightTheme,
                 darkTheme: AppTheme.darkTheme,
                 themeMode: currentThemeMode,
+                navigatorKey: _navigatorKey,
+                builder: (context, child) => IdleDetector(
+                  idleDuration: const Duration(seconds: 10),
+                  navigatorKey: _navigatorKey,
+                  child: child ?? const SizedBox.shrink(),
+                ),
                 home: AppLockWrapper(
                   child: const SplashScreen(),
                 ),
