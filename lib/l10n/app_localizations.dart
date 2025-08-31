@@ -264,6 +264,8 @@ abstract class AppLocalizations {
     'success_data_exported': 'Data berhasil diexport',
     'csv_file_can_be_opened':
         'File CSV dapat dibuka dengan aplikasi spreadsheet seperti Excel atau Google Sheets',
+    'chart_scaled_for_readability':
+        'Grafik diskalakan untuk kemudahan baca (sentuh titik data untuk nilai asli)',
 
     // Settings
     'currency': 'Mata Uang',
@@ -775,6 +777,8 @@ abstract class AppLocalizations {
     'success_data_exported': 'Data exported successfully',
     'csv_file_can_be_opened':
         'CSV files can be opened with spreadsheet apps like Excel or Google Sheets',
+    'chart_scaled_for_readability':
+        'Chart scaled for readability (touch data points for actual values)',
 
     // Settings
     'currency': 'Currency',

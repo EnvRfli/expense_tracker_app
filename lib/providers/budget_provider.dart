@@ -683,7 +683,7 @@ class BudgetProvider extends BaseProvider {
               alertEnabled: budget.alertEnabled,
               alertPercentage: budget.alertPercentage,
               notes: budget.notes,
-              isRecurring: true, // Keep recurring
+              isRecurring: true,
             );
 
             if (success) {

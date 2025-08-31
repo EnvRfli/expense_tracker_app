@@ -34,40 +34,103 @@ class _TimeseriesChart extends StatelessWidget {
       return Center(child: Text(context.tr('no_data')));
     }
 
-    // Map data points to FlSpot using index as x value
+    // Calculate percentile-based scaling to handle outliers
+    final allValues = data
+        .map((e) => e.income)
+        .followedBy(data.map((e) => e.expense))
+        .where((value) => value > 0)
+        .toList()
+      ..sort();
+
+    double maxDisplayValue;
+    bool hasOutliers = false;
+
+    if (allValues.isEmpty) {
+      maxDisplayValue = 1000;
+    } else if (allValues.length < 4) {
+      // Too few data points, use max value
+      maxDisplayValue = allValues.last;
+    } else {
+      // Use 95th percentile to cap outliers
+      final percentile95Index = ((allValues.length - 1) * 0.95).round();
+      final percentile95Value = allValues[percentile95Index];
+      final maxValue = allValues.last;
+
+      // Check if there are significant outliers (max > 2x 95th percentile)
+      hasOutliers = maxValue > percentile95Value * 2;
+      maxDisplayValue = hasOutliers ? percentile95Value * 1.1 : maxValue;
+    }
+
+    // Map data points to FlSpot using index as x value, capping outliers
     final spotsIncome = <FlSpot>[];
     final spotsExpense = <FlSpot>[];
     for (var i = 0; i < data.length; i++) {
-      spotsIncome.add(FlSpot(i.toDouble(), data[i].income));
-      spotsExpense.add(FlSpot(i.toDouble(), data[i].expense));
+      final incomeValue =
+          data[i].income > maxDisplayValue ? maxDisplayValue : data[i].income;
+      final expenseValue =
+          data[i].expense > maxDisplayValue ? maxDisplayValue : data[i].expense;
+
+      spotsIncome.add(FlSpot(i.toDouble(), incomeValue));
+      spotsExpense.add(FlSpot(i.toDouble(), expenseValue));
     }
 
     final interval =
         (data.length / 6).ceilToDouble().clamp(1.0, data.length.toDouble());
 
-    // Hitung max value untuk menentukan interval yang tepat
-    final maxValue = data
-        .map((e) => e.income)
-        .followedBy(data.map((e) => e.expense))
-        .reduce((a, b) => a > b ? a : b);
-
     // Tentukan interval horizontal yang lebih baik untuk menghindari tumpang tindih
     double horizontalInterval;
-    if (maxValue <= 0) {
+    if (maxDisplayValue <= 0) {
       horizontalInterval = 1;
-    } else if (maxValue <= 50000) {
+    } else if (maxDisplayValue <= 50000) {
       horizontalInterval = 10000;
-    } else if (maxValue <= 100000) {
+    } else if (maxDisplayValue <= 100000) {
       horizontalInterval = 20000;
-    } else if (maxValue <= 500000) {
+    } else if (maxDisplayValue <= 500000) {
       horizontalInterval = 100000;
     } else {
-      horizontalInterval = maxValue / 4;
+      horizontalInterval = maxDisplayValue / 4;
     }
 
     return LineChart(
       LineChartData(
-        lineTouchData: LineTouchData(enabled: true),
+        lineTouchData: LineTouchData(
+          enabled: true,
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipItems: (List<LineBarSpot> touchedSpots) {
+              return touchedSpots.map((LineBarSpot touchedSpot) {
+                final spotIndex = touchedSpot.x.toInt();
+                if (spotIndex < 0 || spotIndex >= data.length) return null;
+
+                final dataPoint = data[spotIndex];
+                final isIncome = touchedSpot.barIndex == 1;
+                final actualValue =
+                    isIncome ? dataPoint.income : dataPoint.expense;
+                final displayValue = touchedSpot.y;
+
+                String valueText;
+                if (actualValue > maxDisplayValue) {
+                  // Show actual value for capped outliers
+                  valueText =
+                      '${actualValue > 1000000 ? '${(actualValue / 1000000).toStringAsFixed(1)}M' : actualValue > 1000 ? '${(actualValue / 1000).toStringAsFixed(0)}K' : actualValue.toStringAsFixed(0)} (capped)';
+                } else {
+                  valueText = displayValue > 1000000
+                      ? '${(displayValue / 1000000).toStringAsFixed(1)}M'
+                      : displayValue > 1000
+                          ? '${(displayValue / 1000).toStringAsFixed(0)}K'
+                          : displayValue.toStringAsFixed(0);
+                }
+
+                return LineTooltipItem(
+                  '${isIncome ? 'Income' : 'Expense'}\n$valueText',
+                  TextStyle(
+                    color: isIncome ? AppColors.income : AppColors.expense,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
@@ -406,7 +469,57 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           expense: map[d]!['expense'] ?? 0.0))
                       .toList();
 
-                  return _TimeseriesChart(data: data);
+                  // Check for outliers to show warning
+                  final allValues = data
+                      .map((e) => e.income)
+                      .followedBy(data.map((e) => e.expense))
+                      .where((value) => value > 0)
+                      .toList()
+                    ..sort();
+
+                  bool hasOutliers = false;
+                  if (allValues.length >= 4) {
+                    final percentile95Index =
+                        ((allValues.length - 1) * 0.95).round();
+                    final percentile95Value = allValues[percentile95Index];
+                    final maxValue = allValues.last;
+                    hasOutliers = maxValue > percentile95Value * 2;
+                  }
+
+                  return Column(
+                    children: [
+                      if (hasOutliers)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                                color: AppColors.warning.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.info_outline,
+                                  size: 14, color: AppColors.warning),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  context.tr('chart_scaled_for_readability'),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.warning,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Expanded(child: _TimeseriesChart(data: data)),
+                    ],
+                  );
                 },
               ),
             ),
