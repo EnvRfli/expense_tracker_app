@@ -5,11 +5,11 @@
 Pilih APK yang sesuai dengan device Anda:
 
 ### 🎯 **Recommended (Ukuran Kecil)**
-- **ExpenseTracker-arm64-v8a.apk** (12.7 MB) - Untuk Android device modern (2019+)
-- **ExpenseTracker-armeabi-v7a.apk** (12.3 MB) - Untuk Android device lama (2010-2019)
+- **ExpenseTracker-arm64-v8a-v1.0.1.apk** (12.7 MB) - Untuk Android device modern (2019+)
+- **ExpenseTracker-armeabi-v7a-v1.0.1.apk** (12.3 MB) - Untuk Android device lama (2010-2019)
 
 ### 🌐 **Universal (Ukuran Besar)**
-- **ExpenseTracker-universal.apk** (28 MB) - Kompatibel dengan semua Android device
+- **ExpenseTracker-universal-v1.0.1.apk** (28 MB) - Kompatibel dengan semua Android device
 
 ## 📋 Cara Install
 
@@ -31,14 +31,14 @@ Pilih APK yang sesuai dengan device Anda:
 
 ## 🎯 Rekomendasi APK
 
-- **Kebanyakan device modern**: Gunakan `ExpenseTracker-arm64-v8a.apk`
-- **Device lama**: Gunakan `ExpenseTracker-armeabi-v7a.apk`
-- **Tidak yakin**: Gunakan `ExpenseTracker-universal.apk`
+- **Kebanyakan device modern**: Gunakan `ExpenseTracker-arm64-v8a-v1.0.1.apk`
+- **Device lama**: Gunakan `ExpenseTracker-armeabi-v7a-v1.0.1.apk`
+- **Tidak yakin**: Gunakan `ExpenseTracker-universal-v1.0.1.apk`
 
 ## 🔧 App Info
 
 - **Nama**: Expense Tracker
-- **Version**: 1.0.0+1
+- **Version**: 1.0.1+3
 - **Min SDK**: Android 5.0 (API 21)
 - **Target SDK**: Latest
 - **Permissions**: Camera, Storage, Notifications, Biometric
