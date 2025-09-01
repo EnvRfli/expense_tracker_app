@@ -40,7 +40,7 @@ class BalanceSummaryCard extends StatefulWidget {
 }
 
 class _BalanceSummaryCardState extends State<BalanceSummaryCard> {
-  bool _showCurrentMonth = true;
+  bool _showCurrentMonth = false;
 
   @override
   Widget build(BuildContext context) {
