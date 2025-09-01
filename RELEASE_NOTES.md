@@ -5,15 +5,15 @@
 **Choose the APK that matches your Android device:**
 
 ### 🎯 Recommended (Smaller Size)
-- **[ExpenseTracker-arm64-v8a.apk](https://github.com/EnvRfli/expense_tracker_app/releases/download/v1.0.1/ExpenseTracker-arm64-v8a.apk)** (~12.7 MB)
+- **[ExpenseTracker-arm64-v8a-v1.0.1.apk](https://github.com/EnvRfli/expense_tracker_app/releases/download/v1.0.1/ExpenseTracker-arm64-v8a-v1.0.1.apk)** (~12.7 MB)
   - For modern Android devices (2019+)
   - Most Android phones today use this architecture
 
-- **[ExpenseTracker-armeabi-v7a.apk](https://github.com/EnvRfli/expense_tracker_app/releases/download/v1.0.1/ExpenseTracker-armeabi-v7a.apk)** (~12.3 MB)
+- **[ExpenseTracker-armeabi-v7a-v1.0.1.apk](https://github.com/EnvRfli/expense_tracker_app/releases/download/v1.0.1/ExpenseTracker-armeabi-v7a-v1.0.1.apk)** (~12.3 MB)
   - For older Android devices (2010-2019)
 
 ### 🌐 Universal (Larger Size)
-- **[ExpenseTracker-universal.apk](https://github.com/EnvRfli/expense_tracker_app/releases/download/v1.0.1/ExpenseTracker-universal.apk)** (~28 MB)
+- **[ExpenseTracker-universal-v1.0.1.apk](https://github.com/EnvRfli/expense_tracker_app/releases/download/v1.0.1/ExpenseTracker-universal-v1.0.1.apk)** (~28.1 MB)
   - Compatible with all Android devices
   - Use this if you're not sure which architecture your device uses
 
