@@ -19,9 +19,20 @@
 
 ## 🔄 What's New in v1.0.1
 
-- 🐛 **Bug Fixes**: Fixed critical issues that were affecting user experience
-- ⚡ **Performance Improvements**: Enhanced app stability and responsiveness
-- 🔧 **Minor UI Enhancements**: Improved interface consistency
+### 🐛 **Bug Fixes**
+- **Fixed recurring budget bug**: Resolved issue where recurring budgets were continuously being created automatically
+- **General stability improvements**: Fixed several minor bugs that could cause app crashes
+- **Enhanced reliability**: Improved overall app performance and user experience
+
+### ✨ **New Features & Improvements**
+- **📊 Smart Chart Analytics**: Line charts in reports now use outlier detection method to handle extremely high data values, providing better visualization
+- **� Enhanced Security Session**: Added session management for PIN and biometric security - app automatically locks when session expires
+- **🌍 Extended Localization**: Added more language translations and improved text consistency
+
+### ⚡ **Performance Enhancements**
+- Optimized memory usage
+- Faster app startup time
+- Improved chart rendering performance
 
 ---
 
