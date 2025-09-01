@@ -36,7 +36,6 @@ class _IdleDetectorState extends State<IdleDetector>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Listen to app state changes to pause/resume idle detection
     AppLockState.isLockVisible.addListener(_onAppStateChanged);
     AppLockState.isSplashVisible.addListener(_onAppStateChanged);
 

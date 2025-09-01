@@ -34,13 +34,10 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
   void initState() {
     super.initState();
 
-    // Mark that PIN entry screen is showing (part of lock state)
     AppLockState.setLockVisible(true);
 
-    // Try biometric authentication first if available, with delay to ensure provider is ready
     if (widget.showBiometricOption) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Add longer delay to ensure provider initialization is complete
         Future.delayed(const Duration(milliseconds: 1000), () {
           if (mounted && _shouldShowBiometricOption()) {
             _tryBiometricAuth();
@@ -52,7 +49,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
   @override
   void dispose() {
-    // Clear lock state when PIN entry screen is disposed
     AppLockState.setLockVisible(false);
     super.dispose();
   }
@@ -62,10 +58,8 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
     try {
       final userSettings = context.read<UserSettingsProvider>();
-      // Only show biometric if both PIN and biometric are enabled
       return userSettings.pinEnabled && userSettings.biometricEnabled;
     } catch (e) {
-      // If context is not available or error occurs, default to showBiometricOption parameter
       return widget.showBiometricOption;
     }
   }
@@ -80,7 +74,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Lock Icon
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: const BoxDecoration(
@@ -94,8 +87,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Title
               Text(
                 widget.title.isNotEmpty
                     ? widget.title
@@ -107,8 +98,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-
-              // Subtitle
               Text(
                 widget.subtitle.isNotEmpty
                     ? widget.subtitle
@@ -119,17 +108,10 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-
-              // PIN Display
               _buildPinDisplay(),
               const SizedBox(height: 24),
-
-              // Number Pad
               _buildNumberPad(),
-
               const SizedBox(height: 16),
-
-              // Attempts warning
               if (_attempts > 0) ...[
                 const SizedBox(height: 24),
                 Container(
@@ -183,7 +165,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
   Widget _buildNumberPad() {
     return Column(
       children: [
-        // First row: 1, 2, 3
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -193,8 +174,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
           ],
         ),
         const SizedBox(height: 16),
-
-        // Second row: 4, 5, 6
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -204,8 +183,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
           ],
         ),
         const SizedBox(height: 16),
-
-        // Third row: 7, 8, 9
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -215,12 +192,9 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
           ],
         ),
         const SizedBox(height: 16),
-
-        // Fourth row: biometric, 0, delete
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // Biometric Button
             if (_shouldShowBiometricOption())
               GestureDetector(
                 onTap: _isLoading ? null : _tryBiometricAuth,
@@ -335,9 +309,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
       if (storedPin != null &&
           AuthService.instance.verifyPin(_enteredPin, storedPin)) {
-        // PIN correct - mark as authenticated
         await AuthService.instance.markAsAuthenticated();
-        // Clear lock state before calling success callback
         AppLockState.setLockVisible(false);
         if (widget.onSuccess != null) {
           widget.onSuccess!();
@@ -345,7 +317,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
           Navigator.of(context).pop(true);
         }
       } else {
-        // PIN incorrect
         setState(() {
           _attempts++;
           _enteredPin = '';
@@ -373,7 +344,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
     try {
       final userSettings = context.read<UserSettingsProvider>();
 
-      // Check if user settings are loaded with more retries
       int retryCount = 0;
       while (userSettings.user == null && retryCount < 10) {
         await Future.delayed(const Duration(milliseconds: 200));
@@ -381,7 +351,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
         if (!mounted) return;
       }
 
-      // If still not loaded after retries, skip biometric
       if (userSettings.user == null) {
         print(
             'User settings not loaded after retries, skipping biometric auth');
@@ -399,9 +368,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
       );
 
       if (authenticated) {
-        // Mark as authenticated and call success callback
         await AuthService.instance.markAsAuthenticated();
-        // Clear lock state before calling success callback
         AppLockState.setLockVisible(false);
         if (mounted) {
           if (widget.onSuccess != null) {
@@ -412,7 +379,6 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
         }
       }
     } catch (e) {
-      // Biometric failed, user can still enter PIN
       print('Biometric authentication failed: $e');
     }
   }

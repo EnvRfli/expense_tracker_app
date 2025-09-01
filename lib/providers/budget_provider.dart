@@ -51,7 +51,7 @@ class BudgetProvider extends BaseProvider {
         (budget) =>
             budget.categoryId == categoryId &&
             budget.period == period &&
-            budget.isActive &&
+            // consider any overlapping budget regardless of isActive to avoid duplicates
             _isOverlappingPeriod(
                 budget.startDate, budget.endDate, startDate, endDate),
         orElse: () => BudgetModel(
@@ -583,12 +583,22 @@ class BudgetProvider extends BaseProvider {
   Future<void> createRecurringBudgets() async {
     await handleAsync(() async {
       final now = DateTime.now();
-      final recurringBudgets = _budgets
+      final todayStart = DateTime(now.year, now.month, now.day);
+      // Only process the latest recurring budget per (categoryId, period)
+      final candidates = _budgets
           .where((budget) => budget.isRecurring && budget.recurringTime != null)
           .toList();
+      final Map<String, BudgetModel> latestByKey = {};
+      for (final b in candidates) {
+        final key = '${b.categoryId}|${b.period}';
+        final prev = latestByKey[key];
+        if (prev == null || b.endDate.isAfter(prev.endDate)) {
+          latestByKey[key] = b;
+        }
+      }
+      final recurringBudgets = latestByKey.values.toList();
 
       for (final budget in recurringBudgets) {
-        final todayStart = DateTime(now.year, now.month, now.day);
         final recurringDate = DateTime(budget.recurringTime!.year,
             budget.recurringTime!.month, budget.recurringTime!.day);
 
@@ -600,11 +610,11 @@ class BudgetProvider extends BaseProvider {
           print(
               'Next period: ${nextPeriodDates['start']} to ${nextPeriodDates['end']}');
 
+          // Avoid duplicates regardless of active state
           final existingNextBudget = _budgets.firstWhere(
             (b) =>
                 b.categoryId == budget.categoryId &&
                 b.period == budget.period &&
-                b.isActive &&
                 _isOverlappingPeriod(b.startDate, b.endDate,
                     nextPeriodDates['start']!, nextPeriodDates['end']!),
             orElse: () => BudgetModel(
@@ -657,6 +667,17 @@ class BudgetProvider extends BaseProvider {
           } else {
             print(
                 'Budget for next period already exists: ${existingNextBudget.id}');
+            // Advance recurringTime since the next period already exists
+            final newRecurringTime = DateTime(
+                nextPeriodDates['end']!.year,
+                nextPeriodDates['end']!.month,
+                nextPeriodDates['end']!.day + 1);
+            final updatedBudget = budget.copyWith(
+              recurringTime: newRecurringTime,
+              updatedAt: DateTime.now(),
+            );
+            await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
+            print('Recurring period already exists, moved recurringTime to: $newRecurringTime');
           }
         } else {
           print('Budget ${budget.id} is still active until ${budget.endDate}');
@@ -704,9 +725,18 @@ class BudgetProvider extends BaseProvider {
   Future<void> checkAndCreateOverdueBudgets() async {
     await handleAsync(() async {
       final now = DateTime.now();
-      final recurringBudgets = _budgets
-          .where((budget) => budget.isRecurring) // Remove isActive requirement
-          .toList();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      // Process only the latest recurring budget per (categoryId, period)
+      final candidates = _budgets.where((budget) => budget.isRecurring).toList();
+      final Map<String, BudgetModel> latestByKey = {};
+      for (final b in candidates) {
+        final key = '${b.categoryId}|${b.period}';
+        final prev = latestByKey[key];
+        if (prev == null || b.endDate.isAfter(prev.endDate)) {
+          latestByKey[key] = b;
+        }
+      }
+      final recurringBudgets = latestByKey.values.toList();
 
       print('=== Checking Overdue Recurring Budgets ===');
       print('Current time: $now');
@@ -723,11 +753,17 @@ class BudgetProvider extends BaseProvider {
           final nextPeriodDates =
               _calculateNextPeriodDates(budget.period, currentEndDate);
 
+          // Skip backfilling: don't create periods that start before today
+          if (nextPeriodDates['start']!.isBefore(todayStart)) {
+            currentEndDate = nextPeriodDates['end']!;
+            continue;
+          }
+
+          // Avoid duplicates regardless of active state
           final existingBudget = _budgets.firstWhere(
             (b) =>
                 b.categoryId == budget.categoryId &&
                 b.period == budget.period &&
-                b.isActive &&
                 _isOverlappingPeriod(b.startDate, b.endDate,
                     nextPeriodDates['start']!, nextPeriodDates['end']!),
             orElse: () => BudgetModel(
@@ -762,8 +798,18 @@ class BudgetProvider extends BaseProvider {
           } else {
             print('Overdue budget already exists: ${existingBudget.id}');
           }
-
-          currentEndDate = nextPeriodDates['end']!;
+          // Advance recurringTime for the source budget to the day after this new/end period
+          final newRecurringTime = DateTime(
+              nextPeriodDates['end']!.year,
+              nextPeriodDates['end']!.month,
+              nextPeriodDates['end']!.day + 1);
+          final updatedBudget = budget.copyWith(
+            recurringTime: newRecurringTime,
+            updatedAt: DateTime.now(),
+          );
+          await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
+          // After ensuring today's period exists, stop (avoid multiple catch-up creations)
+          break;
         }
       }
 
