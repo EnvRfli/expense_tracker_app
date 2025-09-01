@@ -1153,7 +1153,7 @@ class SpendingByCategoryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              context.tr('spending_by_category'),
+              context.tr('spending_by_category_last_30_days'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -1162,12 +1162,15 @@ class SpendingByCategoryCard extends StatelessWidget {
             Consumer3<ExpenseProvider, CategoryProvider, UserSettingsProvider>(
               builder: (context, expenseProvider, categoryProvider,
                   userSettings, child) {
-                final currentMonthExpenses =
-                    expenseProvider.getCurrentMonthExpenses();
+                // Get expenses from last 30 days instead of current month
+                final now = DateTime.now();
+                final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+                final last30DaysExpenses =
+                    expenseProvider.getExpensesByDateRange(thirtyDaysAgo, now);
                 final groupedExpenses =
                     expenseProvider.getExpensesGroupedByCategory();
 
-                if (currentMonthExpenses.isEmpty) {
+                if (last30DaysExpenses.isEmpty) {
                   return Center(
                     child: Column(
                       children: [
@@ -1178,7 +1181,7 @@ class SpendingByCategoryCard extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSizes.paddingMedium),
                         Text(
-                          context.tr('no_expenses_this_month'),
+                          context.tr('no_expenses_last_30_days'),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
@@ -1186,15 +1189,17 @@ class SpendingByCategoryCard extends StatelessWidget {
                   );
                 }
 
-                final totalExpenses = expenseProvider.getCurrentMonthTotal();
+                final totalExpenses =
+                    expenseProvider.getTotalAmount(last30DaysExpenses);
 
                 return Column(
                   children: groupedExpenses.entries.take(5).map((entry) {
                     final categoryId = entry.key;
                     final expenses = entry.value
                         .where((e) =>
-                            e.date.month == DateTime.now().month &&
-                            e.date.year == DateTime.now().year)
+                            e.date.isAfter(thirtyDaysAgo
+                                .subtract(const Duration(days: 1))) &&
+                            e.date.isBefore(now.add(const Duration(days: 1))))
                         .toList();
 
                     if (expenses.isEmpty) return const SizedBox.shrink();
