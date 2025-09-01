@@ -383,7 +383,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ListTile(
         leading: const Icon(Icons.tag, color: AppTheme.primaryColor),
         title: Text(context.tr('app_version')),
-        subtitle: const Text('v1.0.0'),
+        subtitle: const Text('v1.0.1'),
       ),
     );
   }
@@ -1034,7 +1034,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showAboutDialog(
       context: context,
       applicationName: 'Expense Tracker',
-      applicationVersion: '1.0.0',
+      applicationVersion: '1.0.1',
       applicationIcon: const Icon(
         Icons.account_balance_wallet,
         size: 48,
