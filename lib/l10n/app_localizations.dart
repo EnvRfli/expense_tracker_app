@@ -61,10 +61,13 @@ abstract class AppLocalizations {
     'see_all': 'Lihat Semua',
     'recent_transactions': 'Transaksi Terbaru',
     'spending_by_category': 'Pengeluaran per Kategori',
+    'spending_by_category_last_30_days':
+        'Pengeluaran per Kategori (30 Hari Terakhir)',
     'no_active_budget': 'Belum ada budget aktif',
     'create_budget_desc': 'Buat budget untuk memantau pengeluaran Anda',
     'no_transactions': 'Belum ada transaksi',
     'no_expenses_this_month': 'Belum ada pengeluaran bulan ini',
+    'no_expenses_last_30_days': 'Belum ada pengeluaran 30 hari terakhir',
     'no_income_expense': 'Belum ada {type}',
     'no_income_expense_period': '{period}',
 
@@ -582,10 +585,12 @@ abstract class AppLocalizations {
     'see_all': 'See All',
     'recent_transactions': 'Recent Transactions',
     'spending_by_category': 'Spending by Category',
+    'spending_by_category_last_30_days': 'Spending by Category (Last 30 Days)',
     'no_active_budget': 'No active budget',
     'create_budget_desc': 'Create budget to track your expenses',
     'no_transactions': 'No transactions yet',
     'no_expenses_this_month': 'No expenses this month',
+    'no_expenses_last_30_days': 'No expenses in the last 30 days',
     'no_income_expense': 'No {type} yet',
     'no_income_expense_period': '{period}',
 

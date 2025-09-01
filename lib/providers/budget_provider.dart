@@ -668,16 +668,16 @@ class BudgetProvider extends BaseProvider {
             print(
                 'Budget for next period already exists: ${existingNextBudget.id}');
             // Advance recurringTime since the next period already exists
-            final newRecurringTime = DateTime(
-                nextPeriodDates['end']!.year,
-                nextPeriodDates['end']!.month,
-                nextPeriodDates['end']!.day + 1);
+            final newRecurringTime = DateTime(nextPeriodDates['end']!.year,
+                nextPeriodDates['end']!.month, nextPeriodDates['end']!.day + 1);
             final updatedBudget = budget.copyWith(
               recurringTime: newRecurringTime,
               updatedAt: DateTime.now(),
             );
-            await DatabaseService.instance.budgets.put(budget.id, updatedBudget);
-            print('Recurring period already exists, moved recurringTime to: $newRecurringTime');
+            await DatabaseService.instance.budgets
+                .put(budget.id, updatedBudget);
+            print(
+                'Recurring period already exists, moved recurringTime to: $newRecurringTime');
           }
         } else {
           print('Budget ${budget.id} is still active until ${budget.endDate}');
@@ -727,7 +727,8 @@ class BudgetProvider extends BaseProvider {
       final now = DateTime.now();
       final todayStart = DateTime(now.year, now.month, now.day);
       // Process only the latest recurring budget per (categoryId, period)
-      final candidates = _budgets.where((budget) => budget.isRecurring).toList();
+      final candidates =
+          _budgets.where((budget) => budget.isRecurring).toList();
       final Map<String, BudgetModel> latestByKey = {};
       for (final b in candidates) {
         final key = '${b.categoryId}|${b.period}';
@@ -799,10 +800,8 @@ class BudgetProvider extends BaseProvider {
             print('Overdue budget already exists: ${existingBudget.id}');
           }
           // Advance recurringTime for the source budget to the day after this new/end period
-          final newRecurringTime = DateTime(
-              nextPeriodDates['end']!.year,
-              nextPeriodDates['end']!.month,
-              nextPeriodDates['end']!.day + 1);
+          final newRecurringTime = DateTime(nextPeriodDates['end']!.year,
+              nextPeriodDates['end']!.month, nextPeriodDates['end']!.day + 1);
           final updatedBudget = budget.copyWith(
             recurringTime: newRecurringTime,
             updatedAt: DateTime.now(),
