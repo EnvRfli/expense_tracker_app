@@ -282,20 +282,15 @@ class CategoryProvider extends BaseProvider {
     return result ?? false;
   }
 
-  /// Get localized category name for display
-  /// This method should be called from UI with BuildContext available
   String getLocalizedCategoryName(
       CategoryModel category, String Function(String) translator) {
-    // If category name is a localization key (for default categories)
     if (category.isDefault && category.name.startsWith('category_')) {
       return translator(category.name);
     }
 
-    // For custom categories, return the original name
     return category.name;
   }
 
-  /// Get localized category name by ID
   String getLocalizedCategoryNameById(
       String categoryId, String Function(String) translator) {
     final category = getCategoryById(categoryId);
