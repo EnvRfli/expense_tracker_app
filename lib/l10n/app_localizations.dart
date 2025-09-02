@@ -351,6 +351,8 @@ abstract class AppLocalizations {
     'category_save_failed': 'Gagal menyimpan kategori',
     'category_delete_failed': 'Gagal menghapus kategori',
     'category_save_error': 'Terjadi kesalahan saat menyimpan kategori',
+    'enter_category_name': 'Masukkan nama kategori',
+    'category_preview': 'Pratinjau Kategori',
 
     // Onboarding
     'onboarding_welcome_title': 'Selamat Datang!',
@@ -895,6 +897,8 @@ abstract class AppLocalizations {
     'category_save_failed': 'Failed to save category',
     'category_delete_failed': 'Failed to delete category',
     'category_save_error': 'An error occurred while saving category',
+    'enter_category_name': 'Enter category name',
+    'category_preview': 'Category Preview',
 
     // Onboarding
     'onboarding_welcome_title': 'Welcome!',

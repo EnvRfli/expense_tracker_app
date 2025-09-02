@@ -212,6 +212,12 @@ extension LocalizationExtension on BuildContext {
 
   /// Get localized category name for default categories
   String getDefaultCategoryName(String name) {
+    // If name is already a localization key, translate it directly
+    if (name.startsWith('category_') || name.startsWith('quick_')) {
+      return tr(name);
+    }
+
+    // Handle legacy Indonesian names for backward compatibility
     switch (name) {
       // Expense categories
       case 'Makanan & Minuman':
