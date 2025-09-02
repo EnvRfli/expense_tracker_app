@@ -16,21 +16,16 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    // Remove all non-digit characters
     String newText = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
 
-    // If empty, return empty
     if (newText.isEmpty) {
       return newValue.copyWith(text: '');
     }
 
-    // Format with thousand separators
     String formattedText = _addThousandSeparator(newText);
 
-    // Calculate cursor position
     int selectionIndex = formattedText.length;
     if (newValue.selection.end < newValue.text.length) {
-      // If cursor is not at the end, try to maintain relative position
       int originalCursorPos = newValue.selection.end;
       int separatorsBeforeCursor =
           ','.allMatches(newValue.text.substring(0, originalCursorPos)).length;
@@ -84,7 +79,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
   final _expenseFormKey = GlobalKey<FormState>();
   final _incomeFormKey = GlobalKey<FormState>();
 
-  // Form fields
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
@@ -103,7 +97,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
       initialIndex: widget.initialTabIndex,
     );
 
-    // Reset form when switching tabs
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         setState(() {
@@ -142,7 +135,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
       ),
       child: Column(
         children: [
-          // Handle bar
           Container(
             width: 40,
             height: 4,
@@ -152,8 +144,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
-          // Header dengan gradient
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
@@ -192,8 +182,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ],
             ),
           ),
-
-          // Tab bar dengan custom design
           Container(
             margin: const EdgeInsets.symmetric(
               horizontal: AppSizes.paddingLarge,
@@ -257,8 +245,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               ],
             ),
           ),
-
-          // Tab content
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -283,22 +269,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
         ),
         child: Column(
           children: [
-            // Amount field dengan design card
             _buildAmountCard(isIncome),
             const SizedBox(height: AppSizes.paddingMedium),
-
-            // Description field
             _buildDescriptionCard(),
             const SizedBox(height: AppSizes.paddingMedium),
-
-            // Category selection
             _buildCategoryCard(isIncome),
             const SizedBox(height: AppSizes.paddingMedium),
-
-            // Date selection
             _buildDateCard(),
-
-            // Additional fields for expense
             if (!isIncome) ...[
               const SizedBox(height: AppSizes.paddingMedium),
               _buildPaymentMethodCard(),
@@ -307,16 +284,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               const SizedBox(height: AppSizes.paddingMedium),
               _buildPhotoCard(),
             ],
-
-            // Source field for income
             if (isIncome) ...[
               const SizedBox(height: AppSizes.paddingMedium),
               _buildSourceCard(),
             ],
-
             const SizedBox(height: AppSizes.paddingLarge),
-
-            // Submit button dengan animasi
             _buildSubmitButton(context, isIncome),
             SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 20),
           ],
@@ -400,7 +372,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
               if (value == null || value.isEmpty) {
                 return context.tr('amount_is_required');
               }
-              // Remove commas for validation
               String cleanValue = value.replaceAll(',', '');
               if (double.tryParse(cleanValue) == null ||
                   double.parse(cleanValue) <= 0) {
@@ -532,7 +503,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                   ? categoryProvider.incomeCategories
                   : categoryProvider.expenseCategories;
 
-              // Reset selected category if it's not in the current list
               if (_selectedCategory != null &&
                   !categories.any((cat) => cat.id == _selectedCategory!.id)) {
                 _selectedCategory = null;
@@ -565,7 +535,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                   setState(() {
                     _selectedCategory = value;
                   });
-                  // Haptic feedback
                   HapticFeedback.selectionClick();
                 },
                 validator: (value) {
@@ -870,7 +839,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                     right: 4,
                     child: GestureDetector(
                       onTap: () async {
-                        // Delete image file if it exists
                         if (_receiptPhotoPath != null) {
                           await ImagePickerService.deleteImage(
                               _receiptPhotoPath!);
@@ -910,7 +878,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             onTap: () async {
               HapticFeedback.selectionClick();
 
-              // Show image source selection dialog and pick image
               final File? imageFile =
                   await ImagePickerService.showImageSourceDialogAndPick(
                       context);
@@ -919,7 +886,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                   _receiptPhotoPath = imageFile.path;
                 });
 
-                // Show success message
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -941,7 +907,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
                   );
                 }
               } else {
-                // Show error message if image picking failed
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -1130,7 +1095,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    // Haptic feedback saat membuka date picker
     HapticFeedback.selectionClick();
 
     final DateTime? picked = await showDatePicker(
@@ -1157,7 +1121,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
       setState(() {
         _selectedDate = picked;
       });
-      // Haptic feedback saat tanggal berubah
       HapticFeedback.lightImpact();
     }
   }
@@ -1166,12 +1129,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
     final formKey = isIncome ? _incomeFormKey : _expenseFormKey;
 
     if (formKey.currentState!.validate()) {
-      // Remove commas before parsing
       final cleanAmountText = _amountController.text.replaceAll(',', '');
       final amount = double.parse(cleanAmountText);
       final description = _descriptionController.text;
 
-      // Haptic feedback untuk success
       HapticFeedback.lightImpact();
 
       if (isIncome) {
@@ -1198,7 +1159,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
             );
       }
 
-      // Show success message with animation
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -1231,14 +1191,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet>
         ),
       );
 
-      // Close the modal dengan delay sedikit untuk UX yang lebih smooth
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
           Navigator.of(context).pop();
         }
       });
     } else {
-      // Haptic feedback untuk error
       HapticFeedback.heavyImpact();
     }
   }
@@ -1255,7 +1213,6 @@ class QuickAddSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
           Container(
             width: 40,
             height: 4,
@@ -1266,7 +1223,6 @@ class QuickAddSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
           Text(
             context.tr('fast_add'),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -1274,8 +1230,6 @@ class QuickAddSheet extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: AppSizes.paddingLarge),
-
-          // Quick expense buttons
           _buildQuickActionSection(
             context,
             context.tr('quick_general_expense'),
@@ -1303,10 +1257,7 @@ class QuickAddSheet extends StatelessWidget {
             ],
             false,
           ),
-
           const SizedBox(height: AppSizes.paddingLarge),
-
-          // Quick income buttons
           _buildQuickActionSection(
             context,
             context.tr('quick_general_income'),
@@ -1329,10 +1280,7 @@ class QuickAddSheet extends StatelessWidget {
             ],
             true,
           ),
-
           const SizedBox(height: AppSizes.paddingLarge),
-
-          // Custom transaction button
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -1467,7 +1415,6 @@ class QuickAddSheet extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               if (amountController.text.isNotEmpty) {
-                // Add quick transaction logic here
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
 

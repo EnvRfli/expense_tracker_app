@@ -66,80 +66,83 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.primaryColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.lock_outline,
-                  size: 48,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.title.isNotEmpty
-                    ? widget.title
-                    : context.tr('enter_pin'),
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+    return PopScope(
+      canPop: false, // Prevent back button from dismissing the lock screen
+      child: Scaffold(
+          backgroundColor: AppTheme.primaryColor,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: const BoxDecoration(
                       color: Colors.white,
+                      shape: BoxShape.circle,
                     ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.subtitle.isNotEmpty
-                    ? widget.subtitle
-                    : context.tr('enter_pin_to_continue'),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              _buildPinDisplay(),
-              const SizedBox(height: 24),
-              _buildNumberPad(),
-              const SizedBox(height: 16),
-              if (_attempts > 0) ...[
-                const SizedBox(height: 24),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.red.withOpacity(0.5),
-                      width: 1,
+                    child: Icon(
+                      Icons.lock_outline,
+                      size: 48,
+                      color: AppTheme.primaryColor,
                     ),
                   ),
-                  child: Text(
-                    context
-                        .tr('incorrect_pin_remaining_attempts')
-                        .replaceAll('{attempts}', '${maxAttempts - _attempts}'),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.red[100],
-                          fontWeight: FontWeight.w500,
+                  const SizedBox(height: 16),
+                  Text(
+                    widget.title.isNotEmpty
+                        ? widget.title
+                        : context.tr('enter_pin'),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.subtitle.isNotEmpty
+                        ? widget.subtitle
+                        : context.tr('enter_pin_to_continue'),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildPinDisplay(),
+                  const SizedBox(height: 24),
+                  _buildNumberPad(),
+                  const SizedBox(height: 16),
+                  if (_attempts > 0) ...[
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.red.withOpacity(0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        context
+                            .tr('incorrect_pin_remaining_attempts')
+                            .replaceAll(
+                                '{attempts}', '${maxAttempts - _attempts}'),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.red[100],
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          )),
     );
   }
 
