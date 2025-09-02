@@ -10,6 +10,12 @@ class UserSettingsProvider extends BaseProvider {
   UserModel? _user;
   bool _isAmountVisible = true;
 
+  // Callback functions for refreshing other providers
+  Function()? _refreshExpenseProvider;
+  Function()? _refreshIncomeProvider;
+  Function()? _refreshBudgetProvider;
+  Function()? _refreshCategoryProvider;
+
   UserModel? get user => _user;
   String get currency => _user?.currency ?? 'IDR';
   String get theme => _user?.theme ?? 'system';
@@ -44,6 +50,41 @@ class UserSettingsProvider extends BaseProvider {
     await prefs.setBool('isAmountVisible', isVisible);
     _isAmountVisible = isVisible;
     notifyListeners();
+  }
+
+  /// Set callback functions for refreshing other providers after import
+  void setProviderRefreshCallbacks({
+    Function()? refreshExpenseProvider,
+    Function()? refreshIncomeProvider,
+    Function()? refreshBudgetProvider,
+    Function()? refreshCategoryProvider,
+  }) {
+    _refreshExpenseProvider = refreshExpenseProvider;
+    _refreshIncomeProvider = refreshIncomeProvider;
+    _refreshBudgetProvider = refreshBudgetProvider;
+    _refreshCategoryProvider = refreshCategoryProvider;
+  }
+
+  /// Refresh all providers after import
+  Future<void> _refreshAllProviders() async {
+    try {
+      // Refresh category provider first since other providers depend on categories
+      if (_refreshCategoryProvider != null) {
+        await _refreshCategoryProvider!();
+      }
+
+      // Then refresh other providers
+      await Future.wait([
+        if (_refreshExpenseProvider != null)
+          Future(() => _refreshExpenseProvider!()),
+        if (_refreshIncomeProvider != null)
+          Future(() => _refreshIncomeProvider!()),
+        if (_refreshBudgetProvider != null)
+          Future(() => _refreshBudgetProvider!()),
+      ]);
+    } catch (e) {
+      print('Error refreshing providers: $e');
+    }
   }
 
   Future<void> loadUserSettings() async {
@@ -748,6 +789,9 @@ class UserSettingsProvider extends BaseProvider {
         throw Exception(
             'Cannot determine file type. Please check CSV format or include type hint in header.');
     }
+
+    // Refresh all providers after successful import
+    await _refreshAllProviders();
 
     return importResults;
   }
@@ -1516,6 +1560,9 @@ class UserSettingsProvider extends BaseProvider {
         result['failed'] = result['failed']! + 1;
       }
     }
+
+    // Refresh all providers after successful import
+    await _refreshAllProviders();
 
     return result;
   }

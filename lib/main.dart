@@ -130,6 +130,18 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
     await context.read<BudgetProvider>().initialize();
     await context.read<SyncProvider>().initialize();
 
+    // Setup refresh callbacks for UserSettingsProvider
+    context.read<UserSettingsProvider>().setProviderRefreshCallbacks(
+          refreshCategoryProvider: () =>
+              context.read<CategoryProvider>().loadCategories(),
+          refreshExpenseProvider: () =>
+              context.read<ExpenseProvider>().loadExpenses(),
+          refreshIncomeProvider: () =>
+              context.read<IncomeProvider>().loadIncomes(),
+          refreshBudgetProvider: () =>
+              context.read<BudgetProvider>().loadBudgets(),
+        );
+
     _isInitialized = true;
   }
 
