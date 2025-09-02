@@ -32,53 +32,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildCurrencyTile(userSettings),
               _buildLanguageTile(userSettings),
               _buildThemeTile(userSettings),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Notification Section
               _buildSectionHeader(context.tr('notifications')),
               _buildNotificationTile(userSettings),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Security Section
               _buildSectionHeader(context.tr('security')),
               _buildBiometricTile(userSettings),
               _buildPinTile(userSettings),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Budget Section
               _buildSectionHeader(context.tr('budget')),
               _buildMonthlyBudgetTile(userSettings),
               _buildBudgetAlertTile(userSettings),
               if (userSettings.budgetAlertEnabled)
                 _buildBudgetPercentageTile(userSettings),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Categories Section
               _buildSectionHeader(context.tr('categories')),
               _buildCategoriesTile(),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Data Management Section
               _buildSectionHeader(context.tr('data_management')),
               _buildDataManagementCard(),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // About Section
               _buildSectionHeader(context.tr('about')),
               _buildAboutTile(),
               _buildVersionTile(),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Reset Section
               _buildResetTile(userSettings),
-
               const SizedBox(height: AppSizes.paddingExtraLarge),
             ],
           );
@@ -287,8 +265,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
             ),
             const SizedBox(height: 16),
-
-            // Export Section
             _buildDataActionSection(
               icon: Icons.file_download,
               iconColor: Colors.green,
@@ -298,10 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               buttonColor: Colors.green,
               onPressed: () => _exportData(),
             ),
-
             const SizedBox(height: 16),
-
-            // Import Section
             _buildDataActionSection(
               icon: Icons.file_upload,
               iconColor: Colors.blue,
@@ -420,7 +393,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // Helper methods for display names
   String _getCurrencyName(String currency) {
     switch (currency) {
       case 'IDR':
@@ -451,7 +423,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Action methods
   void _showCurrencyDialog(UserSettingsProvider userSettings) {
     showDialog(
       context: context,
@@ -536,7 +507,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _updateNotification(UserSettingsProvider userSettings, bool enabled) {
-    // Set waktu tetap jam 20:00 jika notifikasi diaktifkan
     final time = enabled ? '20:00' : null;
     userSettings.updateNotificationSettings(enabled: enabled, time: time);
 
@@ -559,7 +529,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _updateBiometric(UserSettingsProvider userSettings, bool enabled) async {
     if (enabled) {
-      // Check if PIN is already set up
       if (!userSettings.pinEnabled) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -568,7 +537,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         );
 
-        // Automatically navigate to PIN setup
         final pinResult = await Navigator.of(context).push<bool>(
           MaterialPageRoute(
             builder: (context) => const PinSetupScreen(isEdit: false),
@@ -576,15 +544,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
 
         if (pinResult != true) {
-          // If PIN setup was cancelled, don't enable biometric
           return;
         }
 
-        // Refresh userSettings after PIN setup
         await Future.delayed(const Duration(milliseconds: 500));
       }
 
-      // Check if biometric is available
       final isAvailable = await AuthService.instance.isBiometricAvailable();
       if (!isAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -596,7 +561,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
 
-      // Test biometric authentication
       final authenticated =
           await AuthService.instance.authenticateWithBiometric(
         reason: context.tr('biometric_verification_reason'),
@@ -634,9 +598,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
-    if (result == true) {
-      // PIN successfully set/updated
-    }
+    if (result == true) {}
   }
 
   void _removePinDialog(UserSettingsProvider userSettings) {
@@ -656,7 +618,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () async {
               Navigator.pop(context);
 
-              // If biometric is enabled, disable it first
               if (userSettings.biometricEnabled) {
                 await userSettings.updateBiometricEnabled(false);
               }
@@ -705,7 +666,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _exportData() async {
     try {
-      // Show export confirmation dialog first
       final shouldExport = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -724,10 +684,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
 
-      // If user cancelled, return early
       if (shouldExport != true) return;
 
-      // Show loading dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -758,7 +716,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
 
-      // Show success dialog with file locations
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -780,7 +737,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(context.tr('success_data_exported') + ':'),
               const SizedBox(height: 12),
               ...exportedFiles.entries.map((entry) {
-                // Extract directory path from full file path
                 final filePath = entry.value;
                 final fileName = filePath.split('/').last;
                 final dirPath =
@@ -845,7 +801,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _importData() async {
     try {
-      // Show loading dialog immediately without confirmation
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -867,18 +822,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Navigator.pop(context); // Close loading dialog
 
       if (previewData == null) {
-        // User cancelled file selection
         return;
       }
 
-      // Directly perform the import without confirmation
       await _performConfirmedImport(previewData);
     } catch (e) {
       Navigator.pop(context); // Close loading dialog if still open
 
       String errorMessage = e.toString();
       if (errorMessage.contains('No file selected')) {
-        // User cancelled, don't show error
         return;
       }
 
@@ -892,10 +844,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Perform the actual import after confirmation
   Future<void> _performConfirmedImport(Map<String, dynamic> previewData) async {
     try {
-      // Show loading dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -919,7 +869,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       Navigator.pop(context); // Close loading dialog
 
-      // Show result dialog
       _showImportResultDialog(result);
     } catch (e) {
       Navigator.pop(context); // Close loading dialog if still open
@@ -933,7 +882,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Show import result dialog with improved UI
   void _showImportResultDialog(Map<String, int> result) {
     final total = result['total'] ?? 0;
     final success = result['success'] ?? 0;
@@ -1026,7 +974,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // Build import stat row with better styling
   Widget _buildImportStatRow(String label, String value, [Color? valueColor]) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
