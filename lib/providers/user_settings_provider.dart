@@ -10,7 +10,6 @@ class UserSettingsProvider extends BaseProvider {
   UserModel? _user;
   bool _isAmountVisible = true;
 
-  // Callback functions for refreshing other providers
   Function()? _refreshExpenseProvider;
   Function()? _refreshIncomeProvider;
   Function()? _refreshBudgetProvider;
@@ -29,8 +28,7 @@ class UserSettingsProvider extends BaseProvider {
   String? get pinCode => _user?.pinCode;
   bool get pinEnabled => _user?.pinEnabled ?? false;
   bool get isAmountVisible => _isAmountVisible;
-  int get backgroundLockTimeout =>
-      _user?.backgroundLockTimeout ?? 120; // Default 2 minutes
+  int get backgroundLockTimeout => _user?.backgroundLockTimeout ?? 120;
   @override
   Future<void> initialize() async {
     await handleAsyncSilent(() async {
@@ -52,7 +50,6 @@ class UserSettingsProvider extends BaseProvider {
     notifyListeners();
   }
 
-  /// Set callback functions for refreshing other providers after import
   void setProviderRefreshCallbacks({
     Function()? refreshExpenseProvider,
     Function()? refreshIncomeProvider,
@@ -65,15 +62,12 @@ class UserSettingsProvider extends BaseProvider {
     _refreshCategoryProvider = refreshCategoryProvider;
   }
 
-  /// Refresh all providers after import
   Future<void> _refreshAllProviders() async {
     try {
-      // Refresh category provider first since other providers depend on categories
       if (_refreshCategoryProvider != null) {
         await _refreshCategoryProvider!();
       }
 
-      // Then refresh other providers
       await Future.wait([
         if (_refreshExpenseProvider != null)
           Future(() => _refreshExpenseProvider!()),
@@ -790,7 +784,6 @@ class UserSettingsProvider extends BaseProvider {
             'Cannot determine file type. Please check CSV format or include type hint in header.');
     }
 
-    // Refresh all providers after successful import
     await _refreshAllProviders();
 
     return importResults;
@@ -942,7 +935,6 @@ class UserSettingsProvider extends BaseProvider {
       try {
         final fields = _parseCSVLine(lines[i]);
         if (fields.length >= 12) {
-          // Updated to require 12 fields including recurringTime
           if (DatabaseService.instance.budgets.containsKey(fields[0])) {
             continue;
           }
@@ -1561,7 +1553,6 @@ class UserSettingsProvider extends BaseProvider {
       }
     }
 
-    // Refresh all providers after successful import
     await _refreshAllProviders();
 
     return result;
