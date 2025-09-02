@@ -325,6 +325,33 @@ abstract class AppLocalizations {
     'biometric_enabled_success': 'Autentikasi biometrik diaktifkan',
     'biometric_disabled_success': 'Autentikasi biometrik dinonaktifkan',
 
+    // Categories Management
+    'categories': 'Kategori',
+    'manage_categories': 'Kelola Kategori',
+    'manage_categories_subtitle': 'Tambah, edit, atau hapus kategori kustom',
+    'expense_categories': 'Kategori Pengeluaran',
+    'income_categories': 'Kategori Pemasukan',
+    'no_categories_found': 'Tidak ada kategori ditemukan',
+    'add_category_description':
+        'Ketuk tombol + untuk menambahkan kategori baru',
+    'add_category': 'Tambah Kategori',
+    'edit_category': 'Edit Kategori',
+    'delete_category': 'Hapus Kategori',
+    'category_name': 'Nama Kategori',
+    'category_name_required': 'Nama kategori wajib diisi',
+    'category_name_exists': 'Nama kategori sudah ada',
+    'select_color': 'Pilih Warna',
+    'select_icon': 'Pilih Ikon',
+    'default_category': 'Kategori Bawaan',
+    'delete_category_confirmation':
+        'Apakah Anda yakin ingin menghapus kategori "{name}"?',
+    'category_added_success': 'Kategori berhasil ditambahkan',
+    'category_updated_success': 'Kategori berhasil diperbarui',
+    'category_deleted_success': 'Kategori berhasil dihapus',
+    'category_save_failed': 'Gagal menyimpan kategori',
+    'category_delete_failed': 'Gagal menghapus kategori',
+    'category_save_error': 'Terjadi kesalahan saat menyimpan kategori',
+
     // Onboarding
     'onboarding_welcome_title': 'Selamat Datang!',
     'onboarding_welcome_desc': 'Kelola keuangan Anda dengan mudah dan praktis',
@@ -842,6 +869,32 @@ abstract class AppLocalizations {
     'biometric_auth_failed': 'Biometric authentication failed',
     'biometric_enabled_success': 'Biometric authentication enabled',
     'biometric_disabled_success': 'Biometric authentication disabled',
+
+    // Categories Management
+    'categories': 'Categories',
+    'manage_categories': 'Manage Categories',
+    'manage_categories_subtitle': 'Add, edit, or delete custom categories',
+    'expense_categories': 'Expense Categories',
+    'income_categories': 'Income Categories',
+    'no_categories_found': 'No categories found',
+    'add_category_description': 'Tap the + button to add a new category',
+    'add_category': 'Add Category',
+    'edit_category': 'Edit Category',
+    'delete_category': 'Delete Category',
+    'category_name': 'Category Name',
+    'category_name_required': 'Category name is required',
+    'category_name_exists': 'Category name already exists',
+    'select_color': 'Select Color',
+    'select_icon': 'Select Icon',
+    'default_category': 'Default Category',
+    'delete_category_confirmation':
+        'Are you sure you want to delete category "{name}"?',
+    'category_added_success': 'Category added successfully',
+    'category_updated_success': 'Category updated successfully',
+    'category_deleted_success': 'Category deleted successfully',
+    'category_save_failed': 'Failed to save category',
+    'category_delete_failed': 'Failed to delete category',
+    'category_save_error': 'An error occurred while saving category',
 
     // Onboarding
     'onboarding_welcome_title': 'Welcome!',

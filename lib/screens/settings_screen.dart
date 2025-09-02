@@ -5,6 +5,7 @@ import '../services/services.dart';
 import '../utils/theme.dart';
 import '../l10n/localization_extension.dart';
 import 'pin_setup_screen.dart';
+import 'categories_management_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -53,6 +54,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildBudgetAlertTile(userSettings),
               if (userSettings.budgetAlertEnabled)
                 _buildBudgetPercentageTile(userSettings),
+
+              const SizedBox(height: AppSizes.paddingLarge),
+
+              // Categories Section
+              _buildSectionHeader(context.tr('categories')),
+              _buildCategoriesTile(),
 
               const SizedBox(height: AppSizes.paddingLarge),
 
@@ -230,6 +237,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             params: {'percentage': '${userSettings.budgetAlertPercentage}'})),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _setBudgetPercentage(userSettings),
+      ),
+    );
+  }
+
+  Widget _buildCategoriesTile() {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.category, color: AppTheme.primaryColor),
+        title: Text(context.tr('manage_categories')),
+        subtitle: Text(context.tr('manage_categories_subtitle')),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _navigateToCategoriesManagement(),
       ),
     );
   }
@@ -504,6 +523,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  void _navigateToCategoriesManagement() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const CategoriesManagementScreen(),
       ),
     );
   }
