@@ -67,7 +67,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // Prevent back button from dismissing the lock screen
+      canPop: false,
       child: Scaffold(
           backgroundColor: AppTheme.primaryColor,
           body: SafeArea(
