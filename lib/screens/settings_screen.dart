@@ -1017,7 +1017,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Text(context.tr('about_app_desc')),
         const SizedBox(height: 16),
-        Text('Developed with ❤️ using Flutter'),
+        Text('Developed with ❤️ by Nakano Nino'),
       ],
     );
   }
