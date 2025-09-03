@@ -33,7 +33,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -47,8 +46,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               ),
             ),
             const SizedBox(height: 32),
-
-            // Title
             Text(
               _isConfirming
                   ? context.tr('confirm_your_pin')
@@ -62,8 +59,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-
-            // Subtitle
             Text(
               _isConfirming
                   ? context.tr('enter_pin_again_to_confirm')
@@ -74,12 +69,8 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
-
-            // PIN Display
             _buildPinDisplay(),
             const SizedBox(height: 48),
-
-            // Number Pad
             _buildNumberPad(),
           ],
         ),
@@ -112,7 +103,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
   Widget _buildNumberPad() {
     return Column(
       children: [
-        // First row: 1, 2, 3
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -122,8 +112,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
           ],
         ),
         const SizedBox(height: 16),
-
-        // Second row: 4, 5, 6
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -133,8 +121,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
           ],
         ),
         const SizedBox(height: 16),
-
-        // Third row: 7, 8, 9
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -144,8 +130,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
           ],
         ),
         const SizedBox(height: 16),
-
-        // Fourth row: empty, 0, delete
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -228,7 +212,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
         });
 
         if (_currentPin.length == 6) {
-          // Auto proceed to confirmation after 6 digits
           Future.delayed(const Duration(milliseconds: 200), () {
             setState(() {
               _isConfirming = true;
@@ -246,7 +229,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
           _confirmPin = _confirmPin.substring(0, _confirmPin.length - 1);
         });
       } else {
-        // Go back to pin entry
         setState(() {
           _isConfirming = false;
           _confirmPin = '';
@@ -281,7 +263,6 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       final userSettings = context.read<UserSettingsProvider>();
       final hashedPin = AuthService.instance.getHashedPin(_currentPin);
 
-      // Update user settings with PIN
       final success = await userSettings.updatePinSettings(
         pinCode: hashedPin,
         pinEnabled: true,
