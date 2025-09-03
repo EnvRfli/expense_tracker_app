@@ -28,7 +28,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     final incomeProvider = context.watch<IncomeProvider>();
     final categoryProvider = context.watch<CategoryProvider>();
 
-    // Filter transactions
     List<_TransactionItem> transactions = [];
     if (_selectedType == 'all' || _selectedType == 'expense') {
       var filtered = expenseProvider.expenses;
@@ -105,7 +104,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         onPressed: () {
-          // Show add transaction bottom sheet (reuse from dashboard)
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
@@ -128,7 +126,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // First row: Type and Reset button
           Row(
             children: [
               Expanded(
@@ -148,7 +145,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             ],
           ),
           const SizedBox(height: AppSizes.paddingSmall),
-          // Second row: Category and Date filters
           Row(
             children: [
               Expanded(
