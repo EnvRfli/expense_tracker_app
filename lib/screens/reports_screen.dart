@@ -34,7 +34,6 @@ class _TimeseriesChart extends StatelessWidget {
       return Center(child: Text(context.tr('no_data')));
     }
 
-    // Calculate percentile-based scaling to handle outliers
     final allValues = data
         .map((e) => e.income)
         .followedBy(data.map((e) => e.expense))
@@ -48,20 +47,16 @@ class _TimeseriesChart extends StatelessWidget {
     if (allValues.isEmpty) {
       maxDisplayValue = 1000;
     } else if (allValues.length < 4) {
-      // Too few data points, use max value
       maxDisplayValue = allValues.last;
     } else {
-      // Use 95th percentile to cap outliers
       final percentile95Index = ((allValues.length - 1) * 0.95).round();
       final percentile95Value = allValues[percentile95Index];
       final maxValue = allValues.last;
 
-      // Check if there are significant outliers (max > 2x 95th percentile)
       hasOutliers = maxValue > percentile95Value * 2;
       maxDisplayValue = hasOutliers ? percentile95Value * 1.1 : maxValue;
     }
 
-    // Map data points to FlSpot using index as x value, capping outliers
     final spotsIncome = <FlSpot>[];
     final spotsExpense = <FlSpot>[];
     for (var i = 0; i < data.length; i++) {
@@ -77,7 +72,6 @@ class _TimeseriesChart extends StatelessWidget {
     final interval =
         (data.length / 6).ceilToDouble().clamp(1.0, data.length.toDouble());
 
-    // Tentukan interval horizontal yang lebih baik untuk menghindari tumpang tindih
     double horizontalInterval;
     if (maxDisplayValue <= 0) {
       horizontalInterval = 1;
@@ -109,7 +103,6 @@ class _TimeseriesChart extends StatelessWidget {
 
                 String valueText;
                 if (actualValue > maxDisplayValue) {
-                  // Show actual value for capped outliers
                   valueText =
                       '${actualValue > 1000000 ? '${(actualValue / 1000000).toStringAsFixed(1)}M' : actualValue > 1000 ? '${(actualValue / 1000).toStringAsFixed(0)}K' : actualValue.toStringAsFixed(0)} (capped)';
                 } else {
@@ -252,7 +245,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
           padding: const EdgeInsets.all(AppSizes.paddingMedium),
           child: Column(
             children: [
-              // Filter Range Section
               _buildFilterSection(),
               const SizedBox(height: AppSizes.paddingMedium),
               _buildSummaryCards(),
@@ -260,7 +252,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
               _buildTimeSeriesPlaceholder(),
               const SizedBox(height: AppSizes.paddingMedium),
               LayoutBuilder(builder: (context, constraints) {
-                // if narrow, stack vertically for breathing room
                 if (constraints.maxWidth < 700) {
                   return Column(
                     children: [
@@ -271,7 +262,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   );
                 }
 
-                // otherwise keep side-by-side
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -438,7 +428,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   final incomes = incomeProvider.getIncomesByDateRange(
                       _range.start, _range.end);
 
-                  // aggregate per day
                   final map = <DateTime, Map<String, double>>{};
                   DateTime cur = _range.start;
                   while (!cur.isAfter(_range.end)) {
@@ -469,7 +458,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           expense: map[d]!['expense'] ?? 0.0))
                       .toList();
 
-                  // Check for outliers to show warning
                   final allValues = data
                       .map((e) => e.income)
                       .followedBy(data.map((e) => e.expense))
@@ -559,7 +547,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
               );
             }
 
-            // Prepare pie data (top 6)
             final topEntries = entries.take(6).toList();
             final pieData = List.generate(topEntries.length, (i) {
               final cat = categoryProvider.getCategoryById(topEntries[i].key);
@@ -726,7 +713,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Future<void> _exportData() async {
     try {
-      // Show export confirmation dialog first
       final shouldExport = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -745,10 +731,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ),
       );
 
-      // If user cancelled, return early
       if (shouldExport != true) return;
 
-      // Show loading dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -779,7 +763,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return;
       }
 
-      // Show success dialog with file locations
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -801,7 +784,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Text(context.tr('success_data_exported') + ' :'),
               const SizedBox(height: 12),
               ...exportedFiles.entries.map((entry) {
-                // Extract directory path from full file path
                 final filePath = entry.value;
                 final fileName = filePath.split('/').last;
                 final dirPath =
@@ -853,10 +835,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ),
       );
     } catch (e) {
-      // Close loading dialog if still open
       Navigator.pop(context);
 
-      // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:
