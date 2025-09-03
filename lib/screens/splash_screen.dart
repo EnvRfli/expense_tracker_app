@@ -27,7 +27,6 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _scaleAnimation;
   Timer? _loadingTextTimer;
 
-  // Loading states
   String _currentLoadingText = '';
   final List<String> _loadingSteps = [
     'Initializing...',
@@ -41,16 +40,13 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Mark splash as visible
     AppLockState.setSplashVisible(true);
 
-    // Main animation controller for initial entrance (no repeat)
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
-    // Separate controller for loading animation
     _loadingAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -72,26 +68,20 @@ class _SplashScreenState extends State<SplashScreen>
       curve: Curves.elasticOut,
     ));
 
-    // Defer initialization until after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeApp();
     });
   }
 
   Future<void> _initializeApp() async {
-    // Start entrance animation (once only)
     _animationController.forward();
 
-    // Start loading animation (repeat)
     _loadingAnimationController.repeat();
 
-    // Start loading text animation
     _startLoadingTextAnimation();
 
-    // Initialize all providers
     await _initializeProviders();
 
-    // Wait a bit more for user to see the splash
     await Future.delayed(const Duration(milliseconds: 2000));
 
     if (mounted) {
@@ -122,7 +112,6 @@ class _SplashScreenState extends State<SplashScreen>
     final budgetProvider = context.read<BudgetProvider>();
     final syncProvider = context.read<SyncProvider>();
 
-    // Initialize all providers silently without triggering notifications
     await Future.wait([
       _initializeProviderSilently(userSettingsProvider),
       _initializeProviderSilently(categoryProvider),
@@ -132,18 +121,14 @@ class _SplashScreenState extends State<SplashScreen>
       _initializeProviderSilently(syncProvider),
     ]);
 
-    // Check budget alerts after providers are loaded
     try {
       await budgetProvider.checkBudgetAlerts();
     } catch (e) {
-      // Handle error silently for background task
       print('Error checking budget alerts during startup: $e');
     }
 
-    // Enable notifications after startup is complete
     BudgetNotificationService.instance.enableNotifications();
 
-    // Initialize recurring budget service
     try {
       RecurringBudgetService.instance.initialize(budgetProvider);
       print('Recurring budget service initialized in splash screen');
@@ -151,7 +136,6 @@ class _SplashScreenState extends State<SplashScreen>
       print('Error initializing recurring budget service: $e');
     }
 
-    // Perform auto sync if Google Drive is connected
     try {
       if (syncProvider.isGoogleLinked && syncProvider.autoSyncEnabled) {
         print('Performing auto sync during startup...');
@@ -159,7 +143,6 @@ class _SplashScreenState extends State<SplashScreen>
         print('Auto sync completed during startup');
       }
     } catch (e) {
-      // Handle error silently for background sync
       print('Error during auto sync at startup: $e');
     }
   }
@@ -174,12 +157,10 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _navigateToNextScreen() {
-    // Mark splash as no longer visible before navigation
     AppLockState.setSplashVisible(false);
 
     final userSettingsProvider = context.read<UserSettingsProvider>();
 
-    // Check if this is first time setup
     if (userSettingsProvider.isFirstTimeSetup()) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -201,7 +182,6 @@ class _SplashScreenState extends State<SplashScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Static Money Icon (no pulsing)
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
@@ -218,22 +198,17 @@ class _SplashScreenState extends State<SplashScreen>
               color: Colors.white,
             ),
           ),
-
           const SizedBox(height: 12),
-
-          // Animated Dots with separate controller
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(3, (index) {
               return AnimatedBuilder(
                 animation: _loadingAnimationController,
                 builder: (context, child) {
-                  // Calculate delay for each dot
                   double delay = index * 0.2;
                   double animationValue =
                       ((_loadingAnimationController.value - delay) % 1.0);
 
-                  // Create smooth wave effect
                   double opacity = 0.3 +
                       (0.7 *
                           (0.5 + 0.5 * math.sin(animationValue * 2 * math.pi)));
@@ -260,7 +235,6 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    // Ensure splash state is cleared when disposed
     AppLockState.setSplashVisible(false);
     _loadingTextTimer?.cancel();
     _animationController.dispose();
@@ -283,7 +257,6 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // App Logo
                     Container(
                       width: 120,
                       height: 120,
@@ -305,10 +278,7 @@ class _SplashScreenState extends State<SplashScreen>
                         color: AppTheme.primaryColor,
                       ),
                     ),
-
                     const SizedBox(height: AppSizes.paddingLarge),
-
-                    // App Name
                     Text(
                       context.tr('expense_tracker'),
                       style:
@@ -317,25 +287,16 @@ class _SplashScreenState extends State<SplashScreen>
                                 fontWeight: FontWeight.bold,
                               ),
                     ),
-
                     const SizedBox(height: AppSizes.paddingSmall),
-
-                    // App Tagline
                     Text(
                       context.tr('manage_finances_easily'),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white70,
                           ),
                     ),
-
                     const SizedBox(height: AppSizes.paddingExtraLarge),
-
-                    // Loading Indicator - Animated Dots
                     _buildAnimatedLoadingIndicator(),
-
                     const SizedBox(height: AppSizes.paddingMedium),
-
-                    // Loading Text
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
                       child: Text(
