@@ -35,7 +35,6 @@ class BudgetDetailsSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle bar
               Center(
                 child: Container(
                   width: 40,
@@ -50,8 +49,6 @@ class BudgetDetailsSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.paddingLarge),
-
-              // Header
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -105,7 +102,6 @@ class BudgetDetailsSheet extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSizes.paddingLarge),
               InkWell(
                 onTap: () {
@@ -208,26 +204,19 @@ class BudgetDetailsSheet extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: AppSizes.paddingLarge),
-
               _buildDetailRow(context, context.tr('period'),
                   _getPeriodText(context, budget)),
-
               _buildDetailRow(
                 context,
                 context.tr('remaining_budget'),
                 userSettings.formatCurrency(budget.amount - budget.spent),
               ),
-
               _buildDetailRow(context, context.tr('alert_threshold'),
                   '${budget.alertPercentage}%'),
               if (budget.notes?.isNotEmpty == true)
                 _buildDetailRow(context, context.tr('notes'), budget.notes!),
-
               const Spacer(),
-
-              // Always show Edit and Delete buttons for active budgets
               if (budget.isActive) ...[
                 Row(
                   children: [
@@ -236,7 +225,6 @@ class BudgetDetailsSheet extends StatelessWidget {
                         onPressed: onEdit ??
                             () {
                               Navigator.pop(context);
-                              // Default edit action - you can customize this
                               showModalBottomSheet(
                                 context: context,
                                 isScrollControlled: true,
@@ -345,7 +333,6 @@ class BudgetDetailsSheet extends StatelessWidget {
     }
   }
 
-  /// Static method untuk menampilkan budget details sheet
   static void show(
     BuildContext context,
     BudgetModel budget, {
