@@ -5,8 +5,6 @@ import '../screens/pin_entry_screen.dart';
 import '../services/app_lock_state.dart';
 import '../l10n/localization_extension.dart';
 
-/// A top-level wrapper that detects user inactivity (front-end only)
-/// and shows a blocking dialog after [idleDuration] without input.
 class IdleDetector extends StatefulWidget {
   const IdleDetector({
     super.key,
@@ -62,7 +60,6 @@ class _IdleDetectorState extends State<IdleDetector>
   }
 
   void _startTimerIfAppropriate() {
-    // Only start timer if we should detect idle and app is in foreground
     if (AppLockState.shouldDetectIdle && _isForeground && !_dialogShowing) {
       _startTimer();
     }
@@ -71,8 +68,6 @@ class _IdleDetectorState extends State<IdleDetector>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Pause detection when app is not in foreground to avoid showing dialogs
-    // while the app is backgrounded.
     _isForeground = state == AppLifecycleState.resumed;
     if (_isForeground) {
       _resetTimer();
@@ -103,18 +98,14 @@ class _IdleDetectorState extends State<IdleDetector>
         !AppLockState.shouldDetectIdle) return;
     _dialogShowing = true;
     try {
-      // Prefer using the navigatorKey context if provided to ensure we
-      // present above the app's Navigator.
       final dialogContext = widget.navigatorKey?.currentContext ?? context;
       int secondsLeft = widget.promptCountdown.inSeconds;
       Timer? countdownTimer;
 
       Future<void> lockNow() async {
-        // Close dialog first if still open
         if (Navigator.of(dialogContext, rootNavigator: true).canPop()) {
           Navigator.of(dialogContext, rootNavigator: true).pop();
         }
-        // Navigate to PIN screen
         final nav = widget.navigatorKey?.currentState ?? Navigator.of(context);
         await nav.push(
           MaterialPageRoute(
@@ -123,7 +114,6 @@ class _IdleDetectorState extends State<IdleDetector>
               title: 'App Locked',
               subtitle: 'Enter PIN to continue',
               onSuccess: () {
-                // On success, simply pop the lock screen
                 if (nav.canPop()) nav.pop();
               },
             ),
@@ -143,7 +133,6 @@ class _IdleDetectorState extends State<IdleDetector>
                   if (!mounted) return;
                   if (secondsLeft <= 1) {
                     t.cancel();
-                    // Trigger lock
                     lockNow();
                   } else {
                     setState(() => secondsLeft -= 1);
