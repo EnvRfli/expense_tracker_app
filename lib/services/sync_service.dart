@@ -7,7 +7,6 @@ class SyncService {
   static SyncService get instance => _instance ??= SyncService._();
   SyncService._();
 
-  // Track data changes for sync
   Future<void> trackChange({
     required String dataType,
     required String dataId,
@@ -26,7 +25,6 @@ class SyncService {
     await DatabaseService.instance.syncData.put(syncData.id, syncData);
   }
 
-  // Get pending sync items
   List<SyncDataModel> getPendingSyncItems() {
     return DatabaseService.instance.syncData.values
         .where((item) => !item.synced)
@@ -34,7 +32,6 @@ class SyncService {
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
   }
 
-  // Sync all pending changes to Google Drive
   Future<bool> syncToGoogleDrive() async {
     if (!GoogleDriveService.instance.isSignedIn) {
       return false;
@@ -51,24 +48,20 @@ class SyncService {
       try {
         final success = await _syncSingleItem(item);
         if (success) {
-          // Mark as synced
           final updatedItem = item.markSynced();
           await DatabaseService.instance.syncData.put(item.id, updatedItem);
         } else {
           allSuccess = false;
-          // Mark as failed
           final failedItem = item.markFailed('Sync failed');
           await DatabaseService.instance.syncData.put(item.id, failedItem);
         }
       } catch (e) {
         allSuccess = false;
-        // Mark as failed with error message
         final failedItem = item.markFailed(e.toString());
         await DatabaseService.instance.syncData.put(item.id, failedItem);
       }
     }
 
-    // If all items synced successfully, do a full backup
     if (allSuccess) {
       await GoogleDriveService.instance.backupAllData();
     }
@@ -76,27 +69,21 @@ class SyncService {
     return allSuccess;
   }
 
-  // Sync a single item
   Future<bool> _syncSingleItem(SyncDataModel syncItem) async {
-    // For now, we'll just track the sync and do periodic full backups
-    // In a more advanced implementation, you could sync individual changes
     return true;
   }
 
-  // Auto sync (call this periodically)
   Future<void> autoSync() async {
     final user = DatabaseService.instance.getCurrentUser();
     if (user == null || !user.isBackupEnabled || !user.isGoogleLinked) {
       return;
     }
 
-    // Check if we need to sync
     final pendingItems = getPendingSyncItems();
     if (pendingItems.isEmpty) {
       return;
     }
 
-    // Check if last sync was more than 1 hour ago
     final lastSync = user.lastSyncDate;
     final now = DateTime.now();
 
@@ -105,7 +92,6 @@ class SyncService {
     }
   }
 
-  // Force full backup
   Future<bool> forceBackup() async {
     if (!GoogleDriveService.instance.isSignedIn) {
       return false;
@@ -114,7 +100,6 @@ class SyncService {
     final success = await GoogleDriveService.instance.backupAllData();
 
     if (success) {
-      // Mark all pending items as synced
       final pendingItems = getPendingSyncItems();
       for (final item in pendingItems) {
         final updatedItem = item.markSynced();
@@ -125,7 +110,6 @@ class SyncService {
     return success;
   }
 
-  // Restore from Google Drive
   Future<bool> restoreFromGoogleDrive() async {
     if (!GoogleDriveService.instance.isSignedIn) {
       return false;
@@ -134,7 +118,6 @@ class SyncService {
     return await GoogleDriveService.instance.restoreLatestBackup();
   }
 
-  // Get sync status
   Map<String, dynamic> getSyncStatus() {
     final user = DatabaseService.instance.getCurrentUser();
     final pendingItems = getPendingSyncItems();
@@ -153,7 +136,6 @@ class SyncService {
     };
   }
 
-  // Clear failed sync items
   Future<void> clearFailedItems() async {
     final failedItems = DatabaseService.instance.syncData.values
         .where((item) => !item.synced && item.errorMessage != null)
@@ -164,7 +146,6 @@ class SyncService {
     }
   }
 
-  // Retry failed sync items
   Future<bool> retryFailedItems() async {
     final failedItems = DatabaseService.instance.syncData.values
         .where((item) =>
@@ -200,7 +181,6 @@ class SyncService {
     return allSuccess;
   }
 
-  // Get backup files from Google Drive
   Future<List<Map<String, dynamic>>> getBackupFiles() async {
     if (!GoogleDriveService.instance.isSignedIn) {
       return [];
@@ -209,7 +189,6 @@ class SyncService {
     return await GoogleDriveService.instance.getBackupFiles();
   }
 
-  // Clean up old backups
   Future<void> cleanupOldBackups({int keepCount = 5}) async {
     if (!GoogleDriveService.instance.isSignedIn) {
       return;
