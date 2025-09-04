@@ -15,21 +15,16 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    // Remove all non-digit characters
     String newText = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
 
-    // If empty, return empty
     if (newText.isEmpty) {
       return newValue.copyWith(text: '');
     }
 
-    // Format with thousand separators
     String formattedText = _addThousandSeparator(newText);
 
-    // Calculate cursor position
     int selectionIndex = formattedText.length;
     if (newValue.selection.end < newValue.text.length) {
-      // If cursor is not at the end, try to maintain relative position
       int originalCursorPos = newValue.selection.end;
       int separatorsBeforeCursor =
           ','.allMatches(newValue.text.substring(0, originalCursorPos)).length;
@@ -83,7 +78,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
-  // Form fields
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
@@ -112,7 +106,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
           .expenses
           .firstWhere((e) => e.id == widget.transactionId);
 
-      // Format amount with thousand separator when loading
       _amountController.text = _formatAmountForDisplay(_expense!.amount);
       _descriptionController.text = _expense!.description;
       _locationController.text = _expense!.location ?? '';
@@ -131,7 +124,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
           .incomes
           .firstWhere((i) => i.id == widget.transactionId);
 
-      // Format amount with thousand separator when loading
       _amountController.text = _formatAmountForDisplay(_income!.amount);
       _descriptionController.text = _income!.description;
       _sourceController.text = _income!.source;
@@ -145,17 +137,13 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
     }
   }
 
-  // Helper method to format amount for display
   String _formatAmountForDisplay(double amount) {
-    // Convert double to integer string (remove decimal if it's .0)
     String amountString =
         amount % 1 == 0 ? amount.toInt().toString() : amount.toString();
 
-    // Apply thousand separator formatting
     return _addThousandSeparator(amountString);
   }
 
-  // Helper method to add thousand separator (same logic as in formatter)
   String _addThousandSeparator(String value) {
     if (value.length <= 3) return value;
 
@@ -195,7 +183,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
       ),
       child: Column(
         children: [
-          // Handle bar
           Container(
             width: 40,
             height: 4,
@@ -205,8 +192,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
-          // Header dengan gradient
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
@@ -282,8 +267,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               ],
             ),
           ),
-
-          // Form content
           Expanded(
             child: _buildTransactionForm(context),
           ),
@@ -302,22 +285,13 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
         ),
         child: Column(
           children: [
-            // Amount field dengan design card
             _buildAmountCard(),
             const SizedBox(height: AppSizes.paddingMedium),
-
-            // Description field
             _buildDescriptionCard(),
             const SizedBox(height: AppSizes.paddingMedium),
-
-            // Category selection
             _buildCategoryCard(),
             const SizedBox(height: AppSizes.paddingMedium),
-
-            // Date selection
             _buildDateCard(),
-
-            // Additional fields for expense
             if (widget.isExpense) ...[
               const SizedBox(height: AppSizes.paddingMedium),
               _buildPaymentMethodCard(),
@@ -326,20 +300,13 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               const SizedBox(height: AppSizes.paddingMedium),
               _buildPhotoCard(),
             ],
-
-            // Source field for income
             if (!widget.isExpense) ...[
               const SizedBox(height: AppSizes.paddingMedium),
               _buildSourceCard(),
             ],
-
-            // Recurring transaction options
             const SizedBox(height: AppSizes.paddingMedium),
             _buildRecurringCard(),
-
             const SizedBox(height: AppSizes.paddingLarge),
-
-            // Action buttons
             _buildActionButtons(context),
             SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 20),
           ],
@@ -427,7 +394,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
               if (value == null || value.isEmpty) {
                 return context.tr('amount_is_required');
               }
-              // Remove thousand separators before parsing
               String cleanValue = value.replaceAll(',', '');
               if (double.tryParse(cleanValue) == null ||
                   double.parse(cleanValue) <= 0) {
@@ -891,7 +857,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                     right: 4,
                     child: GestureDetector(
                       onTap: () async {
-                        // Delete image file if it exists
                         if (_receiptPhotoPath != null) {
                           await ImagePickerService.deleteImage(
                               _receiptPhotoPath!);
@@ -931,7 +896,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
             onTap: () async {
               HapticFeedback.selectionClick();
 
-              // Show image source selection dialog and pick image
               final File? imageFile =
                   await ImagePickerService.showImageSourceDialogAndPick(
                       context);
@@ -940,7 +904,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                   _receiptPhotoPath = imageFile.path;
                 });
 
-                // Show success message
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -962,7 +925,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
                   );
                 }
               } else {
-                // Show error message if image picking failed
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -1297,7 +1259,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    // Haptic feedback saat membuka date picker
     HapticFeedback.selectionClick();
 
     final DateTime? picked = await showDatePicker(
@@ -1324,7 +1285,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
       setState(() {
         _selectedDate = picked;
       });
-      // Haptic feedback saat tanggal berubah
       HapticFeedback.lightImpact();
     }
   }
@@ -1337,7 +1297,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet>
     });
 
     try {
-      // Remove thousand separators before parsing
       final amount = double.parse(_amountController.text.replaceAll(',', ''));
       final description = _descriptionController.text.trim();
 
