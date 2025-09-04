@@ -107,10 +107,8 @@ class DeleteBudgetDialog extends StatelessWidget {
             ElevatedButton(
               onPressed: () async {
                 try {
-                  // Show loading indicator
                   Navigator.of(context).pop(null);
 
-                  // Show loading dialog
                   showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -119,14 +117,11 @@ class DeleteBudgetDialog extends StatelessWidget {
                     ),
                   );
 
-                  // Delete budget
                   final success = await budgetProvider.deleteBudget(budget.id);
 
-                  // Close loading dialog
                   Navigator.of(context).pop();
 
                   if (success) {
-                    // Show success message
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(context.tr('success_budget_deleted')),
@@ -135,10 +130,8 @@ class DeleteBudgetDialog extends StatelessWidget {
                       ),
                     );
 
-                    // Return true to indicate success
                     Navigator.of(context).pop(true);
                   } else {
-                    // Show error message
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(context.tr('failed_to_delete_budget')),
@@ -148,10 +141,8 @@ class DeleteBudgetDialog extends StatelessWidget {
                     );
                   }
                 } catch (e) {
-                  // Close loading dialog if still open
                   Navigator.of(context).pop();
 
-                  // Show error message
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: ${e.toString()}'),
@@ -173,7 +164,6 @@ class DeleteBudgetDialog extends StatelessWidget {
     );
   }
 
-  /// Static method untuk menampilkan delete confirmation dialog
   static Future<bool?> show(BuildContext context, BudgetModel budget) {
     return showDialog<bool>(
       context: context,
