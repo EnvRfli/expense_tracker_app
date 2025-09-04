@@ -35,7 +35,6 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // Update global lock state
     AppLockState.setLockVisible(_isLocked);
 
     if (_isLocked) {
@@ -47,7 +46,6 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
             _isLocked = false;
           });
 
-          // Mark as initialized immediately to prevent re-checking
           _hasInitialized = true;
         },
       );
@@ -57,9 +55,7 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
   }
 
   void _checkLockStatus() async {
-    // Skip if already checking or if we just unlocked
     if (_hasInitialized) {
-      // Quick check for mounted widget
       if (!mounted) return;
 
       final userSettings = context.read<UserSettingsProvider>();
@@ -72,7 +68,6 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
         return;
       }
 
-      // Only do a quick lock check without reset
       final isLocked = await AuthService.instance.isAppLocked();
 
       if (mounted) {
@@ -85,7 +80,6 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
 
     final userSettings = context.read<UserSettingsProvider>();
 
-    // Wait for user settings to be loaded
     if (userSettings.user == null) {
       _retryCount++;
 
@@ -96,7 +90,6 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
         return;
       }
 
-      // UserSettings not loaded yet, wait a bit and try again
       await Future.delayed(const Duration(milliseconds: 100));
       if (mounted) {
         _checkLockStatus();
@@ -104,10 +97,8 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
       return;
     }
 
-    // Reset retry count once user is loaded
     _retryCount = 0;
 
-    // Only check lock if PIN or biometric is enabled
     if (!userSettings.pinEnabled && !userSettings.biometricEnabled) {
       setState(() {
         _isLocked = false;
@@ -116,9 +107,6 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
       return;
     }
 
-    // Reset authentication status only on true app start, not hot restart
-    // Check if we need to reset authentication status
-    // Don't reset if user was recently authenticated (e.g., biometric just succeeded)
     final isRecentlyAuth = await AuthService.instance.isRecentlyAuthenticated();
     final shouldResetAuth = await _shouldResetAuthenticationStatus();
 
@@ -128,12 +116,8 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
 
     _hasInitialized = true;
 
-    // Give more time for biometric authentication to complete
-    // This prevents the race condition where app is marked as locked
-    // before biometric authentication has a chance to run
     await Future.delayed(const Duration(milliseconds: 1500));
 
-    // Check if app should be locked
     final isLocked = await AuthService.instance.isAppLocked();
 
     if (mounted) {
@@ -143,42 +127,31 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
     }
   }
 
-  // Determine if authentication status should be reset
-  // This helps distinguish between true app start vs hot restart
   Future<bool> _shouldResetAuthenticationStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userSettings = context.read<UserSettingsProvider>();
 
-      // Check when the app was last backgrounded
       final lastBackground = prefs.getInt('last_background_time') ?? 0;
 
-      // If no background time is set, this is likely a fresh start
       if (lastBackground == 0) {
         return true;
       }
 
-      // Check how much time has passed since last background
       final currentTime = DateTime.now().millisecondsSinceEpoch;
       final timeDifference = currentTime - lastBackground;
 
-      // SECURITY: Auto-lock based on user's configured timeout
-      // This protects against unauthorized access when device is borrowed
       final backgroundLockThreshold =
           userSettings.backgroundLockTimeout * 1000; // Convert to milliseconds
 
       if (timeDifference > backgroundLockThreshold) {
-        // Force lock the app due to extended background time
         return true;
       }
 
-      // If more than 10 seconds have passed, consider it a true app restart
-      // Hot restart usually happens much faster than this
       final shouldReset = timeDifference > 10000; // 10 seconds
 
       return shouldReset;
     } catch (e) {
-      // If there's an error, err on the side of security
       return true;
     }
   }
