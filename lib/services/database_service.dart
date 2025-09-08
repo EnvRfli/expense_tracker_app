@@ -6,7 +6,6 @@ class DatabaseService {
   static DatabaseService get instance => _instance ??= DatabaseService._();
   DatabaseService._();
 
-  // Box names
   static const String expenseBox = 'expenses';
   static const String incomeBox = 'incomes';
   static const String categoryBox = 'categories';
@@ -15,7 +14,6 @@ class DatabaseService {
   static const String transactionBox = 'transactions';
   static const String syncBox = 'sync_data';
 
-  // Boxes
   late Box<ExpenseModel> _expenseBox;
   late Box<IncomeModel> _incomeBox;
   late Box<CategoryModel> _categoryBox;
@@ -24,7 +22,6 @@ class DatabaseService {
   late Box<TransactionModel> _transactionBox;
   late Box<SyncDataModel> _syncBox;
 
-  // Getters for boxes
   Box<ExpenseModel> get expenses => _expenseBox;
   Box<IncomeModel> get incomes => _incomeBox;
   Box<CategoryModel> get categories => _categoryBox;
@@ -33,11 +30,9 @@ class DatabaseService {
   Box<TransactionModel> get transactions => _transactionBox;
   Box<SyncDataModel> get syncData => _syncBox;
 
-  // Initialize database
   Future<void> initialize() async {
     await Hive.initFlutter();
 
-    // Register adapters
     Hive.registerAdapter(ExpenseModelAdapter());
     Hive.registerAdapter(IncomeModelAdapter());
     Hive.registerAdapter(CategoryModelAdapter());
@@ -46,7 +41,6 @@ class DatabaseService {
     Hive.registerAdapter(TransactionModelAdapter());
     Hive.registerAdapter(SyncDataModelAdapter());
 
-    // Open boxes
     _expenseBox = await Hive.openBox<ExpenseModel>(expenseBox);
     _incomeBox = await Hive.openBox<IncomeModel>(incomeBox);
     _categoryBox = await Hive.openBox<CategoryModel>(categoryBox);
@@ -55,13 +49,10 @@ class DatabaseService {
     _transactionBox = await Hive.openBox<TransactionModel>(transactionBox);
     _syncBox = await Hive.openBox<SyncDataModel>(syncBox);
 
-    // Initialize default data if needed
     await _initializeDefaultData();
   }
 
-  // Initialize default categories and user if not exists
   Future<void> _initializeDefaultData() async {
-    // Create default user if not exists
     if (_userBox.isEmpty) {
       final defaultUser = UserModel(
         id: 'default_user',
@@ -71,19 +62,15 @@ class DatabaseService {
       await _userBox.put('default_user', defaultUser);
     }
 
-    // Create default categories if not exists
     if (_categoryBox.isEmpty) {
       await _createDefaultCategories();
     } else {
-      // Migrate existing categories to use localization keys
       await migrateCategoryNamesToLocalizationKeys();
     }
   }
 
-  // Create default categories
   Future<void> _createDefaultCategories() async {
     final defaultCategories = [
-      // Expense categories
       CategoryModel(
         id: 'exp_food',
         name: 'category_food_drink', // Using localization key
@@ -144,8 +131,6 @@ class DatabaseService {
         updatedAt: DateTime.now(),
         isDefault: true,
       ),
-
-      // Income categories
       CategoryModel(
         id: 'inc_salary',
         name: 'category_salary', // Using localization key
@@ -193,7 +178,6 @@ class DatabaseService {
     }
   }
 
-  // Migrate existing categories to use localization keys
   Future<void> migrateCategoryNamesToLocalizationKeys() async {
     final categoryMigrationMap = {
       'Makanan & Minuman': 'category_food_drink',
@@ -208,13 +192,11 @@ class DatabaseService {
       'Lainnya': 'category_other_income',
     };
 
-    // Get all categories
     final allCategories = _categoryBox.values.toList();
 
     for (final category in allCategories) {
       if (category.isDefault &&
           categoryMigrationMap.containsKey(category.name)) {
-        // Update the category name to use localization key
         final updatedCategory = category.copyWith(
           name: categoryMigrationMap[category.name]!,
           updatedAt: DateTime.now(),
@@ -225,7 +207,6 @@ class DatabaseService {
     }
   }
 
-  // Close all boxes
   Future<void> close() async {
     await _expenseBox.close();
     await _incomeBox.close();
@@ -236,7 +217,6 @@ class DatabaseService {
     await _syncBox.close();
   }
 
-  // Clear all data (for testing purposes)
   Future<void> clearAllData() async {
     await _expenseBox.clear();
     await _incomeBox.clear();
@@ -249,12 +229,10 @@ class DatabaseService {
     await _initializeDefaultData();
   }
 
-  // Get current user
   UserModel? getCurrentUser() {
     return _userBox.get('default_user');
   }
 
-  // Update current user
   Future<void> updateUser(UserModel user) async {
     await _userBox.put('default_user', user);
   }
