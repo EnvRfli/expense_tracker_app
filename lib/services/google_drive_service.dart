@@ -21,18 +21,15 @@ class GoogleDriveService {
   drive.DriveApi? _driveApi;
   GoogleSignInAccount? _currentUser;
 
-  // App folder name in Google Drive
   static const String appFolderName = 'ExpenseTrackerBackup';
   String? _appFolderId;
 
-  // Initialize Google Sign In
   void initialize() {
     _googleSignIn = GoogleSignIn(
       scopes: _scopes,
     );
   }
 
-  // Sign in to Google
   Future<bool> signIn() async {
     try {
       if (_googleSignIn == null) {
@@ -47,15 +44,12 @@ class GoogleDriveService {
 
       _currentUser = account;
 
-      // Get authentication headers
       final authHeaders = await account.authHeaders;
       final client = GoogleApiClient(authHeaders);
       _driveApi = drive.DriveApi(client);
 
-      // Create app folder if not exists
       await _ensureAppFolder();
 
-      // Update user model with Google account info
       await _updateUserWithGoogleInfo(account);
 
       print('Google Sign-In successful: ${account.email}');
@@ -75,14 +69,12 @@ class GoogleDriveService {
     }
   }
 
-  // Sign out from Google
   Future<void> signOut() async {
     await _googleSignIn?.signOut();
     _currentUser = null;
     _driveApi = null;
     _appFolderId = null;
 
-    // Update user model to remove Google account info
     final user = DatabaseService.instance.getCurrentUser();
     if (user != null) {
       final updatedUser = user.copyWith(
@@ -95,13 +87,10 @@ class GoogleDriveService {
     }
   }
 
-  // Check if user is signed in
   bool get isSignedIn => _currentUser != null && _driveApi != null;
 
-  // Get current user info
   GoogleSignInAccount? get currentUser => _currentUser;
 
-  // Update user model with Google account info
   Future<void> _updateUserWithGoogleInfo(GoogleSignInAccount account) async {
     final user = DatabaseService.instance.getCurrentUser();
     if (user != null) {
@@ -115,12 +104,10 @@ class GoogleDriveService {
     }
   }
 
-  // Ensure app folder exists in Google Drive
   Future<void> _ensureAppFolder() async {
     if (_driveApi == null) return;
 
     try {
-      // Search for existing app folder
       final fileList = await _driveApi!.files.list(
         q: "name='$appFolderName' and mimeType='application/vnd.google-apps.folder' and trashed=false",
         spaces: 'drive',
@@ -129,7 +116,6 @@ class GoogleDriveService {
       if (fileList.files != null && fileList.files!.isNotEmpty) {
         _appFolderId = fileList.files!.first.id;
       } else {
-        // Create app folder
         final folder = drive.File()
           ..name = appFolderName
           ..mimeType = 'application/vnd.google-apps.folder';
@@ -142,12 +128,10 @@ class GoogleDriveService {
     }
   }
 
-  // Backup all data to Google Drive
   Future<bool> backupAllData() async {
     if (!isSignedIn || _appFolderId == null) return false;
 
     try {
-      // Create backup data structure
       final backupData = {
         'version': '1.0',
         'timestamp': DateTime.now().toIso8601String(),
@@ -160,10 +144,8 @@ class GoogleDriveService {
         }
       };
 
-      // Convert to JSON
       final jsonData = jsonEncode(backupData);
 
-      // Create backup file
       final fileName = 'backup_${DateTime.now().millisecondsSinceEpoch}.json';
 
       final file = drive.File()
@@ -178,7 +160,6 @@ class GoogleDriveService {
 
       await _driveApi!.files.create(file, uploadMedia: media);
 
-      // Update last backup date
       final user = DatabaseService.instance.getCurrentUser();
       if (user != null) {
         final updatedUser = user.copyWith(
@@ -188,7 +169,6 @@ class GoogleDriveService {
         await DatabaseService.instance.updateUser(updatedUser);
       }
 
-      // Clear sync queue
       await _markAllDataAsSynced();
 
       return true;
@@ -198,12 +178,10 @@ class GoogleDriveService {
     }
   }
 
-  // Restore data from Google Drive
   Future<bool> restoreLatestBackup() async {
     if (!isSignedIn || _appFolderId == null) return false;
 
     try {
-      // Get latest backup file
       final fileList = await _driveApi!.files.list(
         q: "parents in '$_appFolderId' and name contains 'backup_' and trashed=false",
         orderBy: 'createdTime desc',
@@ -216,7 +194,6 @@ class GoogleDriveService {
 
       final latestBackup = fileList.files!.first;
 
-      // Download backup file
       final media = await _driveApi!.files.get(
         latestBackup.id!,
         downloadOptions: drive.DownloadOptions.fullMedia,
@@ -230,10 +207,8 @@ class GoogleDriveService {
       final jsonString = utf8.decode(dataBytes);
       final backupData = jsonDecode(jsonString) as Map<String, dynamic>;
 
-      // Restore data
       await _restoreFromBackupData(backupData);
 
-      // Update last sync date
       final user = DatabaseService.instance.getCurrentUser();
       if (user != null) {
         final updatedUser = user.copyWith(
@@ -250,7 +225,6 @@ class GoogleDriveService {
     }
   }
 
-  // Get backup files list
   Future<List<Map<String, dynamic>>> getBackupFiles() async {
     if (!isSignedIn || _appFolderId == null) return [];
 
@@ -276,7 +250,6 @@ class GoogleDriveService {
     }
   }
 
-  // Delete old backup files (keep only last 5)
   Future<void> cleanupOldBackups({int keepCount = 5}) async {
     if (!isSignedIn || _appFolderId == null) return;
 
@@ -288,7 +261,6 @@ class GoogleDriveService {
 
       if (fileList.files == null || fileList.files!.length <= keepCount) return;
 
-      // Delete files beyond keepCount
       final filesToDelete = fileList.files!.skip(keepCount);
       for (final file in filesToDelete) {
         await _driveApi!.files.delete(file.id!);
@@ -298,7 +270,6 @@ class GoogleDriveService {
     }
   }
 
-  // Helper methods to get data for backup
   List<Map<String, dynamic>> _getExpensesData() {
     return DatabaseService.instance.expenses.values
         .map((expense) => expense.toJson())
@@ -328,14 +299,11 @@ class GoogleDriveService {
     return user?.toJson();
   }
 
-  // Restore data from backup
   Future<void> _restoreFromBackupData(Map<String, dynamic> backupData) async {
     final data = backupData['data'] as Map<String, dynamic>;
 
-    // Clear existing data
     await DatabaseService.instance.clearAllData();
 
-    // Restore categories first (as they are referenced by other models)
     if (data['categories'] != null) {
       for (final categoryJson in data['categories'] as List) {
         final category = CategoryModel.fromJson(categoryJson);
@@ -343,13 +311,11 @@ class GoogleDriveService {
       }
     }
 
-    // Restore user data
     if (data['user'] != null) {
       final user = UserModel.fromJson(data['user']);
       await DatabaseService.instance.updateUser(user);
     }
 
-    // Restore expenses
     if (data['expenses'] != null) {
       for (final expenseJson in data['expenses'] as List) {
         final expense = ExpenseModel.fromJson(expenseJson);
@@ -357,7 +323,6 @@ class GoogleDriveService {
       }
     }
 
-    // Restore incomes
     if (data['incomes'] != null) {
       for (final incomeJson in data['incomes'] as List) {
         final income = IncomeModel.fromJson(incomeJson);
@@ -365,7 +330,6 @@ class GoogleDriveService {
       }
     }
 
-    // Restore budgets
     if (data['budgets'] != null) {
       for (final budgetJson in data['budgets'] as List) {
         final budget = BudgetModel.fromJson(budgetJson);
@@ -374,7 +338,6 @@ class GoogleDriveService {
     }
   }
 
-  // Mark all data as synced
   Future<void> _markAllDataAsSynced() async {
     final syncBox = DatabaseService.instance.syncData;
     final syncItems = syncBox.values.where((item) => !item.synced).toList();
@@ -386,7 +349,6 @@ class GoogleDriveService {
   }
 }
 
-// Custom HTTP client for Google APIs
 class GoogleApiClient extends http.BaseClient {
   final Map<String, String> _headers;
   final http.Client _client = http.Client();
