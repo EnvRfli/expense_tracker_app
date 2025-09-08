@@ -19,13 +19,10 @@ class BudgetNotificationService {
 
   bool _isInitialized = false;
 
-  // Track sent notifications to prevent duplicates
   final Set<String> _sentNotifications = <String>{};
 
-  // Track last alert percentages to detect threshold crossings
   final Map<String, double> _lastAlertPercentages = <String, double>{};
 
-  // Flag to suppress notifications during app startup
   bool _suppressStartupNotifications = true;
 
   Future<void> initialize() async {
@@ -55,9 +52,7 @@ class BudgetNotificationService {
     _isInitialized = true;
   }
 
-  void _onNotificationResponse(NotificationResponse response) {
-    // Handle notification response if needed
-  }
+  void _onNotificationResponse(NotificationResponse response) {}
 
   Future<void> checkBudgetAlerts(
       List<BudgetModel> budgets, List<CategoryModel> categories,
@@ -66,12 +61,10 @@ class BudgetNotificationService {
       await initialize();
     }
 
-    // If this is not from user action and we're suppressing startup notifications, return early
     if (!isFromUserAction && _suppressStartupNotifications) {
       return;
     }
 
-    // Filter budgets to check only the specific category if provided
     final budgetsToCheck = specificCategoryId != null
         ? budgets
             .where((budget) => budget.categoryId == specificCategoryId)
@@ -96,12 +89,10 @@ class BudgetNotificationService {
         ),
       );
 
-      // Check if budget has reached alert threshold
       if (budget.usagePercentage >= budget.alertPercentage) {
         await _showBudgetAlert(budget, category);
       }
 
-      // Check if budget is exceeded or full
       if (budget.status == 'exceeded' || budget.status == 'full') {
         await _showBudgetExceededAlert(budget, category);
       }
@@ -114,18 +105,13 @@ class BudgetNotificationService {
     final String notificationKey =
         '${budget.id}_${budget.usagePercentage.floor()}';
 
-    // Check if we've already sent this notification
     if (_sentNotifications.contains(notificationKey)) {
       return;
     }
 
-    // Check if we're crossing a new threshold (only send notifications when crossing thresholds)
     final lastPercentage = _lastAlertPercentages[budget.id] ?? 0.0;
     final currentPercentage = budget.usagePercentage;
 
-    // Only send notification if:
-    // 1. This is the first time reaching the alert threshold, OR
-    // 2. We've crossed a new 10% threshold (80%, 90%, 100%)
     final shouldSendNotification = (lastPercentage < budget.alertPercentage &&
             currentPercentage >= budget.alertPercentage) ||
         (currentPercentage.floor() ~/ 10 > lastPercentage.floor() ~/ 10 &&
@@ -170,7 +156,6 @@ class BudgetNotificationService {
       payload: 'budget_alert:${budget.id}',
     );
 
-    // Track that we've sent this notification
     _sentNotifications.add(notificationKey);
     _lastAlertPercentages[budget.id] = currentPercentage;
   }
@@ -181,7 +166,6 @@ class BudgetNotificationService {
         budget.id.hashCode + 1000; // Different ID for exceeded alerts
     final String exceededKey = '${budget.id}_exceeded';
 
-    // Check if we've already sent the exceeded notification for this budget
     if (_sentNotifications.contains(exceededKey)) {
       return;
     }
@@ -232,7 +216,6 @@ class BudgetNotificationService {
       payload: 'budget_exceeded:${budget.id}',
     );
 
-    // Track that we've sent the exceeded notification
     _sentNotifications.add(exceededKey);
   }
 
@@ -339,7 +322,6 @@ class BudgetNotificationService {
       await initialize();
     }
 
-    // Schedule daily notification at 8 PM
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       9998, // Fixed ID for scheduled notification
       '📊 Budget Check Reminder',
@@ -390,24 +372,20 @@ class BudgetNotificationService {
     await _flutterLocalNotificationsPlugin.cancel(notificationId + 1000);
     await _flutterLocalNotificationsPlugin.cancel(notificationId + 2000);
 
-    // Clear tracking for this budget
     _sentNotifications.removeWhere((key) => key.startsWith(budgetId));
     _lastAlertPercentages.remove(budgetId);
   }
 
-  // Reset notification tracking for all budgets (call this at start of new period)
   void resetNotificationTracking() {
     _sentNotifications.clear();
     _lastAlertPercentages.clear();
   }
 
-  // Reset notification tracking for specific budget
   void resetBudgetNotificationTracking(String budgetId) {
     _sentNotifications.removeWhere((key) => key.startsWith(budgetId));
     _lastAlertPercentages.remove(budgetId);
   }
 
-  // Force reset tracking for category to ensure fresh notifications
   void forceResetCategoryTracking(
       String categoryId, List<BudgetModel> budgets) {
     final categoryBudgets = budgets.where((b) => b.categoryId == categoryId);
@@ -416,7 +394,6 @@ class BudgetNotificationService {
     }
   }
 
-  // Enable notifications after app startup
   void enableNotifications() {
     _suppressStartupNotifications = false;
   }
