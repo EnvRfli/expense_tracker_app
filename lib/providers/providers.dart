@@ -6,3 +6,4 @@ export 'category_provider.dart';
 export 'budget_provider.dart';
 export 'sync_provider.dart';
 export 'user_settings_provider.dart';
+export 'payment_method_provider.dart';
