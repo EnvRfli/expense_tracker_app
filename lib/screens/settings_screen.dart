@@ -6,6 +6,7 @@ import '../utils/theme.dart';
 import '../l10n/localization_extension.dart';
 import 'pin_setup_screen.dart';
 import 'categories_management_screen.dart';
+import 'payment_method_management_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -48,6 +49,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: AppSizes.paddingLarge),
               _buildSectionHeader(context.tr('categories')),
               _buildCategoriesTile(),
+              const SizedBox(height: AppSizes.paddingLarge),
+              _buildSectionHeader(context.tr('payment_methods')),
+              _buildPaymentMethodsTile(),
               const SizedBox(height: AppSizes.paddingLarge),
               _buildSectionHeader(context.tr('data_management')),
               _buildDataManagementCard(),
@@ -227,6 +231,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: Text(context.tr('manage_categories_subtitle')),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _navigateToCategoriesManagement(),
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodsTile() {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.payment, color: AppTheme.primaryColor),
+        title: Text(context.tr('payment_methods')),
+        subtitle: Text(context.tr('manage_payment_methods_subtitle')),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _navigateToPaymentMethodsManagement(),
       ),
     );
   }
@@ -502,6 +518,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const CategoriesManagementScreen(),
+      ),
+    );
+  }
+
+  void _navigateToPaymentMethodsManagement() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const PaymentMethodManagementScreen(),
       ),
     );
   }
