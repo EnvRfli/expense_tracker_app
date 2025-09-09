@@ -338,6 +338,35 @@ abstract class AppLocalizations {
     'edit_category': 'Edit Kategori',
     'delete_category': 'Hapus Kategori',
     'category_name': 'Nama Kategori',
+
+    // Payment Methods Management
+    'payment_methods': 'Metode Pembayaran',
+    'manage_payment_methods_subtitle':
+        'Kelola kantong uang dan metode pembayaran',
+    'no_payment_methods': 'Tidak ada metode pembayaran',
+    'add_payment_method_desc':
+        'Tambahkan metode pembayaran untuk mengelola kantong uang Anda',
+    'add_payment_method': 'Tambah Metode Pembayaran',
+    'edit_payment_method': 'Edit Metode Pembayaran',
+    'delete_payment_method': 'Hapus Metode Pembayaran',
+    'delete_payment_method_confirmation':
+        'Apakah Anda yakin ingin menghapus "{name}"?',
+    'payment_method_name': 'Nama Metode Pembayaran',
+    'enter_payment_method_name': 'Masukkan nama metode pembayaran',
+    'payment_method_name_required': 'Nama metode pembayaran wajib diisi',
+    'set_as_default': 'Jadikan Default',
+    'default': 'Default',
+    'built_in_method': 'Metode Bawaan',
+    'custom_method': 'Metode Kustom',
+    'default_payment_method_updated':
+        'Metode pembayaran default berhasil diubah',
+    'error_updating_payment_method': 'Gagal mengubah metode pembayaran',
+    'payment_method_deleted': 'Metode pembayaran berhasil dihapus',
+    'error_deleting_payment_method': 'Gagal menghapus metode pembayaran',
+    'payment_method_added': 'Metode pembayaran berhasil ditambahkan',
+    'payment_method_updated': 'Metode pembayaran berhasil diperbarui',
+    'error_saving_payment_method': 'Gagal menyimpan metode pembayaran',
+    'update': 'Perbarui',
     'category_name_required': 'Nama kategori wajib diisi',
     'category_name_exists': 'Nama kategori sudah ada',
     'select_color': 'Pilih Warna',
@@ -884,6 +913,35 @@ abstract class AppLocalizations {
     'edit_category': 'Edit Category',
     'delete_category': 'Delete Category',
     'category_name': 'Category Name',
+
+    // Payment Methods Management
+    'payment_methods': 'Payment Methods',
+    'manage_payment_methods_subtitle':
+        'Manage your money pockets and payment methods',
+    'no_payment_methods': 'No payment methods',
+    'add_payment_method_desc':
+        'Add payment methods to manage your money pockets',
+    'add_payment_method': 'Add Payment Method',
+    'edit_payment_method': 'Edit Payment Method',
+    'delete_payment_method': 'Delete Payment Method',
+    'delete_payment_method_confirmation':
+        'Are you sure you want to delete "{name}"?',
+    'payment_method_name': 'Payment Method Name',
+    'enter_payment_method_name': 'Enter payment method name',
+    'payment_method_name_required': 'Payment method name is required',
+    'set_as_default': 'Set as Default',
+    'default': 'Default',
+    'built_in_method': 'Built-in Method',
+    'custom_method': 'Custom Method',
+    'default_payment_method_updated':
+        'Default payment method updated successfully',
+    'error_updating_payment_method': 'Failed to update payment method',
+    'payment_method_deleted': 'Payment method deleted successfully',
+    'error_deleting_payment_method': 'Failed to delete payment method',
+    'payment_method_added': 'Payment method added successfully',
+    'payment_method_updated': 'Payment method updated successfully',
+    'error_saving_payment_method': 'Failed to save payment method',
+    'update': 'Update',
     'category_name_required': 'Category name is required',
     'category_name_exists': 'Category name already exists',
     'select_color': 'Select Color',
