@@ -13,6 +13,7 @@ class DatabaseService {
   static const String budgetBox = 'budgets';
   static const String transactionBox = 'transactions';
   static const String syncBox = 'sync_data';
+  static const String paymentMethodBox = 'payment_methods';
 
   late Box<ExpenseModel> _expenseBox;
   late Box<IncomeModel> _incomeBox;
@@ -21,6 +22,7 @@ class DatabaseService {
   late Box<BudgetModel> _budgetBox;
   late Box<TransactionModel> _transactionBox;
   late Box<SyncDataModel> _syncBox;
+  late Box<PaymentMethodModel> _paymentMethodBox;
 
   Box<ExpenseModel> get expenses => _expenseBox;
   Box<IncomeModel> get incomes => _incomeBox;
@@ -29,6 +31,7 @@ class DatabaseService {
   Box<BudgetModel> get budgets => _budgetBox;
   Box<TransactionModel> get transactions => _transactionBox;
   Box<SyncDataModel> get syncData => _syncBox;
+  Box<PaymentMethodModel> get paymentMethods => _paymentMethodBox;
 
   Future<void> initialize() async {
     await Hive.initFlutter();
@@ -40,6 +43,7 @@ class DatabaseService {
     Hive.registerAdapter(BudgetModelAdapter());
     Hive.registerAdapter(TransactionModelAdapter());
     Hive.registerAdapter(SyncDataModelAdapter());
+    Hive.registerAdapter(PaymentMethodModelAdapter());
 
     _expenseBox = await Hive.openBox<ExpenseModel>(expenseBox);
     _incomeBox = await Hive.openBox<IncomeModel>(incomeBox);
@@ -48,6 +52,8 @@ class DatabaseService {
     _budgetBox = await Hive.openBox<BudgetModel>(budgetBox);
     _transactionBox = await Hive.openBox<TransactionModel>(transactionBox);
     _syncBox = await Hive.openBox<SyncDataModel>(syncBox);
+    _paymentMethodBox =
+        await Hive.openBox<PaymentMethodModel>(paymentMethodBox);
 
     await _initializeDefaultData();
   }
@@ -215,6 +221,7 @@ class DatabaseService {
     await _budgetBox.close();
     await _transactionBox.close();
     await _syncBox.close();
+    await _paymentMethodBox.close();
   }
 
   Future<void> clearAllData() async {
@@ -225,6 +232,7 @@ class DatabaseService {
     await _budgetBox.clear();
     await _transactionBox.clear();
     await _syncBox.clear();
+    await _paymentMethodBox.clear();
 
     await _initializeDefaultData();
   }
