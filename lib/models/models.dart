@@ -6,6 +6,7 @@ export 'user.dart';
 export 'budget.dart';
 export 'transaction.dart';
 export 'sync_data.dart';
+export 'payment_method.dart';
 
 // Type definitions for better type safety
 enum TransactionType { income, expense }
