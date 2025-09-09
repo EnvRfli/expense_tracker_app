@@ -58,6 +58,7 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
         ChangeNotifierProvider(create: (_) => IncomeProvider()),
         ChangeNotifierProvider(create: (_) => BudgetProvider()),
         ChangeNotifierProvider(create: (_) => SyncProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentMethodProvider()),
       ],
       child: Consumer<UserSettingsProvider>(
         builder: (context, userSettings, child) {
@@ -129,6 +130,7 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
     await context.read<IncomeProvider>().initialize();
     await context.read<BudgetProvider>().initialize();
     await context.read<SyncProvider>().initialize();
+    await context.read<PaymentMethodProvider>().initialize();
 
     // Setup refresh callbacks for UserSettingsProvider
     context.read<UserSettingsProvider>().setProviderRefreshCallbacks(
