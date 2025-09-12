@@ -734,14 +734,10 @@ class BudgetProvider extends BaseProvider {
       }
       final recurringBudgets = latestByKey.values.toList();
 
-
       for (final budget in recurringBudgets) {
         var currentEndDate = budget.endDate;
-       
 
         while (now.isAfter(currentEndDate)) {
-          
-
           final nextPeriodDates =
               _calculateNextPeriodDates(budget.period, currentEndDate);
 
@@ -783,10 +779,6 @@ class BudgetProvider extends BaseProvider {
               notes: budget.notes,
               isRecurring: true,
             );
-
-            print('✅ Created overdue recurring budget');
-          } else {
-            print('Overdue budget already exists: ${existingBudget.id}');
           }
           final newRecurringTime = DateTime(nextPeriodDates['end']!.year,
               nextPeriodDates['end']!.month, nextPeriodDates['end']!.day + 1);
