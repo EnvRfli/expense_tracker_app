@@ -17,13 +17,10 @@ class NotificationService {
 
   bool _isInitialized = false;
 
-  // Helper method to safely convert DateTime to TZDateTime
   tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {
     try {
-      // Ensure timezone is initialized
       tz.initializeTimeZones();
 
-      // Try to get local timezone, with fallback
       tz.Location location;
       try {
         location = tz.local;
@@ -37,7 +34,6 @@ class NotificationService {
 
       return tz.TZDateTime.from(dateTime, location);
     } catch (e) {
-      // Create TZDateTime manually as last resort
       return tz.TZDateTime(
         tz.UTC,
         dateTime.year,
@@ -52,15 +48,12 @@ class NotificationService {
     }
   }
 
-  // Initialize notification service
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
-      // Initialize timezone
       tz.initializeTimeZones();
 
-      // Try to set local timezone, fallback to UTC if not available
       try {
         tz.setLocalLocation(
             tz.getLocation('Asia/Jakarta')); // Adjust to your timezone
@@ -73,10 +66,8 @@ class NotificationService {
       print('Timezone initialization failed: $e');
     }
 
-    // Request permission
     await _requestPermission();
 
-    // Initialize plugin
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
@@ -98,7 +89,6 @@ class NotificationService {
     _isInitialized = true;
   }
 
-  // Check if exact alarms are available
   Future<bool> _canUseExactAlarms() async {
     try {
       final status = await Permission.scheduleExactAlarm.status;
@@ -109,25 +99,17 @@ class NotificationService {
   }
 
   Future<bool> _requestPermission() async {
-    // Request basic notification permission
     final notificationStatus = await Permission.notification.request();
 
-    // For Android 12+, also try to request SCHEDULE_EXACT_ALARM permission
     try {
       await Permission.scheduleExactAlarm.request();
-    } catch (e) {
-      // Permission not available on this device
-    }
+    } catch (e) {}
 
     return notificationStatus.isGranted;
   }
 
-  // Handle notification tap
-  void _onNotificationTap(NotificationResponse notificationResponse) {
-    // Handle notification tap if needed
-  }
+  void _onNotificationTap(NotificationResponse notificationResponse) {}
 
-  // Show immediate notification
   Future<void> showNotification({
     required int id,
     required String title,
@@ -160,14 +142,12 @@ class NotificationService {
     );
   }
 
-  // Schedule daily reminder
   Future<void> scheduleDailyReminder({
     required int hour,
     required int minute,
   }) async {
     if (!_isInitialized) await initialize();
 
-    // Cancel existing daily reminder first
     await cancelDailyReminder();
 
     const androidDetails = AndroidNotificationDetails(
@@ -185,22 +165,18 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    // Calculate the next notification time
     final now = DateTime.now();
     var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
 
-    // If the scheduled time has already passed today, schedule for tomorrow
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    // Check if we can use exact alarms
     final canUseExact = await _canUseExactAlarms();
     final scheduleMode = canUseExact
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
 
-    // Schedule the actual daily reminder
     final scheduledTzDate = _convertToTZDateTime(scheduledDate);
 
     try {
@@ -217,7 +193,6 @@ class NotificationService {
             DateTimeComponents.time, // Repeat daily at same time
       );
     } catch (e) {
-      // Try fallback with periodic notification (less precise but more compatible)
       try {
         await _flutterLocalNotificationsPlugin.periodicallyShow(
           1001,
@@ -226,18 +201,14 @@ class NotificationService {
           RepeatInterval.daily,
           notificationDetails,
         );
-      } catch (e2) {
-        // Silent fail - notification scheduling not critical
-      }
+      } catch (e2) {}
     }
   }
 
-  // Cancel daily reminder
   Future<void> cancelDailyReminder() async {
     await _flutterLocalNotificationsPlugin.cancel(1001);
   }
 
-  // Show budget alert notification
   Future<void> showBudgetAlert({
     required String categoryName,
     required double percentage,
@@ -265,7 +236,6 @@ class NotificationService {
     );
   }
 
-  // Show sync status notification
   Future<void> showSyncNotification({
     required bool success,
     String? errorMessage,
@@ -287,16 +257,13 @@ class NotificationService {
     }
   }
 
-  // Check and notify budget alerts (delegated to BudgetNotificationService)
   Future<void> checkBudgetAlerts(
       {String? specificCategoryId,
       bool forceReset = false,
       bool isFromUserAction = false}) async {
     try {
-      // First, refresh all budget spent amounts to ensure accurate calculations
       await _refreshBudgetSpentAmounts();
 
-      // Get fresh data from database after refresh
       final budgets = DatabaseService.instance.budgets.values.toList();
       final categories = DatabaseService.instance.categories.values.toList();
 
@@ -306,16 +273,13 @@ class NotificationService {
       print('Is from user action: $isFromUserAction');
       print('Total budgets in database: ${budgets.length}');
 
-      // Use the specialized budget notification service
       final budgetNotificationService = BudgetNotificationService.instance;
 
-      // Force reset tracking if requested
       if (forceReset && specificCategoryId != null) {
         budgetNotificationService.forceResetCategoryTracking(
             specificCategoryId, budgets);
       }
 
-      // Filter and show budget info for debugging
       final relevantBudgets = specificCategoryId != null
           ? budgets.where((b) => b.categoryId == specificCategoryId).toList()
           : budgets;
@@ -345,15 +309,10 @@ class NotificationService {
     }
   }
 
-  // Helper method to refresh budget spent amounts
   Future<void> _refreshBudgetSpentAmounts() async {
     try {
       final budgets = DatabaseService.instance.budgets.values.toList();
       for (final budget in budgets) {
-        // Remove the isActive check - update all budgets including inactive ones
-        // if (!budget.isActive) continue;
-
-        // Calculate spent amount using the corrected logic
         final spent = _calculateSpentAmount(
           budget.categoryId,
           budget.startDate,
@@ -375,7 +334,6 @@ class NotificationService {
   double _calculateSpentAmount(
       String categoryId, DateTime startDate, DateTime endDate) {
     final expenses = DatabaseService.instance.expenses.values.where((expense) {
-      // Check category match
       if (expense.categoryId != categoryId) return false;
       final expenseDate = expense.date;
       final isAfterStart = expenseDate.isAfter(startDate) ||
@@ -389,7 +347,6 @@ class NotificationService {
     return expenses.fold(0.0, (sum, expense) => sum + expense.amount);
   }
 
-  // Setup notifications based on user preferences
   Future<void> setupUserNotifications() async {
     final user = DatabaseService.instance.getCurrentUser();
 
@@ -398,9 +355,7 @@ class NotificationService {
       return;
     }
 
-    // Setup daily reminder - default to 20:00 if enabled
     if (user.notificationEnabled) {
-      // Use stored time or default to 20:00
       int hour = 20;
       int minute = 0;
 
@@ -416,12 +371,10 @@ class NotificationService {
     }
   }
 
-  // Cancel all notifications
   Future<void> cancelAllNotifications() async {
     await _flutterLocalNotificationsPlugin.cancelAll();
   }
 
-  // Get pending notifications
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
   }
