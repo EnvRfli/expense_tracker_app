@@ -15,9 +15,6 @@ class PaymentMethodManagementScreen extends StatefulWidget {
 
 class _PaymentMethodManagementScreenState
     extends State<PaymentMethodManagementScreen> {
-  String?
-      _settingDefaultId; // Track which payment method is being set as default
-
   @override
   void initState() {
     super.initState();
@@ -189,57 +186,48 @@ class _PaymentMethodManagementScreenState
                 color: Colors.grey[600],
               ),
         ),
-        trailing: _settingDefaultId == paymentMethod.id
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : PopupMenuButton<String>(
-                enabled: _settingDefaultId ==
-                    null, // Disable when any operation is running
-                onSelected: (value) =>
-                    _handleMenuAction(context, value, paymentMethod, provider),
-                itemBuilder: (context) => [
-                  if (!paymentMethod.isDefault)
-                    PopupMenuItem(
-                      value: 'set_default',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.star_outline, size: 20),
-                          const SizedBox(width: 8),
-                          Text(context.tr('set_as_default')),
-                        ],
-                      ),
-                    ),
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.edit_outlined, size: 20),
-                        const SizedBox(width: 8),
-                        Text(context.tr('edit')),
-                      ],
-                    ),
-                  ),
-                  if (!paymentMethod.isBuiltIn &&
-                      provider.paymentMethods.length > 1)
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.delete_outline,
-                              size: 20, color: Colors.red),
-                          const SizedBox(width: 8),
-                          Text(
-                            context.tr('delete'),
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        ],
-                      ),
-                    ),
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) =>
+              _handleMenuAction(context, value, paymentMethod, provider),
+          itemBuilder: (context) => [
+            if (!paymentMethod.isDefault)
+              PopupMenuItem(
+                value: 'set_default',
+                child: Row(
+                  children: [
+                    const Icon(Icons.star_outline, size: 20),
+                    const SizedBox(width: 8),
+                    Text(context.tr('set_as_default')),
+                  ],
+                ),
+              ),
+            PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  const Icon(Icons.edit_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  Text(context.tr('edit')),
                 ],
               ),
+            ),
+            if (!paymentMethod.isBuiltIn && provider.paymentMethods.length > 1)
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete_outline,
+                        size: 20, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Text(
+                      context.tr('delete'),
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
         onTap: () => _showAddEditDialog(context, paymentMethod: paymentMethod),
       ),
     );
@@ -251,10 +239,9 @@ class _PaymentMethodManagementScreenState
     PaymentMethodModel paymentMethod,
     PaymentMethodProvider provider,
   ) async {
-    Navigator.pop(context);
     switch (action) {
       case 'set_default':
-        await _setAsDefault(context, paymentMethod, provider);
+        _showSetDefaultConfirmation(context, paymentMethod, provider);
         break;
       case 'edit':
         _showAddEditDialog(context, paymentMethod: paymentMethod);
@@ -265,35 +252,63 @@ class _PaymentMethodManagementScreenState
     }
   }
 
+  void _showSetDefaultConfirmation(
+    BuildContext context,
+    PaymentMethodModel paymentMethod,
+    PaymentMethodProvider provider,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('set_default_payment_method')),
+        content: Text(
+          context.tr('set_default_payment_method_confirmation',
+              params: {'name': paymentMethod.name}),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.tr('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _setAsDefault(context, paymentMethod, provider);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.budget),
+            child: Text(context.tr('set_default')),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _setAsDefault(
     BuildContext context,
     PaymentMethodModel paymentMethod,
     PaymentMethodProvider provider,
   ) async {
-    if (!mounted) return;
-
-    setState(() {
-      _settingDefaultId = paymentMethod.id;
-    });
-
     final success = await provider.setDefaultPaymentMethod(paymentMethod.id);
 
-    setState(() {
-      _settingDefaultId = null;
-    });
+    if (!mounted) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success
-                ? context.tr('default_payment_method_updated')
-                : context.tr('error_updating_payment_method')),
-            backgroundColor: success ? AppColors.success : AppColors.error,
-          ),
-        );
-      }
-    });
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('default_payment_method_updated',
+              params: {'name': paymentMethod.name})),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.errorMessage ??
+              context.tr('error_updating_payment_method')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   void _showDeleteConfirmation(
