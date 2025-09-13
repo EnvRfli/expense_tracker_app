@@ -355,6 +355,10 @@ abstract class AppLocalizations {
     'enter_payment_method_name': 'Masukkan nama metode pembayaran',
     'payment_method_name_required': 'Nama metode pembayaran wajib diisi',
     'set_as_default': 'Jadikan Default',
+    'set_default': 'Jadikan Default',
+    'set_default_payment_method': 'Jadikan Metode Pembayaran Default',
+    'set_default_payment_method_confirmation':
+        'Apakah Anda yakin ingin menjadikan "{name}" sebagai metode pembayaran default?',
     'default': 'Default',
     'built_in_method': 'Metode Bawaan',
     'custom_method': 'Metode Kustom',
@@ -930,6 +934,10 @@ abstract class AppLocalizations {
     'enter_payment_method_name': 'Enter payment method name',
     'payment_method_name_required': 'Payment method name is required',
     'set_as_default': 'Set as Default',
+    'set_default': 'Set Default',
+    'set_default_payment_method': 'Set Default Payment Method',
+    'set_default_payment_method_confirmation':
+        'Are you sure you want to set "{name}" as the default payment method?',
     'default': 'Default',
     'built_in_method': 'Built-in Method',
     'custom_method': 'Custom Method',
