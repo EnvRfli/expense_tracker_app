@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../utils/theme.dart';
-import '../widgets/dashboard_widgets.dart'; // Add this import for showFilteredTransactionsSheet
-import '../l10n/localization_extension.dart'; // Add localization import
+import '../widgets/dashboard_widgets.dart';
+import '../l10n/localization_extension.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -13,7 +13,6 @@ class ReportsScreen extends StatefulWidget {
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
 
-// --- helper classes for charts ---
 class _TimeSeriesPoint {
   final DateTime date;
   final double income;
