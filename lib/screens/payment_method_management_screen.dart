@@ -282,7 +282,6 @@ class _PaymentMethodManagementScreenState
       _settingDefaultId = null;
     });
 
-    // Use a safer approach for showing SnackBar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -430,7 +429,6 @@ class _PaymentMethodDialogState extends State<_PaymentMethodDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Name field
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
@@ -441,8 +439,6 @@ class _PaymentMethodDialogState extends State<_PaymentMethodDialog> {
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 16),
-
-            // Icon selection
             Text(
               context.tr('select_icon'),
               style: Theme.of(context).textTheme.titleSmall,
@@ -450,8 +446,6 @@ class _PaymentMethodDialogState extends State<_PaymentMethodDialog> {
             const SizedBox(height: 8),
             _buildIconSelector(),
             const SizedBox(height: 16),
-
-            // Color selection
             Text(
               context.tr('select_color'),
               style: Theme.of(context).textTheme.titleSmall,
@@ -459,8 +453,6 @@ class _PaymentMethodDialogState extends State<_PaymentMethodDialog> {
             const SizedBox(height: 8),
             _buildColorSelector(),
             const SizedBox(height: 16),
-
-            // Set as default checkbox
             CheckboxListTile(
               value: _setAsDefault,
               onChanged: (value) {
@@ -588,7 +580,6 @@ class _PaymentMethodDialogState extends State<_PaymentMethodDialog> {
     bool success = false;
 
     if (widget.paymentMethod != null) {
-      // Edit existing payment method
       success = await provider.updatePaymentMethod(
         id: widget.paymentMethod!.id,
         name: name,
@@ -597,7 +588,6 @@ class _PaymentMethodDialogState extends State<_PaymentMethodDialog> {
         setAsDefault: _setAsDefault,
       );
     } else {
-      // Add new payment method
       success = await provider.addPaymentMethod(
         name: name,
         iconName: _selectedIcon,
