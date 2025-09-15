@@ -1,4 +1,43 @@
-# 🔧 Expense Tracker v1.0.1 - Bug Fix Release
+# � Expense Tracker v1.0.2 - Feature Enhancement Release
+
+## 📱 Download APK
+
+**Choose the APK that matches your Android device:**
+
+### 🎯 Recommended (Smaller Size)
+- **[ExpenseTracker-arm64-v8a-v1.0.2.apk](https://github.com/EnvRfli/expense_tracker_app/releases/download/v1.0.2/ExpenseTracker-arm64-v8a-v1.0.2.apk)** (~12.8 MB)
+  - For modern Android devices (2019+)
+  - Most Android phones today use this architecture
+
+- **[ExpenseTracker-armeabi-v7a-v1.0.2.apk](https://github.com/EnvRfli/expense_tracker_app/releases/download/v1.0.2/ExpenseTracker-armeabi-v7a-v1.0.2.apk)** (~12.4 MB)
+  - For older Android devices (2010-2019)
+
+### 🌐 Universal (Larger Size)
+- **[ExpenseTracker-universal-v1.0.2.apk](https://github.com/EnvRfli/expense_tracker_app/releases/download/v1.0.2/ExpenseTracker-universal-v1.0.2.apk)** (~28.2 MB)
+  - Compatible with all Android devices
+  - Use this if you're not sure which architecture your device uses
+
+## 🔄 What's New in v1.0.2
+
+### ✨ **New Features & Improvements**
+- **Enhanced User Interface**: Improved overall app design and user experience
+- **Better Performance**: Optimized app performance and reduced loading times
+- **Additional Settings**: More customization options in settings screen
+- **Improved Stability**: Enhanced app reliability and crash prevention
+
+### 🐛 **Bug Fixes**
+- Fixed minor UI inconsistencies
+- Resolved performance issues in chart rendering
+- Enhanced error handling throughout the app
+
+### ⚡ **Performance Enhancements**
+- Faster data processing
+- Improved memory management
+- Better battery optimization
+
+---
+
+# �🔧 Expense Tracker v1.0.1 - Bug Fix Release
 
 ## 📱 Download APK
 

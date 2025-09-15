@@ -1032,7 +1032,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showAboutDialog(
       context: context,
       applicationName: 'Expense Tracker',
-      applicationVersion: '1.0.1',
+      applicationVersion: '1.0.2',
       applicationIcon: const Icon(
         Icons.account_balance_wallet,
         size: 48,
