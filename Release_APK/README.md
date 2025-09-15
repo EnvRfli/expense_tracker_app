@@ -5,11 +5,11 @@
 Pilih APK yang sesuai dengan device Anda:
 
 ### 🎯 **Recommended (Ukuran Kecil)**
-- **ExpenseTracker-arm64-v8a-v1.0.1.apk** (12.7 MB) - Untuk Android device modern (2019+)
-- **ExpenseTracker-armeabi-v7a-v1.0.1.apk** (12.3 MB) - Untuk Android device lama (2010-2019)
+- **ExpenseTracker-arm64-v8a-v1.0.2.apk** (12.8 MB) - Untuk Android device modern (2019+)
+- **ExpenseTracker-armeabi-v7a-v1.0.2.apk** (12.4 MB) - Untuk Android device lama (2010-2019)
 
 ### 🌐 **Universal (Ukuran Besar)**
-- **ExpenseTracker-universal-v1.0.1.apk** (28 MB) - Kompatibel dengan semua Android device
+- **ExpenseTracker-universal-v1.0.2.apk** (28.2 MB) - Kompatibel dengan semua Android device
 
 ## 📋 Cara Install
 
@@ -31,14 +31,14 @@ Pilih APK yang sesuai dengan device Anda:
 
 ## 🎯 Rekomendasi APK
 
-- **Kebanyakan device modern**: Gunakan `ExpenseTracker-arm64-v8a-v1.0.1.apk`
-- **Device lama**: Gunakan `ExpenseTracker-armeabi-v7a-v1.0.1.apk`
-- **Tidak yakin**: Gunakan `ExpenseTracker-universal-v1.0.1.apk`
+- **Kebanyakan device modern**: Gunakan `ExpenseTracker-arm64-v8a-v1.0.2.apk`
+- **Device lama**: Gunakan `ExpenseTracker-armeabi-v7a-v1.0.2.apk`
+- **Tidak yakin**: Gunakan `ExpenseTracker-universal-v1.0.2.apk`
 
 ## 🔧 App Info
 
 - **Nama**: Expense Tracker
-- **Version**: 1.0.1+3
+- **Version**: 1.0.2+4
 - **Min SDK**: Android 5.0 (API 21)
 - **Target SDK**: Latest
 - **Permissions**: Camera, Storage, Notifications, Biometric
@@ -55,5 +55,5 @@ Pilih APK yang sesuai dengan device Anda:
 - ✅ Charts & analytics
 
 ---
-**Build Date**: August 28, 2025
+**Build Date**: September 15, 2025
 **Built with**: Flutter 3.x
